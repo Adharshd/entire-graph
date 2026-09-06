@@ -1,5 +1,57 @@
 Semantic changes 90d1939..HEAD
 
+BUILDATHON.md (Markdown)
+  + section Start-here added
+  + section If-you-are-an-agent-reading-this added
+  + code_fence code_fence_1_sh added
+  + section What-this-is-for-beyond-one-report added
+  + code_fence code_fence_5_sh added
+  + section vendor-removal----X-is-everything-so---from-is-omitted added
+  + section architecture-boundary----X-is-scoped added
+  + code_fence code_fence_9_text added
+  + code_fence code_fence_11_text added
+  ~ code_fence code_fence_13_sh renamed from code_fence_9_sh (0 dependents)
+  + code_fence code_fence_14_text added
+  + section Every-requirement-and-where-it-is-answered added
+  + section Our-own-loop-found-this-before-the-card-named-it added
+  + section The-tempting-wrong-answer added
+  + section The-assumption-that-was-invalidated added
+  + code_fence code_fence_15_text added
+  + code_fence code_fence_16_text added
+  + code_fence code_fence_17_text added
+  ~ code_fence code_fence_18_text renamed from code_fence_5_text (0 dependents)
+  + section What-changed added
+  + code_fence code_fence_19_text added
+  + code_fence code_fence_20_text added
+  + section Why-the-new-result-is-safe added
+  + section The-fixture-for-incomplete-analysis added
+  + section Run-against-Kubernetes added
+  + code_fence code_fence_21_text added
+  + code_fence code_fence_22_text added
+  + code_fence code_fence_23_text added
+  ~ code_fence code_fence_24_text renamed from code_fence_1_text (0 dependents)
+  + section Closing-the-loop:-a-verifier-with-no-model-in-it added
+  + code_fence code_fence_25_json added
+  + code_fence code_fence_26_text added
+  + section Graph-evidence-captured-before-the-first-edit added
+  + section The-skill:-what-survives added
+  + section The-evidence-folder added
+  ~ code_fence code_fence_27_sh renamed from code_fence_11_sh (0 dependents)
+  + code_fence code_fence_28_text added
+  + section How-we-would-take-this-forward added
+  + section Next-harden-what-exists added
+  + section Then-the-second-audience added
+  + section Later-the-evidence-itself added
+
+docs/demo/DEMO.md (Markdown)
+  - section TODO removed (0 dependents)
+  + section The-Noon-Curveball-step-add-after-the-impact-step added
+  + code_fence code_fence_3_sh added
+  + code_fence code_fence_4_text added
+  + code_fence code_fence_5_text added
+  + code_fence code_fence_6_text added
+  + section Known-gaps-in-this-script added
+
 docs/demo/curveball/00-pivot-on-itself.json (JSON)
   + section schema_version added
   + section plan_id added
@@ -54,39 +106,171 @@ docs/demo/curveball/00-pivot-on-itself.json (JSON)
 docs/demo/curveball/06-capabilities.json (JSON)
   + module docs/demo/curveball/06-capabilities.json added
 
+docs/demo/curveball/08-semantic-diff.json (JSON)
+  + section base added
+  + section head added
+  + section files added
+  + section path added
+  + section status added
+  + section language added
+  + section changes added
+  + section type added
+  + section kind added
+  + section name added
+  + section new_signature added
+  + section after_start_line added
+  + section dependents_count added
+  + section old_signature added
+  + section before_start_line added
+  + section warnings added
+  + section code added
+  + section severity added
+  + section file_path added
+  + section effect_on_semantic_completeness added
+  + section detail added
+  + section schema_version added
+  + section producer_version added
+
+docs/demo/curveball/11-kubernetes-finding.md (Markdown)
+  + section Kubernetes:-a-heuristic-edge-that-is-demonstrably-wrong added
+  + code_fence code_fence_1_text added
+  + code_fence code_fence_2_text added
+  + section The-edge added
+  + code_fence code_fence_3_text added
+  + code_fence code_fence_4_text added
+  + code_fence code_fence_5_go added
+  + code_fence code_fence_6_text added
+  + code_fence code_fence_7_text added
+  + code_fence code_fence_8_text added
+  + section The-other-half:-48-files-that-were-reported-SAFE added
+  + code_fence code_fence_9_text added
+  + code_fence code_fence_10_text added
+  + section Why-this-repository added
+  + code_fence code_fence_11_text added
+  + code_fence code_fence_12_text added
+  + section Honest-limits-of-this-run added
+
+docs/demo/curveball/14-pivot-on-itself-plan.json (JSON)
+  + section schema_version added
+  + section plan_id added
+  + section graph_tool added
+  + section name added
+  + section version added
+  + section provider added
+  + section graph_schema_version added
+  + section depth added
+  + section exclude_tests added
+  + section index_cache_hit added
+  + section repo added
+  + section head_commit added
+  + section constraint added
+  + section prohibited added
+  + section rule added
+  + section interpreted_by added
+  + section counts added
+  + section invalidated added
+  + section at_risk added
+  + section safe added
+  + section unverified added
+  + section unreached added
+  + section total added
+  + section excluded_tests added
+  + section p0 added
+  + section p1 added
+  + section p2 added
+  + section by_role added
+  + section PRODUCTION added
+  + section known_blind_spots added
+  + section id added
+  + section statement added
+  + section implication added
+  + section work_items added
+  + section priority added
+  + section action added
+  + section verdict added
+  + section role added
+  + section path added
+  + section package added
+  + section evidence_quality added
+  + section verification_required added
+  + section distance added
+  + section root_invalidated added
+  + section evidence added
+  + section relation added
+  + section target added
+  + section confidence added
+  + section reason added
+  + section resolution added
+  + section evidence_tier added
+  + section agent_instructions added
+  + section acceptance_criteria added
+  + section line added
+  + section source_file added
+  + section validation added
+  + section required_commands added
+  + section notes added
+  + section execution_contract added
+  + section must_not_claim added
+  + section must_do added
+
+docs/demo/curveball/15-loop-findings-from-checkpoint.md (Markdown)
+  + section What-the-verification-loop-found-hours-before-the-curveball-named-it added
+  + section Finding-1-a-heuristic-edge-produced-a-citation-to-a-line-that-does-not-exist added
+  + section Finding-2-the-loop-can-be-gamed-by-deletion added
+  + code_fence code_fence_1_text added
+  + code_fence code_fence_2_text added
+  + section Finding-3-the-loop-returns-a-boolean-where-it-needs-four-statuses added
+  + section Raw-transcript-excerpt added
+  + code_fence code_fence_3_text added
+  + code_fence code_fence_4_text added
+  + code_fence code_fence_5_text added
+  + code_fence code_fence_6_text added
+  + code_fence code_fence_7_text added
+  + section 13:30-14:15-The-two-hardening-wins-from-the-research added
+  + section 14:15-14:40-Docs-checkpoint-4 added
+  + code_fence code_fence_8_text added
+
 docs/demo/curveball/PLAN.md (Markdown)
   + section Curveball-plan-Track-2:-Graph-is-evidence-not-an-oracle added
   + section Card-requirements---where-each-is-satisfied added
   + section Steps added
   + section Findings-recorded-during-step-1-evidence-not-assumption added
   + section Demo-repos-props-not-code-under-change added
+  + section Outcome added
+
+internal/cli/help.go (Go)
+  ~ module internal/cli/help.go body changed (0 dependents)
 
 internal/cli/pivot.go (Go)
-  ~ type pivotEdge signature changed (11 dependents)
+  ~ type pivotFlags signature changed (26 dependents)
+  + field pivotFlags.From added
+  ~ type pivotEdge signature changed (12 dependents)
   + field pivotEdge.Resolution added
   + field pivotEdge.Tier added
-  ~ type pivotFile signature changed (23 dependents)
+  ~ type pivotFile signature changed (24 dependents)
   + field pivotFile.EvidenceQuality added
   + field pivotFile.VerificationRequired added
   + field pivotFile.AnalysisNote added
-  ~ type pivotResponse signature changed (12 dependents)
+  ~ type pivotResponse signature changed (15 dependents)
   + field pivotResponse.Unverified added
   + field pivotResponse.UnverifiedReason added
   + field pivotResponse.EvidenceCounts added
   ~ type pivotCounts signature changed (5 dependents)
   + field pivotCounts.Unverified added
-  ~ function buildPivotResponse body changed (9 dependents)
+  ~ function parsePivotFlags body changed (3 dependents)
+  ~ function buildPivotResponse body changed (13 dependents)
   ~ type fileDependentEdge signature changed (1 dependent)
   + field fileDependentEdge.resolution added
   + field fileDependentEdge.warningCodes added
   ~ function buildFileDependents body changed (1 dependent)
+  + function withinPivotScope added
+  ~ function prohibitedMatch body changed (2 dependents)
 
 internal/cli/pivot_evidence.go (Go)
   + function classifyEvidenceTier added
   + function tierRank added
   + function weakestEvidenceTier added
   + function incompleteAnalysisFiles added
-  + function sortedIncompleteFiles added
   + function pivotEvidenceMix added
 
 internal/cli/pivot_evidence_test.go (Go)
@@ -99,6 +283,13 @@ internal/cli/pivot_evidence_test.go (Go)
   + function TestPivotPlanCarriesEvidenceForAgents added
   + function TestClassifyEvidenceTier added
   + function TestWeakestEvidenceTierGovernsTheFile added
+  + function TestProhibitedMatchResolvesInternalPackagePaths added
+  + function TestPlanForbidsTrivialSatisfaction added
+  + function TestPlanEmitsCheckableInvariants added
+  + function TestInvariantsNeverPinFilesTheAgentIsToldNotToEdit added
+  + function TestDeletionBudgetScalesWithTheWork added
+  + function TestFromScopesTheRulesSubject added
+  + function TestWithinPivotScopeMatchesPathSegments added
 
 internal/cli/pivot_plan.go (Go)
   ~ type pivotPlanCounts signature changed (3 dependents)
@@ -106,9 +297,32 @@ internal/cli/pivot_plan.go (Go)
   ~ type pivotWorkItem signature changed (5 dependents)
   + field pivotWorkItem.EvidenceQuality added
   + field pivotWorkItem.VerificationRequired added
-  ~ function buildPivotPlan body changed (8 dependents)
+  ~ type pivotPlanValidation signature changed (3 dependents)
+  + field pivotPlanValidation.Invariants added
+  + type pivotInvariants added
+  + field pivotInvariants.FilesMustStillExist added
+  + field pivotInvariants.PathsMustNotChange added
+  + field pivotInvariants.MaxNetLinesDeleted added
+  + field pivotInvariants.MaxNetLinesDeletedBasis added
+  + field pivotInvariants.FlagsMustMatch added
+  + field pivotInvariants.ExpectedAfter added
+  + field pivotInvariants.NotMechanicallyCheckable added
+  + type pivotInvariantFlags added
+  + field pivotInvariantFlags.Dependency added
+  + field pivotInvariantFlags.Depth added
+  + field pivotInvariantFlags.ExcludeTests added
+  + type pivotExpectedAfter added
+  + field pivotExpectedAfter.Invalidated added
+  + field pivotExpectedAfter.UnverifiedMustNotIncrease added
+  ~ type pivotExecutionContract signature changed (3 dependents)
+  + field pivotExecutionContract.MustNotDo added
+  ~ function buildPivotPlan body changed (11 dependents)
   ~ function pivotWorkItemFor body changed (1 dependent)
   ~ function pivotKnownBlindSpots body changed (1 dependent)
+  + function pivotDeletionBudget added
+  + function pivotBuildInvariants added
+  + function pivotUncheckable added
+  + function pivotMustNotDo added
   ~ function pivotMustNotClaim body changed (1 dependent)
 
 internal/cli/pivot_roles.go (Go)
@@ -117,7 +331,73 @@ internal/cli/pivot_roles.go (Go)
   ~ function writePivotFileLine body changed (1 dependent)
 
 internal/cli/pivot_test.go (Go)
-  ~ function pivotVerdict body changed (2 dependents)
+  ~ function pivotVerdict body changed (3 dependents)
+
+scripts/pivot-mcp.py (Python)
+  + function log added
+  + function resolve_binary added
+  + function run added
+  + function uncertainty_header added
+  + function text_uncertainty_note added
+  + function pivot_argv added
+  + function tool_pivot added
+  + function tool_pivot_verify added
+  + function tool_impact added
+  + function tool_capabilities added
+  + function _tokens added
+  + function harvest_dependency_candidates added
+  + function match_dependency_candidates added
+  + function product_areas added
+  + function decision_class added
+  + function _scope_flags added
+  + function _confidence_block added
+  + function _next_decision added
+  + function _run_product_pivot added
+  + function tool_assess_product_constraint_change added
+  + function tool_explain_product_impact added
+  + function tool_prepare_engineering_discovery_brief added
+  + function respond added
+  + function error added
+  + function _initialize added
+  + function handle added
+  + function main added
+
+scripts/pivot-verify.py (Python)
+  + class Result added
+  + method Result.__init__ added
+  + function git added
+  + function load_plan added
+  + function check_flags added
+  + function check_files_exist added
+  + function check_tests_unchanged added
+  + function is_conventional_test_path added
+  + function check_deletion_budget added
+  + function check_expected_after added
+  + function verdict added
+  + function main added
+
+skills/what-survives/SKILL.md (Markdown)
+  + section what-survives added
+  + section Build-it-first added
+  + code_fence code_fence_1_sh added
+  + code_fence code_fence_2_text added
+  + section Run-it added
+  + code_fence code_fence_3_sh added
+  + code_fence code_fence_4_text added
+  + code_fence code_fence_5_sh added
+  + code_fence code_fence_6_text added
+  + section Read-the-verdicts added
+  + section Read-the-evidence-tier-before-acting-on-anything added
+  + code_fence code_fence_7_text added
+  + code_fence code_fence_8_text added
+  + section Working-the-plan-as-an-agent added
+  + section Prove-it-and-do-not-stop-at-the-count added
+  + code_fence code_fence_9_sh added
+  + code_fence code_fence_10_text added
+  + code_fence code_fence_11_sh added
+  + code_fence code_fence_12_text added
+  + section When-not-to-use-this added
+  + section Never-claim added
 
 Warnings
   ! W_UNSUPPORTED_FILE docs/demo/curveball/01-search-evidence-consumers.txt
@@ -135,3 +415,30 @@ Warnings
   ! W_UNSUPPORTED_FILE docs/demo/curveball/05-neighbors-firstEvidenceLine.txt
     file skipped; no parser for this file type, so its changes are not analyzed
     head version has no supported parser
+  ! W_UNSUPPORTED_FILE docs/demo/curveball/07-semantic-diff.txt
+    file skipped; no parser for this file type, so its changes are not analyzed
+    head version has no supported parser
+  ! W_UNSUPPORTED_FILE docs/demo/curveball/10-kubernetes-pivot.txt
+    file skipped; no parser for this file type, so its changes are not analyzed
+    head version has no supported parser
+  ! W_UNSUPPORTED_FILE docs/demo/curveball/12-impact-prohibitedMatch.txt
+    file skipped; no parser for this file type, so its changes are not analyzed
+    head version has no supported parser
+  ! W_UNSUPPORTED_FILE docs/demo/curveball/13-pivot-on-itself-fixed.txt
+    file skipped; no parser for this file type, so its changes are not analyzed
+    head version has no supported parser
+  ! W_UNSUPPORTED_FILE docs/demo/curveball/16-impact-buildPivotPlan.txt
+    file skipped; no parser for this file type, so its changes are not analyzed
+    head version has no supported parser
+  ! W_UNSUPPORTED_FILE docs/demo/curveball/17-verify-demo.txt
+    file skipped; no parser for this file type, so its changes are not analyzed
+    head version has no supported parser
+  ! W_UNSUPPORTED_FILE docs/demo/curveball/18-mcp-smoke.txt
+    file skipped; no parser for this file type, so its changes are not analyzed
+    head version has no supported parser
+  ! W_UNSUPPORTED_FILE docs/demo/curveball/19-impact-before-from-flag.txt
+    file skipped; no parser for this file type, so its changes are not analyzed
+    head version has no supported parser
+  ! W_MOVE_AMBIGUOUS docs/demo/DEMO.md
+    symbol move could not be reconciled unambiguously; reported as remove/add
+    section TODO has multiple equally similar destinations
