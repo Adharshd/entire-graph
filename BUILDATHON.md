@@ -454,8 +454,12 @@ package this feature touches, passes in full.
   on `gorilla/mux` reports 0 callers even though `Router.Match` calls it through an interface.
 - **Constraint interpretation is out of scope by design.** Pivot takes a package name, not a sentence.
   The natural-language step belongs outside the no-egress boundary.
-- **Prohibited-name matching is path-shaped** (exact, or a `pkg/` prefix). A dependency referred to by
-  an alias in source is not currently resolved to its canonical package.
+- **Prohibited-name matching is path-shaped** (exact, a `pkg/` prefix, or a package path segment
+  inside a symbol id). A dependency referred to by an alias in source is still not resolved to its
+  canonical package. Internal package paths were also unmatched until the curveball session: a
+  constraint naming `internal/sem` returned zero invalidated files on a repository where 139 files
+  depend on it, and zero reads as compliance. Fixed, with the id shapes the graph actually emits
+  pinned in `TestProhibitedMatchResolvesInternalPackagePaths`.
 - **Test exclusion is path-shaped, not build-tag-shaped.** `--exclude-tests` recognizes conventional
   test paths (`_test.go`, `*.test.*`, a `test/`/`testdata/` directory segment, and the equivalents in
   the other supported languages). A test helper that lives in a normally-named file is still

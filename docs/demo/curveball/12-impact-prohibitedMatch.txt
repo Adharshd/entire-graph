@@ -1,0 +1,30 @@
+Index: cache-miss (30611ms) | Query: 8ms | Total: 30619ms
+Completeness: no parse failures in Go (423 files parsed); 1 elsewhere (JSON 1) cannot affect this answer — see --format json.
+Impact: prohibitedMatch (internal/cli/pivot.go:698) def=698 span=698-719 [function]
+Blast radius: 9 callers (1 direct, 8 transitive), 3 callees, 0 type consumers, 1 data flow, 5 co-change files, 0 siblings.
+Callers (1 direct, 8 transitive; who breaks if behavior changes):
+- buildPivotResponse (internal/cli/pivot.go:459, def :378)
+- runPivot (internal/cli/pivot.go:341, def :311) [via buildPivotResponse]
+- TestPivotDoesNotReportUnparsedFileAsSafe (internal/cli/pivot_evidence_test.go:99, def :98) [via buildPivotResponse]
+- TestPivotTiersEvidenceByResolution (internal/cli/pivot_evidence_test.go:145, def :144) [via buildPivotResponse]
+- TestPivotFullyResolvedBehaviourUnchanged (internal/cli/pivot_evidence_test.go:177, def :176) [via buildPivotResponse]
+- TestPivotTextTagsEvidenceForUsers (internal/cli/pivot_evidence_test.go:215, def :214) [via buildPivotResponse]
+- TestPivotPlanCarriesEvidenceForAgents (internal/cli/pivot_evidence_test.go:241, def :240) [via buildPivotResponse]
+- TestPivotClassifiesTestFilesWithoutExclusion (internal/cli/pivot_test.go:75, def :74) [via buildPivotResponse]
+- TestPivotExcludeTestsDropsTestsAndTheirPropagation (internal/cli/pivot_test.go:98, def :97) [via buildPivotResponse]
+Callees (3; what it depends on):
+- strings.Contains
+- strings.CutPrefix
+- strings.HasPrefix
+Type consumers (0 in, 0 out; USES_TYPE/PARAM_TYPE/RETURNS_TYPE):
+- none
+Data flows (1 in, 0 out):
+- <- buildPivotResponse (internal/cli/pivot.go:378)
+Co-change coupling (5; files that historically change with internal/cli/pivot.go):
+- BUILDATHON.md [files changed together in 2 recent commits]
+- internal/cli/help.go [files changed together in 3 recent commits]
+- internal/cli/pivot_plan.go [files changed together in 2 recent commits]
+- internal/cli/pivot_roles.go [files changed together in 3 recent commits]
+- internal/cli/pivot_test.go [files changed together in 2 recent commits]
+Same-container siblings (0):
+- none

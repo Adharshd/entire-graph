@@ -336,3 +336,46 @@ func TestWeakestEvidenceTierGovernsTheFile(t *testing.T) {
 		t.Errorf("with an unverified edge = %q, want %q", got, evidenceUnverified)
 	}
 }
+
+// TestProhibitedMatchResolvesInternalPackagePaths covers the constraint shape the
+// matcher used to answer with silence: an architecture rule naming an internal
+// package rather than a third-party import.
+//
+// The two id shapes are the ones the graph actually emits, taken from
+// `edges --relation IMPORTS,CALLS` against this repository, not invented:
+//
+//	local/entire-graph:file:internal/sem/analyze.go
+//	local/entire-graph:Go:internal/sem/provider.go:function:StreamSnapshot
+//
+// Before this, --dependency internal/sem returned 0 invalidated files on a
+// repository where 139 files depend on it. Zero reads as "you comply"; it meant
+// "I did not understand the question", which is the failure mode this whole
+// change is about.
+func TestProhibitedMatchResolvesInternalPackagePaths(t *testing.T) {
+	for _, testCase := range []struct {
+		name       string
+		toID       string
+		prohibited string
+		want       string
+	}{
+		{"file record in an internal package", "local/entire-graph:file:internal/sem/analyze.go", "internal/sem", "internal/sem"},
+		{"symbol in an internal package", "local/entire-graph:Go:internal/sem/provider.go:function:StreamSnapshot", "internal/sem", "internal/sem"},
+		{"method in an internal package", "local/entire-graph:Go:internal/sem/records_cache.go:method:Cache.Load", "internal/sem", "internal/sem"},
+		{"a sibling package must not match", "local/entire-graph:file:internal/cli/pivot.go", "internal/sem", ""},
+		{"a prefix that is not a path segment must not match", "local/entire-graph:file:internal/semantics/x.go", "internal/sem", ""},
+
+		// The external cases the matcher already handled. They are here because
+		// the new rule must not disturb them: os/exec never appears as a path
+		// segment inside an internal id, so nothing about these moves.
+		{"bare external import", "external:import:os/exec", "os/exec", "os/exec"},
+		{"external import below the package", "external:import:os/exec/internal/x", "os/exec", "os/exec"},
+		{"unrelated external import", "external:import:net/http", "os/exec", ""},
+		{"internal file against an external constraint", "local/entire-graph:file:internal/sem/analyze.go", "os/exec", ""},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			if got := prohibitedMatch(testCase.toID, []string{testCase.prohibited}); got != testCase.want {
+				t.Errorf("prohibitedMatch(%q, %q) = %q, want %q", testCase.toID, testCase.prohibited, got, testCase.want)
+			}
+		})
+	}
+}

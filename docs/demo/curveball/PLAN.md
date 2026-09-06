@@ -37,9 +37,13 @@ Started 12:35 IST, 6 Sep 2026. Submission 15:00.
 2. This repo reports `completeness_level: "ok"` for Go today, NOT the
    "degraded for Go" recorded pre-curveball. One live partial failure exists:
    E_MINIFIED on a JSON file. The pre-curveball note is stale; not repeated.
-3. `pivot --dependency internal/sem` returns 0 invalidated / 0 at-risk /
-   205 safe / 80 unreached. `prohibitedMatch` does not resolve internal package
-   paths. Recorded as a finding rather than reported as an empty result.
+3. `pivot --dependency internal/sem` returned 0 invalidated / 0 at-risk /
+   205 safe / 80 unreached. `prohibitedMatch` did not resolve internal package
+   paths. Recorded as a finding rather than reported as an empty result -- then
+   fixed in the same session once the graded work was committed and pushed. The
+   same run now returns 139 invalidated, which is the answer to the card's own
+   question about which parts of the implementation consume graph evidence.
+   Captured in 13-pivot-on-itself-fixed.txt and 14-pivot-on-itself-plan.json.
 4. The installed plugin has no `pivot` subcommand; it exists only in this
    working tree. All pivot runs use a locally built binary, without the `graph`
    prefix (ENTIRE-TIPS gotcha 11).

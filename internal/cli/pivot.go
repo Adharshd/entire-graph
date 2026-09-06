@@ -714,6 +714,20 @@ func prohibitedMatch(toID string, prohibited []string) string {
 		if strings.Contains(target, ":"+candidate+":") || strings.Contains(target, "/"+candidate+":") {
 			return candidate
 		}
+		// An internal package is named by a path, not by an import target, and
+		// its id embeds the defining file rather than ending at the package:
+		//
+		//	local/entire-graph:file:internal/sem/analyze.go
+		//	local/entire-graph:Go:internal/sem/provider.go:function:StreamSnapshot
+		//
+		// Neither shape matches any rule above, so an architecture constraint
+		// naming an internal package ("nothing outside the API layer may touch
+		// internal/sem") returned zero invalidated files. Zero reads as
+		// compliance; it meant the question was never understood -- the same
+		// class of mistake as reporting an unparsed file SAFE.
+		if strings.Contains(target, ":"+candidate+"/") || strings.Contains(target, "/"+candidate+"/") {
+			return candidate
+		}
 	}
 	return ""
 }
