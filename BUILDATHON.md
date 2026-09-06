@@ -698,13 +698,24 @@ commit from `2ff8446` onward carries a checkpoint, verified that way.
 ```sh
 mise run build          # builds ./entire-graph (needs Go + CGO for tree-sitter)
 mise run test           # go test ./...
+```
 
-entire graph pivot --repo . --dependency net/http
-entire graph pivot --repo . --dependency os/exec --exclude-tests --depth 1
-entire graph pivot --repo . --dependency net/http --checkpoint <id> --format json
+**Run the binary you just built, not the installed plugin.** `pivot` is new in this branch, so
+`entire graph pivot` fails with `unknown command "pivot"` against the released plugin (v0.4.0).
+The standalone binary takes the subcommand directly — there is **no `graph` prefix**:
+
+```sh
+./entire-graph pivot --dependency net/http
+./entire-graph pivot --dependency os/exec --exclude-tests --depth 1
+
+# an architecture rule rather than a vendor removal: "the CLI layer may not reach the graph layer"
+./entire-graph pivot --from internal/cli --dependency internal/sem --exclude-tests --depth 1
 
 # the agent work order
-entire graph pivot --repo . --dependency os/exec --exclude-tests --depth 1 --format plan
+./entire-graph pivot --dependency os/exec --exclude-tests --depth 1 --format plan
+
+# with checkpoint intent folded in
+./entire-graph pivot --dependency net/http --checkpoint <id> --format json
 ```
 
 `mise run test` does not come back fully green on every machine: `cmd/graph-bench`'s clone helper
