@@ -1,0 +1,929 @@
+{
+  "base": "90d1939",
+  "head": "HEAD",
+  "files": [
+    {
+      "path": "docs/demo/curveball/00-pivot-on-itself.json",
+      "status": "A",
+      "language": "JSON",
+      "changes": [
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "schema_version",
+          "new_signature": "json key schema_version",
+          "after_start_line": 2,
+          "dependents_count": 36
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "plan_id",
+          "new_signature": "json key plan_id",
+          "after_start_line": 3,
+          "dependents_count": 4
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "graph_tool",
+          "new_signature": "json key graph_tool",
+          "after_start_line": 4,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "name",
+          "new_signature": "json key name",
+          "after_start_line": 5,
+          "dependents_count": 1672
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "version",
+          "new_signature": "json key version",
+          "after_start_line": 6,
+          "dependents_count": 725
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "provider",
+          "new_signature": "json key provider",
+          "after_start_line": 7,
+          "dependents_count": 124
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "graph_schema_version",
+          "new_signature": "json key graph_schema_version",
+          "after_start_line": 8,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "depth",
+          "new_signature": "json key depth",
+          "after_start_line": 9,
+          "dependents_count": 185
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "exclude_tests",
+          "new_signature": "json key exclude_tests",
+          "after_start_line": 10,
+          "dependents_count": 4
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "index_cache_hit",
+          "new_signature": "json key index_cache_hit",
+          "after_start_line": 11,
+          "dependents_count": 16
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "repo",
+          "new_signature": "json key repo",
+          "after_start_line": 13,
+          "dependents_count": 1766
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "head_commit",
+          "new_signature": "json key head_commit",
+          "after_start_line": 14,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "constraint",
+          "new_signature": "json key constraint",
+          "after_start_line": 15,
+          "dependents_count": 35
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "prohibited",
+          "new_signature": "json key prohibited",
+          "after_start_line": 16,
+          "dependents_count": 14
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "rule",
+          "new_signature": "json key rule",
+          "after_start_line": 19,
+          "dependents_count": 128
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "interpreted_by",
+          "new_signature": "json key interpreted_by",
+          "after_start_line": 20,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "counts",
+          "new_signature": "json key counts",
+          "after_start_line": 22,
+          "dependents_count": 66
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "invalidated",
+          "new_signature": "json key invalidated",
+          "after_start_line": 23,
+          "dependents_count": 21
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "at_risk",
+          "new_signature": "json key at_risk",
+          "after_start_line": 24,
+          "dependents_count": 6
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "safe",
+          "new_signature": "json key safe",
+          "after_start_line": 25,
+          "dependents_count": 99
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "unreached",
+          "new_signature": "json key unreached",
+          "after_start_line": 26,
+          "dependents_count": 10
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "total",
+          "new_signature": "json key total",
+          "after_start_line": 27,
+          "dependents_count": 172
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "excluded_tests",
+          "new_signature": "json key excluded_tests",
+          "after_start_line": 28,
+          "dependents_count": 6
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "p0",
+          "new_signature": "json key p0",
+          "after_start_line": 29,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "p1",
+          "new_signature": "json key p1",
+          "after_start_line": 30,
+          "dependents_count": 5
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "p2",
+          "new_signature": "json key p2",
+          "after_start_line": 31,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "by_role",
+          "new_signature": "json key by_role",
+          "after_start_line": 32,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "PRODUCTION",
+          "new_signature": "json key PRODUCTION",
+          "after_start_line": 33,
+          "dependents_count": 6
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "known_blind_spots",
+          "new_signature": "json key known_blind_spots",
+          "after_start_line": 36,
+          "dependents_count": 5
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "id",
+          "new_signature": "json key id",
+          "after_start_line": 38,
+          "dependents_count": 352
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "statement",
+          "new_signature": "json key statement",
+          "after_start_line": 39,
+          "dependents_count": 48
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "implication",
+          "new_signature": "json key implication",
+          "after_start_line": 40,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "work_items",
+          "new_signature": "json key work_items",
+          "after_start_line": 68,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "priority",
+          "new_signature": "json key priority",
+          "after_start_line": 71,
+          "dependents_count": 11
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "action",
+          "new_signature": "json key action",
+          "after_start_line": 72,
+          "dependents_count": 38
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "verdict",
+          "new_signature": "json key verdict",
+          "after_start_line": 73,
+          "dependents_count": 41
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "role",
+          "new_signature": "json key role",
+          "after_start_line": 74,
+          "dependents_count": 45
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "path",
+          "new_signature": "json key path",
+          "after_start_line": 75,
+          "dependents_count": 1185
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "package",
+          "new_signature": "json key package",
+          "after_start_line": 76,
+          "dependents_count": 675
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "distance",
+          "new_signature": "json key distance",
+          "after_start_line": 77,
+          "dependents_count": 18
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "evidence",
+          "new_signature": "json key evidence",
+          "after_start_line": 78,
+          "dependents_count": 259
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "agent_instructions",
+          "new_signature": "json key agent_instructions",
+          "after_start_line": 79,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "acceptance_criteria",
+          "new_signature": "json key acceptance_criteria",
+          "after_start_line": 84,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "validation",
+          "new_signature": "json key validation",
+          "after_start_line": 5360,
+          "dependents_count": 21
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "required_commands",
+          "new_signature": "json key required_commands",
+          "after_start_line": 5361,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "notes",
+          "new_signature": "json key notes",
+          "after_start_line": 5365,
+          "dependents_count": 34
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "execution_contract",
+          "new_signature": "json key execution_contract",
+          "after_start_line": 5370,
+          "dependents_count": 4
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "must_not_claim",
+          "new_signature": "json key must_not_claim",
+          "after_start_line": 5371,
+          "dependents_count": 4
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "must_do",
+          "new_signature": "json key must_do",
+          "after_start_line": 5379,
+          "dependents_count": 2
+        }
+      ]
+    },
+    {
+      "path": "docs/demo/curveball/06-capabilities.json",
+      "status": "A",
+      "language": "JSON",
+      "changes": [
+        {
+          "type": "added",
+          "kind": "module",
+          "name": "docs/demo/curveball/06-capabilities.json",
+          "after_start_line": 1,
+          "dependents_count": 0
+        }
+      ]
+    },
+    {
+      "path": "docs/demo/curveball/PLAN.md",
+      "status": "A",
+      "language": "Markdown",
+      "changes": [
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "Curveball-plan-Track-2:-Graph-is-evidence-not-an-oracle",
+          "new_signature": "markdown heading Curveball plan — Track 2: Graph is evidence, not an oracle",
+          "after_start_line": 1,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "Card-requirements---where-each-is-satisfied",
+          "new_signature": "markdown heading Card requirements -\u003e where each is satisfied",
+          "after_start_line": 5,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "Steps",
+          "new_signature": "markdown heading Steps",
+          "after_start_line": 17,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "Findings-recorded-during-step-1-evidence-not-assumption",
+          "new_signature": "markdown heading Findings recorded during step 1 (evidence, not assumption)",
+          "after_start_line": 31,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "Demo-repos-props-not-code-under-change",
+          "new_signature": "markdown heading Demo repos (props, not code under change)",
+          "after_start_line": 46,
+          "dependents_count": 0
+        }
+      ]
+    },
+    {
+      "path": "internal/cli/pivot.go",
+      "status": "M",
+      "language": "Go",
+      "changes": [
+        {
+          "type": "signature_changed",
+          "kind": "type",
+          "name": "pivotEdge",
+          "old_signature": "pivotEdge struct { Relation string `json:\"relation\"` Target string `json:\"target\"` Confidence float64 `json:\"confidence\"` Reason string `json:\"reason\"` // SourceFile is the file at the other end when this is a propagation edge, // empty when the edge points at the prohibited dependency itself. SourceFile string `json:\"source_file,omitempty\"` // Line is a line in the file this evidence is attached to -- the import or call // site where that file reaches out -- NOT a line in Target or SourceFile. Pairing // it with the other end is what produced citations like \"regexp.go:676\" for a // file of 413 lines, where 676 was the call site in the caller. Line int `json:\"line,omitempty\"` }",
+          "new_signature": "pivotEdge struct { Relation string `json:\"relation\"` Target string `json:\"target\"` Confidence float64 `json:\"confidence\"` Reason string `json:\"reason\"` // Resolution is the graph's own word for how it found this edge -- \"exact\" // when it followed a call to a definition, \"name_only\" when it matched a // globally unique method name. It was previously dropped on the floor, which // is what made a resolved edge and a guessed one indistinguishable. Resolution string `json:\"resolution,omitempty\"` // Tier grades this edge CONFIRMED, HEURISTIC or UNVERIFIED. It is derived // from Resolution, Confidence and whether the file parsed cleanly, so a // reader does not have to know the resolution vocabulary to know what to // trust. See pivot_evidence.go. Tier string `json:\"evidence_tier\"` // SourceFile is the file at the other end when this is a propagation edge, // empty when the edge points at the prohibited dependency itself. SourceFile string `json:\"source_file,omitempty\"` // Line is a line in the file this evidence is attached to -- the import or call // site where that file reaches out -- NOT a line in Target or SourceFile. Pairing // it with the other end is what produced citations like \"regexp.go:676\" for a // file of 413 lines, where 676 was the call site in the caller. Line int `json:\"line,omitempty\"` }",
+          "before_start_line": 77,
+          "after_start_line": 82,
+          "dependents_count": 11
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotEdge.Resolution",
+          "new_signature": "Resolution string",
+          "after_start_line": 91,
+          "dependents_count": 152
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotEdge.Tier",
+          "new_signature": "Tier string",
+          "after_start_line": 96,
+          "dependents_count": 20
+        },
+        {
+          "type": "signature_changed",
+          "kind": "type",
+          "name": "pivotFile",
+          "old_signature": "pivotFile struct { Path string `json:\"path\"` Verdict string `json:\"verdict\"` // Distance is hops from the nearest invalidated file: 0 for an invalidated // file itself, 1 for a direct dependent, and so on up to the depth cap. Distance int `json:\"distance\"` Language string `json:\"language,omitempty\"` // Role is what kind of file this is (production, test, fixture, generated, // vendored). It changes how a verdict should be read, not the verdict itself: // a hundred at-risk test files in one package are one command to run, while // one at-risk production file is a change someone has to make by hand. Role string `json:\"role\"` // RootInvalidated is the invalidated file this one traces back to. At two hops // the evidence edge names the intermediate file, which is the wrong thing to // order work by: what a reader needs is the root that has to be fixed first. RootInvalidated string `json:\"root_invalidated,omitempty\"` // Why is a one-line reading of the evidence, in the report's own voice. Why string `json:\"why\"` // Evidence is what Why is derived from. Never empty for a non-Safe verdict. Evidence []pivotEdge `json:\"evidence,omitempty\"` // InCheckpoint marks a file the supplied checkpoint touched, so the reader can // see which of the affected files are ones this session actually wrote. InCheckpoint bool `json:\"in_checkpoint,omitempty\"` }",
+          "new_signature": "pivotFile struct { Path string `json:\"path\"` Verdict string `json:\"verdict\"` // EvidenceQuality is the weakest tier among this file's evidence, because a // verdict is only as good as the shakiest edge holding it up. Empty when the // file has no evidence at all, which is what Safe means. EvidenceQuality string `json:\"evidence_quality,omitempty\"` // VerificationRequired says this verdict must not be acted on from the graph // alone. It is the safe fallback the report owes a reader whenever the // evidence is heuristic or the parse was incomplete. VerificationRequired bool `json:\"verification_required\"` // AnalysisNote carries the parser's own reason when this file did not parse // cleanly, so the caveat travels attached to the file it applies to rather // than sitting in a header the reader has to correlate by hand. AnalysisNote string `json:\"analysis_note,omitempty\"` // Distance is hops from the nearest invalidated file: 0 for an invalidated // file itself, 1 for a direct dependent, and so on up to the depth cap. Distance int `json:\"distance\"` Language string `json:\"language,omitempty\"` // Role is what kind of file this is (production, test, fixture, generated, // vendored). It changes how a verdict should be read, not the verdict itself: // a hundred at-risk test files in one package are one command to run, while // one at-risk production file is a change someone has to make by hand. Role string `json:\"role\"` // RootInvalidated is the invalidated file this one traces back to. At two hops // the evidence edge names the intermediate file, which is the wrong thing to // order work by: what a reader needs is the root that has to be fixed first. RootInvalidated string `json:\"root_invalidated,omitempty\"` // Why is a one-line reading of the evidence, in the report's own voice. Why string `json:\"why\"` // Evidence is what Why is derived from. Never empty for a non-Safe verdict. Evidence []pivotEdge `json:\"evidence,omitempty\"` // InCheckpoint marks a file the supplied checkpoint touched, so the reader can // see which of the affected files are ones this session actually wrote. InCheckpoint bool `json:\"in_checkpoint,omitempty\"` }",
+          "before_start_line": 92,
+          "after_start_line": 107,
+          "dependents_count": 23
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotFile.EvidenceQuality",
+          "new_signature": "EvidenceQuality string",
+          "after_start_line": 113,
+          "dependents_count": 9
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotFile.VerificationRequired",
+          "new_signature": "VerificationRequired bool",
+          "after_start_line": 117,
+          "dependents_count": 9
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotFile.AnalysisNote",
+          "new_signature": "AnalysisNote string",
+          "after_start_line": 121,
+          "dependents_count": 4
+        },
+        {
+          "type": "signature_changed",
+          "kind": "type",
+          "name": "pivotResponse",
+          "old_signature": "pivotResponse struct { SchemaVersion string `json:\"schema_version\"` Provider string `json:\"provider\"` Version string `json:\"version\"` Repo string `json:\"repo\"` Commit string `json:\"commit,omitempty\"` Prohibited []string `json:\"prohibited\"` MaxDepth int `json:\"max_depth\"` ExcludeTests bool `json:\"exclude_tests,omitempty\"` // Checkpoint, when supplied, is the intent half of the evidence. Checkpoint string `json:\"checkpoint,omitempty\"` CheckpointBase string `json:\"checkpoint_base,omitempty\"` CheckpointHead string `json:\"checkpoint_head,omitempty\"` CheckpointFiles []pivotCheckpointFile `json:\"checkpoint_files,omitempty\"` Invalidated []pivotFile `json:\"invalidated\"` AtRisk []pivotFile `json:\"at_risk\"` Safe []pivotFile `json:\"safe\"` Counts pivotCounts `json:\"counts\"` // RoleCounts is the whole tree broken down by file role, so a consumer can see // the shape of the repository the verdicts were drawn from. RoleCounts map[string]int `json:\"role_counts,omitempty\"` // Unreached is the honest half of the answer: files the graph could not // analyze for relationships, so their verdict is unknown rather than Safe. Unreached []string `json:\"unreached,omitempty\"` UnreachedReason string `json:\"unreached_reason,omitempty\"` Warnings []sem.ProviderWarning `json:\"warnings,omitempty\"` PartialFailures []sem.PartialFailure `json:\"partial_failures\"` Stats sem.ProviderStats `json:\"stats\"` Completeness sem.CompletenessReport `json:\"completeness\"` IndexCacheHit bool `json:\"index_cache_hit\"` IndexLatencyMS int64 `json:\"index_latency_ms\"` QueryLatencyMS int64 `json:\"query_latency_ms\"` TotalLatencyMS int64 `json:\"total_latency_ms\"` }",
+          "new_signature": "pivotResponse struct { SchemaVersion string `json:\"schema_version\"` Provider string `json:\"provider\"` Version string `json:\"version\"` Repo string `json:\"repo\"` Commit string `json:\"commit,omitempty\"` Prohibited []string `json:\"prohibited\"` MaxDepth int `json:\"max_depth\"` ExcludeTests bool `json:\"exclude_tests,omitempty\"` // Checkpoint, when supplied, is the intent half of the evidence. Checkpoint string `json:\"checkpoint,omitempty\"` CheckpointBase string `json:\"checkpoint_base,omitempty\"` CheckpointHead string `json:\"checkpoint_head,omitempty\"` CheckpointFiles []pivotCheckpointFile `json:\"checkpoint_files,omitempty\"` Invalidated []pivotFile `json:\"invalidated\"` AtRisk []pivotFile `json:\"at_risk\"` Safe []pivotFile `json:\"safe\"` Counts pivotCounts `json:\"counts\"` // RoleCounts is the whole tree broken down by file role, so a consumer can see // the shape of the repository the verdicts were drawn from. RoleCounts map[string]int `json:\"role_counts,omitempty\"` // Unreached is the honest half of the answer: files the graph could not // analyze for relationships, so their verdict is unknown rather than Safe. Unreached []string `json:\"unreached,omitempty\"` UnreachedReason string `json:\"unreached_reason,omitempty\"` // Unverified holds files that reached no invalidated file AND did not parse // cleanly. They were previously reported Safe. Unverified []pivotFile `json:\"unverified\"` UnverifiedReason string `json:\"unverified_reason,omitempty\"` // EvidenceCounts totals the classified files by evidence tier, so a reader // sees how much of the report rests on inference before reading any of it. EvidenceCounts map[string]int `json:\"evidence_counts,omitempty\"` Warnings []sem.ProviderWarning `json:\"warnings,omitempty\"` PartialFailures []sem.PartialFailure `json:\"partial_failures\"` Stats sem.ProviderStats `json:\"stats\"` Completeness sem.CompletenessReport `json:\"completeness\"` IndexCacheHit bool `json:\"index_cache_hit\"` IndexLatencyMS int64 `json:\"index_latency_ms\"` QueryLatencyMS int64 `json:\"query_latency_ms\"` TotalLatencyMS int64 `json:\"total_latency_ms\"` }",
+          "before_start_line": 124,
+          "after_start_line": 151,
+          "dependents_count": 12
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotResponse.Unverified",
+          "new_signature": "Unverified []pivotFile",
+          "after_start_line": 182,
+          "dependents_count": 10
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotResponse.UnverifiedReason",
+          "new_signature": "UnverifiedReason string",
+          "after_start_line": 183,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotResponse.EvidenceCounts",
+          "new_signature": "EvidenceCounts map[string]int",
+          "after_start_line": 186,
+          "dependents_count": 3
+        },
+        {
+          "type": "signature_changed",
+          "kind": "type",
+          "name": "pivotCounts",
+          "old_signature": "pivotCounts struct { Invalidated int `json:\"invalidated\"` AtRisk int `json:\"at_risk\"` Safe int `json:\"safe\"` Unreached int `json:\"unreached\"` Total int `json:\"total\"` // ExcludedTests is how many files --exclude-tests removed from the run. It is // reported rather than silently dropped: a file that was never classified is // not a file that came back Safe. ExcludedTests int `json:\"excluded_tests,omitempty\"` }",
+          "new_signature": "pivotCounts struct { Invalidated int `json:\"invalidated\"` AtRisk int `json:\"at_risk\"` Safe int `json:\"safe\"` // Unverified is Safe minus the certainty: no path found, in a file the parser // could not fully read. Unverified int `json:\"unverified\"` Unreached int `json:\"unreached\"` Total int `json:\"total\"` // ExcludedTests is how many files --exclude-tests removed from the run. It is // reported rather than silently dropped: a file that was never classified is // not a file that came back Safe. ExcludedTests int `json:\"excluded_tests,omitempty\"` }",
+          "before_start_line": 164,
+          "after_start_line": 199,
+          "dependents_count": 5
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotCounts.Unverified",
+          "new_signature": "Unverified int",
+          "after_start_line": 205,
+          "dependents_count": 10
+        },
+        {
+          "type": "body_changed",
+          "kind": "function",
+          "name": "buildPivotResponse",
+          "before_start_line": 340,
+          "after_start_line": 378,
+          "dependents_count": 9
+        },
+        {
+          "type": "signature_changed",
+          "kind": "type",
+          "name": "fileDependentEdge",
+          "old_signature": "fileDependentEdge struct { from string relation string confidence float64 reason string line int }",
+          "new_signature": "fileDependentEdge struct { from string relation string confidence float64 reason string // resolution and warningCodes travel with the edge so propagation can be // graded the same way a direct conflict is. Without them an At-Risk verdict // two hops out would carry no indication of how it was reached. resolution string warningCodes []string line int }",
+          "before_start_line": 552,
+          "after_start_line": 643,
+          "dependents_count": 1
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "fileDependentEdge.resolution",
+          "new_signature": "resolution string",
+          "after_start_line": 651,
+          "dependents_count": 126
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "fileDependentEdge.warningCodes",
+          "new_signature": "warningCodes []string",
+          "after_start_line": 652,
+          "dependents_count": 6
+        },
+        {
+          "type": "body_changed",
+          "kind": "function",
+          "name": "buildFileDependents",
+          "before_start_line": 563,
+          "after_start_line": 659,
+          "dependents_count": 1
+        }
+      ]
+    },
+    {
+      "path": "internal/cli/pivot_evidence.go",
+      "status": "A",
+      "language": "Go",
+      "changes": [
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "classifyEvidenceTier",
+          "new_signature": "func classifyEvidenceTier(relationType, resolution string, confidence float64, warningCodes []string, filePath string, incompleteFiles map[string]string) string",
+          "after_start_line": 93,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "tierRank",
+          "new_signature": "func tierRank(tier string) int",
+          "after_start_line": 111,
+          "dependents_count": 1
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "weakestEvidenceTier",
+          "new_signature": "func weakestEvidenceTier(evidence []pivotEdge) string",
+          "after_start_line": 131,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "incompleteAnalysisFiles",
+          "new_signature": "func incompleteAnalysisFiles(header sem.SnapshotHeader) map[string]string",
+          "after_start_line": 146,
+          "dependents_count": 1
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "sortedIncompleteFiles",
+          "new_signature": "func sortedIncompleteFiles(incomplete map[string]string) []string",
+          "after_start_line": 166,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "pivotEvidenceMix",
+          "new_signature": "func pivotEvidenceMix(counts map[string]int) string",
+          "after_start_line": 179,
+          "dependents_count": 1
+        }
+      ]
+    },
+    {
+      "path": "internal/cli/pivot_evidence_test.go",
+      "status": "A",
+      "language": "Go",
+      "changes": [
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "pivotPartialAnalysisSnapshot",
+          "new_signature": "func pivotPartialAnalysisSnapshot() sem.ProviderSnapshot",
+          "after_start_line": 27,
+          "dependents_count": 4
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "pivotFileNamed",
+          "new_signature": "func pivotFileNamed(response pivotResponse, path string) (pivotFile, bool)",
+          "after_start_line": 82,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestPivotDoesNotReportUnparsedFileAsSafe",
+          "new_signature": "func TestPivotDoesNotReportUnparsedFileAsSafe(t *testing.T)",
+          "after_start_line": 98,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestPivotTiersEvidenceByResolution",
+          "new_signature": "func TestPivotTiersEvidenceByResolution(t *testing.T)",
+          "after_start_line": 144,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestPivotFullyResolvedBehaviourUnchanged",
+          "new_signature": "func TestPivotFullyResolvedBehaviourUnchanged(t *testing.T)",
+          "after_start_line": 176,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestPivotTextTagsEvidenceForUsers",
+          "new_signature": "func TestPivotTextTagsEvidenceForUsers(t *testing.T)",
+          "after_start_line": 214,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestPivotPlanCarriesEvidenceForAgents",
+          "new_signature": "func TestPivotPlanCarriesEvidenceForAgents(t *testing.T)",
+          "after_start_line": 240,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestClassifyEvidenceTier",
+          "new_signature": "func TestClassifyEvidenceTier(t *testing.T)",
+          "after_start_line": 290,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestWeakestEvidenceTierGovernsTheFile",
+          "new_signature": "func TestWeakestEvidenceTierGovernsTheFile(t *testing.T)",
+          "after_start_line": 326,
+          "dependents_count": 0
+        }
+      ]
+    },
+    {
+      "path": "internal/cli/pivot_plan.go",
+      "status": "M",
+      "language": "Go",
+      "changes": [
+        {
+          "type": "signature_changed",
+          "kind": "type",
+          "name": "pivotPlanCounts",
+          "old_signature": "pivotPlanCounts struct { Invalidated int `json:\"invalidated\"` AtRisk int `json:\"at_risk\"` Safe int `json:\"safe\"` Unreached int `json:\"unreached\"` Total int `json:\"total\"` ExcludedTests int `json:\"excluded_tests\"` P0 int `json:\"p0\"` P1 int `json:\"p1\"` P2 int `json:\"p2\"` ByRole map[string]int `json:\"by_role,omitempty\"` }",
+          "new_signature": "pivotPlanCounts struct { Invalidated int `json:\"invalidated\"` AtRisk int `json:\"at_risk\"` Safe int `json:\"safe\"` Unverified int `json:\"unverified\"` Unreached int `json:\"unreached\"` Total int `json:\"total\"` ExcludedTests int `json:\"excluded_tests\"` P0 int `json:\"p0\"` P1 int `json:\"p1\"` P2 int `json:\"p2\"` ByRole map[string]int `json:\"by_role,omitempty\"` }",
+          "before_start_line": 90,
+          "after_start_line": 90,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanCounts.Unverified",
+          "new_signature": "Unverified int",
+          "after_start_line": 94,
+          "dependents_count": 10
+        },
+        {
+          "type": "signature_changed",
+          "kind": "type",
+          "name": "pivotWorkItem",
+          "old_signature": "pivotWorkItem struct { ID string `json:\"id\"` Priority string `json:\"priority\"` Action string `json:\"action\"` Verdict string `json:\"verdict\"` Role string `json:\"role\"` Path string `json:\"path\"` Package string `json:\"package\"` // Distance is hops from the root invalidated file; 0 for a direct violation and // -1 for a file that no invalidated code reaches. Distance int `json:\"distance\"` RootInvalidated string `json:\"root_invalidated,omitempty\"` Evidence []pivotEdge `json:\"evidence\"` // InCheckpoint marks work in a file the supplied checkpoint's session wrote. InCheckpoint bool `json:\"in_checkpoint,omitempty\"` AgentInstructions []string `json:\"agent_instructions\"` AcceptanceCriteria []string `json:\"acceptance_criteria\"` }",
+          "new_signature": "pivotWorkItem struct { ID string `json:\"id\"` Priority string `json:\"priority\"` Action string `json:\"action\"` Verdict string `json:\"verdict\"` Role string `json:\"role\"` Path string `json:\"path\"` Package string `json:\"package\"` // Distance is hops from the root invalidated file; 0 for a direct violation and // -1 for a file that no invalidated code reaches. // EvidenceQuality and VerificationRequired are the agent-facing half of the // evidence tiers. The text report tags each evidence line for a human; an // agent consuming this plan needs the same distinction as a field it can // branch on, because an agent is the reader most likely to act on a work // item without opening the file. EvidenceQuality string `json:\"evidence_quality,omitempty\"` VerificationRequired bool `json:\"verification_required\"` Distance int `json:\"distance\"` RootInvalidated string `json:\"root_invalidated,omitempty\"` Evidence []pivotEdge `json:\"evidence\"` // InCheckpoint marks work in a file the supplied checkpoint's session wrote. InCheckpoint bool `json:\"in_checkpoint,omitempty\"` AgentInstructions []string `json:\"agent_instructions\"` AcceptanceCriteria []string `json:\"acceptance_criteria\"` }",
+          "before_start_line": 111,
+          "after_start_line": 112,
+          "dependents_count": 5
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotWorkItem.EvidenceQuality",
+          "new_signature": "EvidenceQuality string",
+          "after_start_line": 127,
+          "dependents_count": 9
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotWorkItem.VerificationRequired",
+          "new_signature": "VerificationRequired bool",
+          "after_start_line": 128,
+          "dependents_count": 9
+        },
+        {
+          "type": "body_changed",
+          "kind": "function",
+          "name": "buildPivotPlan",
+          "before_start_line": 145,
+          "after_start_line": 154,
+          "dependents_count": 8
+        },
+        {
+          "type": "body_changed",
+          "kind": "function",
+          "name": "pivotWorkItemFor",
+          "before_start_line": 256,
+          "after_start_line": 269,
+          "dependents_count": 1
+        },
+        {
+          "type": "body_changed",
+          "kind": "function",
+          "name": "pivotKnownBlindSpots",
+          "before_start_line": 377,
+          "after_start_line": 396,
+          "dependents_count": 1
+        },
+        {
+          "type": "body_changed",
+          "kind": "function",
+          "name": "pivotMustNotClaim",
+          "before_start_line": 455,
+          "after_start_line": 484,
+          "dependents_count": 1
+        }
+      ]
+    },
+    {
+      "path": "internal/cli/pivot_roles.go",
+      "status": "M",
+      "language": "Go",
+      "changes": [
+        {
+          "type": "body_changed",
+          "kind": "function",
+          "name": "writePivotText",
+          "before_start_line": 228,
+          "after_start_line": 228,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "pivotResolutionWord",
+          "new_signature": "func pivotResolutionWord(resolution string) string",
+          "after_start_line": 348,
+          "dependents_count": 1
+        },
+        {
+          "type": "body_changed",
+          "kind": "function",
+          "name": "writePivotFileLine",
+          "before_start_line": 385,
+          "after_start_line": 410,
+          "dependents_count": 1
+        }
+      ]
+    },
+    {
+      "path": "internal/cli/pivot_test.go",
+      "status": "M",
+      "language": "Go",
+      "changes": [
+        {
+          "type": "body_changed",
+          "kind": "function",
+          "name": "pivotVerdict",
+          "before_start_line": 57,
+          "after_start_line": 57,
+          "dependents_count": 2
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    {
+      "code": "W_UNSUPPORTED_FILE",
+      "severity": "info",
+      "file_path": "docs/demo/curveball/01-search-evidence-consumers.txt",
+      "effect_on_semantic_completeness": "file skipped; no parser for this file type, so its changes are not analyzed",
+      "detail": "head version has no supported parser"
+    },
+    {
+      "code": "W_UNSUPPORTED_FILE",
+      "severity": "info",
+      "file_path": "docs/demo/curveball/02-impact-buildPivotResponse.txt",
+      "effect_on_semantic_completeness": "file skipped; no parser for this file type, so its changes are not analyzed",
+      "detail": "head version has no supported parser"
+    },
+    {
+      "code": "W_UNSUPPORTED_FILE",
+      "severity": "info",
+      "file_path": "docs/demo/curveball/03-impact-buildFileDependents.txt",
+      "effect_on_semantic_completeness": "file skipped; no parser for this file type, so its changes are not analyzed",
+      "detail": "head version has no supported parser"
+    },
+    {
+      "code": "W_UNSUPPORTED_FILE",
+      "severity": "info",
+      "file_path": "docs/demo/curveball/04-impact-writePivotFileLine.txt",
+      "effect_on_semantic_completeness": "file skipped; no parser for this file type, so its changes are not analyzed",
+      "detail": "head version has no supported parser"
+    },
+    {
+      "code": "W_UNSUPPORTED_FILE",
+      "severity": "info",
+      "file_path": "docs/demo/curveball/05-neighbors-firstEvidenceLine.txt",
+      "effect_on_semantic_completeness": "file skipped; no parser for this file type, so its changes are not analyzed",
+      "detail": "head version has no supported parser"
+    }
+  ],
+  "schema_version": "1.1",
+  "producer_version": "dev"
+}

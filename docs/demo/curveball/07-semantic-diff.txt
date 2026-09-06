@@ -1,0 +1,137 @@
+Semantic changes 90d1939..HEAD
+
+docs/demo/curveball/00-pivot-on-itself.json (JSON)
+  + section schema_version added
+  + section plan_id added
+  + section graph_tool added
+  + section name added
+  + section version added
+  + section provider added
+  + section graph_schema_version added
+  + section depth added
+  + section exclude_tests added
+  + section index_cache_hit added
+  + section repo added
+  + section head_commit added
+  + section constraint added
+  + section prohibited added
+  + section rule added
+  + section interpreted_by added
+  + section counts added
+  + section invalidated added
+  + section at_risk added
+  + section safe added
+  + section unreached added
+  + section total added
+  + section excluded_tests added
+  + section p0 added
+  + section p1 added
+  + section p2 added
+  + section by_role added
+  + section PRODUCTION added
+  + section known_blind_spots added
+  + section id added
+  + section statement added
+  + section implication added
+  + section work_items added
+  + section priority added
+  + section action added
+  + section verdict added
+  + section role added
+  + section path added
+  + section package added
+  + section distance added
+  + section evidence added
+  + section agent_instructions added
+  + section acceptance_criteria added
+  + section validation added
+  + section required_commands added
+  + section notes added
+  + section execution_contract added
+  + section must_not_claim added
+  + section must_do added
+
+docs/demo/curveball/06-capabilities.json (JSON)
+  + module docs/demo/curveball/06-capabilities.json added
+
+docs/demo/curveball/PLAN.md (Markdown)
+  + section Curveball-plan-Track-2:-Graph-is-evidence-not-an-oracle added
+  + section Card-requirements---where-each-is-satisfied added
+  + section Steps added
+  + section Findings-recorded-during-step-1-evidence-not-assumption added
+  + section Demo-repos-props-not-code-under-change added
+
+internal/cli/pivot.go (Go)
+  ~ type pivotEdge signature changed (11 dependents)
+  + field pivotEdge.Resolution added
+  + field pivotEdge.Tier added
+  ~ type pivotFile signature changed (23 dependents)
+  + field pivotFile.EvidenceQuality added
+  + field pivotFile.VerificationRequired added
+  + field pivotFile.AnalysisNote added
+  ~ type pivotResponse signature changed (12 dependents)
+  + field pivotResponse.Unverified added
+  + field pivotResponse.UnverifiedReason added
+  + field pivotResponse.EvidenceCounts added
+  ~ type pivotCounts signature changed (5 dependents)
+  + field pivotCounts.Unverified added
+  ~ function buildPivotResponse body changed (9 dependents)
+  ~ type fileDependentEdge signature changed (1 dependent)
+  + field fileDependentEdge.resolution added
+  + field fileDependentEdge.warningCodes added
+  ~ function buildFileDependents body changed (1 dependent)
+
+internal/cli/pivot_evidence.go (Go)
+  + function classifyEvidenceTier added
+  + function tierRank added
+  + function weakestEvidenceTier added
+  + function incompleteAnalysisFiles added
+  + function sortedIncompleteFiles added
+  + function pivotEvidenceMix added
+
+internal/cli/pivot_evidence_test.go (Go)
+  + function pivotPartialAnalysisSnapshot added
+  + function pivotFileNamed added
+  + function TestPivotDoesNotReportUnparsedFileAsSafe added
+  + function TestPivotTiersEvidenceByResolution added
+  + function TestPivotFullyResolvedBehaviourUnchanged added
+  + function TestPivotTextTagsEvidenceForUsers added
+  + function TestPivotPlanCarriesEvidenceForAgents added
+  + function TestClassifyEvidenceTier added
+  + function TestWeakestEvidenceTierGovernsTheFile added
+
+internal/cli/pivot_plan.go (Go)
+  ~ type pivotPlanCounts signature changed (3 dependents)
+  + field pivotPlanCounts.Unverified added
+  ~ type pivotWorkItem signature changed (5 dependents)
+  + field pivotWorkItem.EvidenceQuality added
+  + field pivotWorkItem.VerificationRequired added
+  ~ function buildPivotPlan body changed (8 dependents)
+  ~ function pivotWorkItemFor body changed (1 dependent)
+  ~ function pivotKnownBlindSpots body changed (1 dependent)
+  ~ function pivotMustNotClaim body changed (1 dependent)
+
+internal/cli/pivot_roles.go (Go)
+  ~ function writePivotText body changed (3 dependents)
+  + function pivotResolutionWord added
+  ~ function writePivotFileLine body changed (1 dependent)
+
+internal/cli/pivot_test.go (Go)
+  ~ function pivotVerdict body changed (2 dependents)
+
+Warnings
+  ! W_UNSUPPORTED_FILE docs/demo/curveball/01-search-evidence-consumers.txt
+    file skipped; no parser for this file type, so its changes are not analyzed
+    head version has no supported parser
+  ! W_UNSUPPORTED_FILE docs/demo/curveball/02-impact-buildPivotResponse.txt
+    file skipped; no parser for this file type, so its changes are not analyzed
+    head version has no supported parser
+  ! W_UNSUPPORTED_FILE docs/demo/curveball/03-impact-buildFileDependents.txt
+    file skipped; no parser for this file type, so its changes are not analyzed
+    head version has no supported parser
+  ! W_UNSUPPORTED_FILE docs/demo/curveball/04-impact-writePivotFileLine.txt
+    file skipped; no parser for this file type, so its changes are not analyzed
+    head version has no supported parser
+  ! W_UNSUPPORTED_FILE docs/demo/curveball/05-neighbors-firstEvidenceLine.txt
+    file skipped; no parser for this file type, so its changes are not analyzed
+    head version has no supported parser

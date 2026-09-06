@@ -1,5 +1,15 @@
 # PivotMap
 
+> **Where the work is.** All of it is on the branch **`pivot-work-order`**, not on `main`.
+> `main` is protected on the Entire mirror and the push to it was rejected, so the repository root
+> renders a stale tree with no checkpoint activity. That is a display artefact, not the state of the
+> project — confirm with `git ls-remote origin`.
+>
+> ```
+> Branch      pivot-work-order
+> Tree        https://entire.io/gh/Adharshd/entire-graph/tree/pivot-work-order
+> ```
+
 ## One-sentence summary
 
 `entire graph pivot` answers what survives a requirement that changed after the code was already
@@ -257,7 +267,124 @@ whatever it happened to be reached through.
 
 ## Noon Curveball: what changed and how we adapted
 
-*(filled in after 12:00)*
+**The constraint.** *Graph is evidence, not an oracle.* A repository using dynamic dispatch,
+generated code or reflection cannot be fully resolved by static analysis. The product must not
+present incomplete relationships as certain, must identify when analysis may be partial, must offer
+a verification path, must keep working unchanged for fully resolved code, and must let **users and
+agents** tell apart confirmed structural evidence, heuristic or incomplete evidence, and claims
+needing source or test verification.
+
+### The tempting wrong answer
+
+PivotMap already looked compliant. It ships `UNREACHED` for inventory-only languages, it prints
+"SAFE means no path was found, not that none exists", and its plan declares six blind spots that
+name interface dispatch, reflection and generated code explicitly. The easy response was "we already
+did this."
+
+That response is wrong, and the reason is worth stating precisely: **every one of those is a global
+statement, and none of them ever reached the file it applied to.** A reader looking at
+`pkg/foo.go — SAFE` had no way to connect it to a disclaimer six sections earlier. We had declared
+our uncertainty; we had never localised it.
+
+### The assumption that was invalidated
+
+Uncertainty was tiered at the **language** level and nowhere else. It was never tiered at the
+**edge** level. Verified in source before changing anything:
+
+- `Confidence` was captured into every `pivotEdge` (`pivot.go:428`, `:476`) and read by exactly one
+  line in the whole feature — a `Fprintf` in `pivot_roles.go`. Printed, never consulted.
+- `sem.RelationRecord.Resolution` and `.WarningCodes` — the graph's own account of *how* it knows an
+  edge — were never copied into `pivotEdge` at all.
+- `Header.Warnings` and `Header.PartialFailures` were copied into the response (`:348`, `:544`) and
+  then read by nothing.
+
+So these two rendered and behaved identically:
+
+```
+IMPORTS os/exec       confidence 0.80  resolution import declaration read from source
+CALLS   verify.go     confidence 0.80  resolution package-level guess
+```
+
+**The consequence was live in this repository.** Five files were reported SAFE — "no dependency path
+to invalidated code, leave alone" — while carrying `E_PARSE_ERROR`:
+
+```
+internal/sem/grammars/{csharp,erlang,fsharp,haskell,perl}/tree_sitter/array.h
+```
+
+The parser had failed on them. SAFE presented a gap in the analysis as a finding about the code,
+which is exactly what the card forbids.
+
+### What changed
+
+Every edge is now graded, keyed on **the graph's own resolution vocabulary** rather than a threshold
+we invented. The rules were chosen from a measured distribution over all 57,791 relations in this
+repository, recorded in `internal/cli/pivot_evidence.go`:
+
+| Tier | Means | Example |
+|---|---|---|
+| `CONFIRMED` | import declarations, and calls resolved to a definition (`exact`, `import_resolved`) at or above a 0.80 floor | `IMPORTS internal/gitutil/git.go -> os/exec` |
+| `HEURISTIC` | inferred — `name_only`, `package`, `type_inferred`, `pattern` | `CALLS preflight.go -> verify.go (resolution package)` |
+| `UNVERIFIED` | the parser reported a warning or partial failure on the file | `array.h`, `E_PARSE_ERROR` |
+
+**Confidence alone could not carry this.** 0.80 covers both `IMPORTS name_only` — an import statement
+physically present in the source — and `CALLS package`, a guess about where a call landed. Resolution
+is the axis that separates a fact from an inference. And no relation in this repository reaches
+confidence 1.00; the highest observed is 0.95, so a design waiting for certainty would have graded
+everything uncertain.
+
+Surfaced to both audiences the card names:
+
+```
+users   [CONFIRMED] evidence: IMPORTS internal/cli/verify.go -> os/exec (confidence 0.80, resolution name_only)
+        [HEURISTIC] evidence: CALLS internal/cli/preflight.go -> internal/cli/verify.go (confidence 0.80, resolution package)
+            VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+
+agents  "evidence_quality": "HEURISTIC", "verification_required": true
+        known_blind_spots += heuristic-edges, unverified-parse
+        must_not_claim    += "Must not treat a HEURISTIC edge as an established fact..."
+```
+
+A file that would have been SAFE but did not parse cleanly is now `UNVERIFIED`. A file that did not
+parse but *has* a real path to invalidated code stays `AT-RISK` — the verdict still says there is a
+path, because there is one — and carries its uncertainty as evidence quality instead.
+
+### Why the new result is safe
+
+Nothing about a clean parse changed. Evidence quality is graded after the verdicts are final,
+exactly as roles are, and never moves one. `TestPivotFullyResolvedBehaviourUnchanged` pins all six
+verdicts of the original fixture and asserts the unverified bucket stays empty. The full
+`internal/cli` suite passes at 56.071s with **no existing assertion modified**.
+
+The direction of every change is towards less certainty, never more: no file moves from a weaker
+verdict to a stronger one, and `CONFIRMED` requires both a structural resolution and a confidence
+floor. The semantic diff (`docs/demo/curveball/07-semantic-diff.txt`) is entirely additive —
+new fields and functions, nothing removed or renamed.
+
+### The fixture for incomplete analysis
+
+`internal/cli/pivot_evidence_test.go` carries a partial-analysis fixture with one file per pattern
+static analysis loses: an import read from source, a call matched only by name, generated code
+carrying a warning, and a file the parser failed on. Nine tests cover the tier rules directly, both
+output surfaces, the weakest-edge rule, and the fully-resolved regression lock.
+
+### Graph evidence, captured before the first edit
+
+Every graph command was run **before** any code changed, and piped to a file rather than described:
+`docs/demo/curveball/01-search-evidence-consumers.txt`, three `impact` runs on the verdict maker,
+the propagation walker and the renderer, the `neighbors` query that revealed per-edge `resolution`
+and `confidence`, `capabilities`, and pivot run against itself.
+
+Three findings are recorded there rather than asserted from memory:
+
+1. The `Completeness: degraded for Go` note from before noon **no longer reproduces** — this
+   repository reports `completeness_level: "ok"` for Go with one JSON partial failure. The earlier
+   note was carried forward and is stale; it is not repeated.
+2. `pivot --dependency internal/sem` returns **0 invalidated**: `prohibitedMatch` does not resolve
+   internal package paths. Recorded as a finding about the matcher rather than reported as an empty
+   result.
+3. The installed plugin has no `pivot` subcommand — the feature exists only in this working tree —
+   so all pivot runs use a locally built binary without the `graph` prefix.
 
 ## Checkpoint links and what each checkpoint proves
 
@@ -270,6 +397,8 @@ lands via PR; the checkpoint ref (`entire/checkpoints/v1`) pushes independently 
 | — | `4a0a219` | — | `--exclude-tests` applied before classification. **No checkpoint** — see below. |
 | `bb0d72d79dbc` | `2ff8446` | Initial understanding and architecture | Checkpoints bind from this worktree. The header keeps depth and index provenance on uncommitted runs, so a reader can tell how far propagation walked and whether the verdict came off a warm cache. |
 | `4a14d2327199` | `934d180` | Last stable state before noon | File roles rank the report instead of listing it: 32 direct violations resolve to 8 production files to open by hand and 24 test files collapsed to 5 package commands. |
+| `9ab0f807a913` | `90d1939` | Last stable before the Noon Curveball | The commit message carries intent, architecture, completed work and open risks, so a fresh session reconstructs the project from the checkpoint rather than from a summary pasted out of the previous one. That is how this curveball response started. |
+| `c8f225bf19ba` | `d09e6af` | Curveball response: evidence tiers | Uncertainty moves from the language level to the edge level. Confidence was captured and never consulted; `Resolution` was dropped entirely; parse failures were copied into the response and read by nothing. Five files in this repository were reported SAFE while carrying `E_PARSE_ERROR`. |
 
 ### The two commits with no checkpoint are the honest part
 

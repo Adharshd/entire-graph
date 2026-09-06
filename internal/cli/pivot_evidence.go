@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/entireio/entire-graph/internal/sem"
@@ -160,16 +159,6 @@ func incompleteAnalysisFiles(header sem.SnapshotHeader) map[string]string {
 		}
 	}
 	return incomplete
-}
-
-// sortedIncompleteFiles renders the set deterministically for the report.
-func sortedIncompleteFiles(incomplete map[string]string) []string {
-	paths := make([]string, 0, len(incomplete))
-	for path := range incomplete {
-		paths = append(paths, path)
-	}
-	sort.Strings(paths)
-	return paths
 }
 
 // pivotEvidenceMix renders the tier totals as one line a reader takes in before
