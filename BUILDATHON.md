@@ -28,7 +28,11 @@ Then [what assumption was invalidated](#the-assumption-that-was-invalidated),
 [what changed](#what-changed), [why it is safe](#why-the-new-result-is-safe), and the
 [run against Kubernetes](#run-against-kubernetes).
 
-**3 — The evidence, reproducible**
+**3 — Where this goes next**
+[How we would take this forward](#how-we-would-take-this-forward) — ordered by what today's work
+showed was missing, including the five attacks our verifier does not yet test.
+
+**4 — The evidence, reproducible**
 [`docs/demo/curveball/`](docs/demo/curveball/) — every graph command, its output, and the plan that
 was followed. Items 01-06 ran before the first line of code changed.
 [Checkpoint → commit table](#checkpoint-links-and-what-each-checkpoint-proves) maps each milestone to
@@ -654,6 +658,66 @@ entire graph pivot --repo . --dependency os/exec --exclude-tests --depth 1 --for
 tests fail wherever the local git rejects `checkout --end-of-options`. Those failures reproduce at
 `4a0a219`, before any of this work, and are unrelated to pivot — `internal/cli`, which is the only
 package this feature touches, passes in full.
+
+## How we would take this forward
+
+Ordered by what the work already done says is missing, not by what would demo well. Each item names
+the evidence that put it on the list.
+
+### Next — harden what exists
+
+**Close the verifier's isolation gap.** The referee runs from a clean checkout, but its contract,
+script and analyzer live in the repository the agent can write to. The remedy is CI-shaped rather
+than tool-shaped: run the verifier outside the agent's container, pin the analyzer image by digest,
+generate the baseline before the agent starts, and protect the workflow paths. Until that exists the
+verifier stops an agent taking a shortcut, not an agent attacking the referee.
+
+**Finish the adversarial suite.** Published threat models list six ways to satisfy a verifier without
+doing the work: delete failing tests, add suppressions, stub a function, remove code rather than
+repair it, change the analyzer's scope, and modify the runner. **We test one** — removal — and it is
+caught by two independent invariants. The other five are unwritten. A verifier with one attack case
+is a verifier with one attack case, and saying so is cheaper than discovering it later.
+
+**Confine the MCP surface.** The server takes a repository path from its caller, which is an
+arbitrary-read primitive if it is ever reachable by anything but the user's own shell. An allowlisted
+root, canonicalised, with symlink escape refused, is the precondition for any use beyond a single
+local developer. Read-only is not the same as low risk: the answers describe where a codebase is
+weakest.
+
+### Then — the second audience
+
+Constraints arrive from people who cannot answer what they cost. Legal drops a vendor, compliance
+bans a library, a requirement changes — and the person holding that constraint needs a developer to
+translate it. Existing tooling runs the other way: product artifacts are pushed *into* coding agents
+(Figma, Linear, Productboard, Atlassian all ship MCP servers doing exactly this). Almost nothing runs
+the reverse direction, from a business constraint to code evidence a non-developer can act on.
+
+That direction needs different output, not a different engine. **`SAFE` is actively dangerous for
+this reader** — a green result reads as proof to someone without the instinct to distrust it, when it
+means "no path found in what we could parse". The vocabulary has to change with the audience:
+*Directly affected*, *Needs engineering validation*, *No impact found in analyzed code*, *Not
+assessed* — each carrying its coverage caveat in the same breath rather than in a footnote.
+
+Two rules we would hold to. **No effort estimates**: structural analysis can report shape —
+concentrated in one boundary, or distributed across nine — and a decision class, but a number of
+hours from a dependency graph is false precision that destroys trust the first time it is wrong.
+**Refuse to guess**: when a vendor name maps to three possible packages, return the three and stop.
+An impact claim built on a guessed target is worse than no answer.
+
+### Later — the evidence itself
+
+**Severity within a tier.** A file whose only link is a type reference is a smaller job than one
+calling an invalidated function on every request path. The graph already carries enough to separate
+them; the report does not yet.
+
+**Alias and dynamic-dispatch resolution.** The blind spots are declared honestly but they are still
+blind spots. Interface dispatch is the one that matters most, because it is common in exactly the
+code where being wrong is expensive.
+
+**Push evidence to where decisions are made.** A `verification-result` mapped onto a GitHub Check
+Run, and graph findings as SARIF for code scanning, put the verdict in the pull request instead of a
+terminal. The tiers survive that translation: SARIF carries rule-level metadata, so a heuristic
+finding can arrive labelled as one.
 
 ## Known limitations and next steps
 
