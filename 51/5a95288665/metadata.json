@@ -3,7 +3,7 @@
   "checkpoint_id": "515a95288665",
   "strategy": "manual-commit",
   "branch": "pivot-work-order",
-  "checkpoints_count": 4,
+  "checkpoints_count": 5,
   "files_touched": [
     "BUILDATHON.md"
   ],
@@ -14,13 +14,20 @@
       "compact_transcript": "/51/5a95288665/0/transcript.jsonl",
       "content_hash": "/51/5a95288665/0/content_hash.txt",
       "prompt": ""
+    },
+    {
+      "metadata": "/51/5a95288665/1/metadata.json",
+      "transcript": "/51/5a95288665/1/full.jsonl",
+      "compact_transcript": "/51/5a95288665/1/transcript.jsonl",
+      "content_hash": "/51/5a95288665/1/content_hash.txt",
+      "prompt": "/51/5a95288665/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 0,
-    "cache_creation_tokens": 0,
-    "cache_read_tokens": 0,
-    "output_tokens": 0,
-    "api_call_count": 0
+    "input_tokens": 286,
+    "cache_creation_tokens": 421878,
+    "cache_read_tokens": 24775402,
+    "output_tokens": 123395,
+    "api_call_count": 143
   }
 }
