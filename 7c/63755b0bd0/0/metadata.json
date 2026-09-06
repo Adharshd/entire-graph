@@ -1,0 +1,152 @@
+{
+  "cli_version": "0.10.5",
+  "checkpoint_id": "7c63755b0bd0",
+  "session_id": "0b2a0f3c-268d-4c7f-83ac-37e8fb667a62",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-06T08:06:51.949198Z",
+  "branch": "pivot-work-order",
+  "checkpoints_count": 5,
+  "save_step_count": 4,
+  "files_touched": [
+    "docs/demo/curveball/16-impact-buildPivotPlan.txt",
+    "internal/cli/pivot_plan.go",
+    "scripts/pivot-verify.py"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5",
+  "turn_id": "bf62ae579fbe",
+  "checkpoint_transcript_start": 88,
+  "transcript_lines_at_start": 88,
+  "compact_transcript_start": 12,
+  "token_usage": {
+    "input_tokens": 42,
+    "cache_creation_tokens": 84706,
+    "cache_read_tokens": 1305509,
+    "output_tokens": 11131,
+    "api_call_count": 21
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_018ZdBLJWi9voDYpkjf4oWXq",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "claude-in-chrome"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "bf62ae579fbe",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 89,
+        "end": 90,
+        "entry_ids": [
+          "54d32791-e299-4e39-99b8-d1768872c5c0"
+        ],
+        "tool_use_id": "toolu_018ZdBLJWi9voDYpkjf4oWXq"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_018ZdBLJWi9voDYpkjf4oWXq"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: claude-in-chrome",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "claude-skill-toolu_01DXAzDvUXH1zniqgBUFhdqg",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "claude-in-chrome"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "bf62ae579fbe",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 173,
+        "end": 174,
+        "entry_ids": [
+          "47e8f20c-7cd3-4eec-85b0-c97138d09e24"
+        ],
+        "tool_use_id": "toolu_01DXAzDvUXH1zniqgBUFhdqg"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_01DXAzDvUXH1zniqgBUFhdqg"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: claude-in-chrome",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 6
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-06T08:06:51.913014Z",
+    "agent_lines": 268,
+    "agent_removed": 1,
+    "human_added": 474,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 742,
+    "total_lines_changed": 743,
+    "agent_percentage": 36.20457604306864,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 1302,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "docs/ENTIRE-TIPS.md": 432,
+        "docs/loop engg config options in agent loop of pivotmap plan.txt": 870
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 48,
+      "user_lines_removed": 0,
+      "agent_lines_added": 1302,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "docs/demo/curveball/16-impact-buildPivotPlan.txt": 48
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 161,
+      "user_lines_removed": 0,
+      "agent_lines_added": 1351,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "docs/demo/curveball/16-impact-buildPivotPlan.txt": 48,
+        "internal/cli/pivot_plan.go": 113
+      }
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 48,
+      "user_lines_removed": 0,
+      "agent_lines_added": 1715,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "docs/demo/curveball/16-impact-buildPivotPlan.txt": 48
+      }
+    }
+  ]
+}
