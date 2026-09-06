@@ -1,0 +1,13 @@
+we are doing track 2 - but the guy here explicitly said multi agent will be great
+
+---
+
+ghence we pivoted
+
+---
+
+see databricks is optinal and good to have - but if we have a way to include databricks and create multi agent ideas -lets do it - - ceratea a fresh prompt if needed
+
+---
+
+curveball is at 12
