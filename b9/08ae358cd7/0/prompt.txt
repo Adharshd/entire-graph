@@ -594,3 +594,7 @@ WHat is PARTIAL ? ewhat type is that ? broef answer pls
 ---
 
 this is aftre the build loop ?
+
+---
+
+yes pls go ahead - if possible use a bg agent for this
