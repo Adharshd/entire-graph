@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PivotMap — a guide</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  :root {
+    --ink: #16181d;
+    --muted: #5b6270;
+    --line: #dfe3ea;
+    --accent: #1f4e79;
+    --panel: #f6f8fa;
+    --confirmed: #1a7f37;
+    --heuristic: #9a6700;
+    --unverified: #a4413b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font: 10.5pt/1.55 -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: var(--ink); margin: 0; padding: 0;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  h1 { font-size: 24pt; margin: 0 0 2mm; letter-spacing: -0.4pt; }
+  .sub { color: var(--muted); font-size: 11pt; margin: 0 0 3mm; }
+  .meta { color: var(--muted); font-size: 8.5pt; border-top: 1px solid var(--line);
+          border-bottom: 1px solid var(--line); padding: 2mm 0; margin-bottom: 7mm; }
+  h2 { font-size: 13.5pt; margin: 8mm 0 2.5mm; padding-bottom: 1.5mm;
+       border-bottom: 2px solid var(--accent); color: var(--accent); }
+  h3 { font-size: 11pt; margin: 5mm 0 1.5mm; }
+  p { margin: 0 0 2.5mm; }
+  ul, ol { margin: 0 0 3mm; padding-left: 5mm; }
+  li { margin-bottom: 1.2mm; }
+  code { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 9pt;
+         background: var(--panel); padding: 0.3mm 1mm; border-radius: 2px; }
+  pre { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 8.5pt;
+        background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent);
+        padding: 2.5mm 3mm; border-radius: 3px; overflow-x: auto;
+        line-height: 1.45; margin: 0 0 3mm; white-space: pre-wrap; }
+  table { width: 100%; border-collapse: collapse; margin: 0 0 3.5mm; font-size: 9.5pt; }
+  th { text-align: left; background: var(--panel); font-weight: 600;
+       border-bottom: 1.5px solid var(--line); padding: 1.8mm 2mm; }
+  td { border-bottom: 1px solid var(--line); padding: 1.8mm 2mm; vertical-align: top; }
+  .lead { font-size: 11pt; color: var(--ink); background: var(--panel);
+          border-left: 3px solid var(--accent); padding: 3mm 4mm; margin: 0 0 4mm; }
+  .note { font-size: 9.5pt; color: var(--muted); border-left: 2px solid var(--line);
+          padding-left: 3mm; margin: 0 0 3mm; }
+  .tag { font-family: "SF Mono", Menlo, monospace; font-size: 8pt; font-weight: 600;
+         padding: 0.4mm 1.4mm; border-radius: 2px; color: #fff; white-space: nowrap; }
+  .t-conf { background: var(--confirmed); }
+  .t-heur { background: var(--heuristic); }
+  .t-unv  { background: var(--unverified); }
+  .cols { display: flex; gap: 5mm; }
+  .col { flex: 1; }
+  .card { border: 1px solid var(--line); border-radius: 4px; padding: 3mm; }
+  .card h3 { margin-top: 0; }
+  .who { font-size: 8.5pt; color: var(--muted); text-transform: uppercase;
+         letter-spacing: 0.5pt; margin-bottom: 1mm; }
+  .break { page-break-before: always; }
+  .avoid { page-break-inside: avoid; }
+  footer { margin-top: 8mm; padding-top: 2mm; border-top: 1px solid var(--line);
+           color: var(--muted); font-size: 8.5pt; }
+</style>
+</head>
+<body>
+
+<h1>PivotMap</h1>
+<p class="sub">What survives when a requirement changes after the code is written.</p>
+<p class="meta">A guide to the command, the agent skill, and the MCP server &middot; BTW Buildathon 2026 &middot; Track 2</p>
+
+<p class="lead">
+Someone changes the rules after the work is done. Legal drops a vendor. Compliance bans a library.
+An architecture rule now forbids one part of the system from touching another. The code is already
+written, and somebody has to answer three questions before anyone touches anything:
+<strong>what actually breaks this rule, what is built on top of that, and what can be left alone?</strong>
+</p>
+
+<p>
+Today that is manual archaeology. <code>git log</code> shows what changed but not why anyone chose it.
+Searching finds the banned name but not the three modules quietly built on top of it. So the work is
+either over-done — treating the whole area as suspect — or under-done, and something breaks in
+production.</p>
+
+<p>PivotMap answers those three questions from a map of the codebase, and — this is the part that
+matters — <strong>it tells you how much of its own answer it is actually sure about.</strong></p>
+
+<h2>Three doors, one engine</h2>
+
+<p>The same analysis is reachable three ways, because the people who need it work in different places.</p>
+
+<div class="cols avoid">
+  <div class="col card">
+    <div class="who">For developers</div>
+    <h3>The command</h3>
+    <p>A terminal command. Full detail: every file, every piece of evidence, the exact line that
+    justifies each verdict.</p>
+  </div>
+  <div class="col card">
+    <div class="who">For coding agents</div>
+    <h3>The skill</h3>
+    <p>Teaches an AI coding assistant when to run the analysis and — more importantly — how much to
+    trust each part of the answer.</p>
+  </div>
+  <div class="col card">
+    <div class="who">For everyone else</div>
+    <h3>The MCP server</h3>
+    <p>Makes the analysis callable from a chat window. A product manager asks in plain English and
+    gets a decision brief, not file paths.</p>
+  </div>
+</div>
+
+<h2>The rule it answers</h2>
+
+<p>Every constraint PivotMap understands has the same shape:</p>
+
+<pre>X may no longer reach Y</pre>
+
+<p>That one sentence covers more than it looks like it does:</p>
+
+<table>
+  <tr><th style="width:38%">The constraint</th><th>X</th><th>Y</th></tr>
+  <tr><td>"We're dropping Stripe"</td><td>everything</td><td>the Stripe library</td></tr>
+  <tr><td>"This library may not touch customer data"</td><td>everything</td><td>the library</td></tr>
+  <tr><td>"The API layer may not reach storage directly"</td><td>the API layer</td><td>storage</td></tr>
+  <tr><td>"Nothing outside payments may use the payments internals"</td><td>everything else</td><td>payments internals</td></tr>
+</table>
+
+<p><strong>What it does not answer</strong>, and this is a real boundary rather than a missing feature:
+constraints about <em>behaviour</em> rather than dependency — "no background workers", "no personal
+data in logs" — and migrations, where the question is what to build rather than what breaks. Those
+need different analysis, not a different setting.</p>
+
+<h2>What the answer looks like</h2>
+
+<p>Every file in the codebase lands in one of five buckets:</p>
+
+<table>
+  <tr><th style="width:22%">Verdict</th><th>Plain meaning</th><th style="width:30%">What to do</th></tr>
+  <tr><td><strong>Directly affected</strong><br><code>INVALIDATED</code></td>
+      <td>This file itself breaks the rule.</td><td>Must change. Start here.</td></tr>
+  <tr><td><strong>Needs validation</strong><br><code>AT-RISK</code></td>
+      <td>Breaks no rule itself, but stands on something that does.</td>
+      <td>Re-check <em>after</em> the first group is fixed, not before.</td></tr>
+  <tr><td><strong>No impact found</strong><br><code>SAFE</code></td>
+      <td>Read cleanly, and no connection found.</td><td>Leave alone.</td></tr>
+  <tr><td><strong>Not assessed</strong><br><code>UNVERIFIED</code></td>
+      <td>The analyzer could not read this file at all.</td>
+      <td><strong>Not cleared.</strong> Needs a human.</td></tr>
+  <tr><td><strong>Not assessed</strong><br><code>UNREACHED</code></td>
+      <td>Written in a language the analyzer only inventories.</td>
+      <td>Unknown, not safe.</td></tr>
+</table>
+
+<p class="note"><strong>The fourth row is the important one.</strong> Before this release, a file the
+analyzer had failed to read was reported as <em>safe</em> — "no connection found, leave alone". Five
+files in this project's own codebase were being reported that way while the parser was erroring on
+them. That is a gap in the analysis being presented as a finding about the code.</p>
+
+<h2 class="break">How sure is it? &mdash; the part most tools skip</h2>
+
+<p>A map of a codebase is built by reading the source. Some of what it finds is a fact it read
+directly. Some is an educated guess. <strong>Until this release, both were shown the same way.</strong></p>
+
+<p>Now every piece of evidence carries a grade:</p>
+
+<table>
+  <tr><th style="width:20%">Grade</th><th>Means</th><th style="width:32%">What you should do</th></tr>
+  <tr><td><span class="tag t-conf">CONFIRMED</span></td>
+      <td>Read straight from the source. An import statement, or a call followed to its definition.</td>
+      <td>Act on it.</td></tr>
+  <tr><td><span class="tag t-heur">HEURISTIC</span></td>
+      <td>Inferred — matched by name or by package. Often right. Never proof.</td>
+      <td><strong>Open the cited line and check before acting.</strong></td></tr>
+  <tr><td><span class="tag t-unv">UNVERIFIED</span></td>
+      <td>The file could not be read properly.</td>
+      <td>Treat as unexamined.</td></tr>
+</table>
+
+<h3>Why this is not academic</h3>
+
+<p>Run against Kubernetes — 17,838 files of Go — the analysis produced 52 confirmed connections and
+<strong>71 guesses</strong>. More of the answer was inferred than proved. One of those guesses was
+demonstrably wrong:</p>
+
+<pre>graph.go     func (n *node) setOwners(owners []OwnerReference)
+                                       ^^^^^^ a variable name
+
+prunexml.go  type owners struct
+             ^^^^^^ an unrelated type, in a different program</pre>
+
+<p>The analyzer matched a <em>variable</em> called <code>owners</code> to a <em>type</em> called
+<code>owners</code> in a completely unrelated file — one the first file does not reference at all.
+Before this release that false connection was displayed identically to a real import statement.
+Now it is tagged as a guess, with a line telling the reader to check it.</p>
+
+<p class="note">This is why "no connection found" is never reported as proof that no connection exists.
+Some code is wired together at runtime in ways no amount of reading can see. The report says
+<em>no path was found</em>, which is a different sentence.</p>
+
+<h2>Door 1 &mdash; the command</h2>
+
+<pre># build it once (needs Go)
+mise run build
+
+# "we're dropping this library"
+./entire-graph pivot --dependency github.com/stripe/stripe-go
+
+# "the CLI layer may not reach the graph layer"
+./entire-graph pivot --from internal/cli --dependency internal/sem</pre>
+
+<table>
+  <tr><th style="width:26%">Option</th><th>What it is</th></tr>
+  <tr><td><code>--dependency</code></td><td><strong>Y</strong> — what may no longer be reached. Required.</td></tr>
+  <tr><td><code>--from</code></td><td><strong>X</strong> — who the rule applies to. Leave out for a rule that applies everywhere.</td></tr>
+  <tr><td><code>--depth 1..5</code></td><td>How far to follow the ripple. 1 gives a shortlist.</td></tr>
+  <tr><td><code>--exclude-tests</code></td><td>Ignore test files.</td></tr>
+  <tr><td><code>--format plan</code></td><td>Output a work order for an AI agent instead of a report.</td></tr>
+</table>
+
+<p class="note">Scoping matters more than it sounds. In this project, "nothing may reach the graph
+layer" returns 139 affected files. "<em>The CLI layer</em> may not reach the graph layer" returns 23.
+The other 116 are real, legitimate dependencies — they are simply not what the rule was about, and
+listing them buries the answer.</p>
+
+<h2>Door 2 &mdash; the agent skill</h2>
+
+<p>A skill is a short instruction file an AI coding assistant loads automatically when it becomes
+relevant. Ours fires on phrases like <em>"we can't use X anymore"</em> or <em>"legal dropped this vendor"</em>.</p>
+
+<p>Its value is not the commands — those are easy. It is the <strong>discipline</strong>:</p>
+
+<ul>
+  <li>Run the analysis first, rather than searching around and guessing.</li>
+  <li>Before acting on a guess, open the cited line and confirm it.</li>
+  <li>A file the analyzer could not read is <em>unread</em>, not <em>cleared</em>.</li>
+  <li>When reporting the work done, re-run the analysis and <strong>show the change alongside the
+      number</strong> — because "zero problems remaining" is also achieved by deleting the code.</li>
+</ul>
+
+<p>It is named <code>what-survives</code>, to pair with an existing Entire skill called
+<code>what-happened</code>. That one looks backward — <em>why does this code look the way it does?</em>
+This one looks forward — <em>what still stands, now the rules have changed?</em></p>
+
+<h2>Door 3 &mdash; the MCP server, for people who don't use a terminal</h2>
+
+<p>MCP is a standard way for an AI assistant to call an external tool. Registering this server makes
+the analysis available inside a chat window — no terminal, no commands.</p>
+
+<p><strong>Why that matters:</strong> constraints usually arrive from people who cannot cost them.
+Legal drops a vendor; compliance bans a library; a requirement changes. Each of those people
+currently has to find a developer to translate the constraint into an answer.</p>
+
+<p>Three of the seven tools are written for that audience, and they follow strict rules:</p>
+
+<ul>
+  <li><strong>Plain language only.</strong> Never "SAFE" — a green word reads as <em>proof</em> to
+      someone without the instinct to distrust it. It says "no impact found in analyzed code", and
+      says what was not analyzed in the same breath.</li>
+  <li><strong>No effort estimates.</strong> Ever. It reports <em>shape</em> — concentrated in one
+      area, or spread across nine — and a decision class such as <em>discovery required</em>. A number
+      of hours derived from a dependency map is false precision.</li>
+  <li><strong>It refuses to guess.</strong> If "Acme Analytics" could mean three different packages,
+      it lists them and stops. A confident, specific, wrong answer is the failure this tool exists to
+      prevent.</li>
+</ul>
+
+<h3>What a product manager actually gets back</h3>
+
+<pre>DECISION BRIEF
+  8 places across 5 areas use this directly, with 101 further places
+  needing re-checking afterwards.
+
+SCOPE CLASS: Discovery required
+  Driven by: 8 direct uses found, but 92 files were not assessed
+  (31% of the analyzed set), so the picture is incomplete.
+  This is a shape, not a schedule.
+
+EVIDENCE AND CONFIDENCE
+  Evidence strength      Mostly inferred. Only 23 connections were read
+                         directly from source; 86 were matched by name.
+  Analysis coverage      Partial. 92 files could not be assessed.
+  Product interpretation Weakest of the three — confirm with an owner.</pre>
+
+<p>Three separate confidence statements, because a single number would hide the difference between
+<em>"the evidence is weak"</em>, <em>"we couldn't see everything"</em>, and <em>"we're guessing which
+product area this maps to"</em>. Those are different problems with different fixes.</p>
+
+<h2>Checking the work afterwards</h2>
+
+<p>When an AI agent does the remediation, something has to decide whether it actually worked. That
+check is <strong>ordinary code, not another AI</strong> — an AI grading an AI just moves the trust
+problem somewhere else.</p>
+
+<p>It returns one of four answers:</p>
+
+<table>
+  <tr><th style="width:24%">Result</th><th>Means</th></tr>
+  <tr><td><strong>PASS</strong></td><td>Every check ran and passed.</td></tr>
+  <tr><td><strong>FAIL</strong></td><td>A check ran and did not pass.</td></tr>
+  <tr><td><strong>PARTIAL</strong></td><td>What could be checked, passed — but some things cannot be checked mechanically. <em>This is the normal good outcome.</em></td></tr>
+  <tr><td><strong>CANNOT&nbsp;VERIFY</strong></td><td>A check could not run at all. Never treated as a pass.</td></tr>
+</table>
+
+<p>The reason it exists: "zero problems remaining" is satisfied just as well by <strong>deleting the
+code</strong> as by fixing it. Tested for real — deleting the offending file makes the original check
+report success, and the new checks catch it on two independent grounds.</p>
+
+<h2>What it cannot do</h2>
+
+<p>Stated plainly, because a tool that hides its limits is the thing this project exists to argue against.</p>
+
+<ul>
+  <li><strong>Code wired together at runtime is invisible.</strong> Some connections are decided while
+      the program runs, and leave nothing to read. A genuinely affected file can come back as
+      "no impact found".</li>
+  <li><strong>It does not interpret sentences.</strong> It takes a package or module name. Turning
+      "we can't send customer data through Library X" into that name is a human or assistant step,
+      deliberately kept outside the tool — which is what lets it run entirely offline, with no data
+      leaving the machine.</li>
+  <li><strong>Behavioural rules are out of scope.</strong> "No background workers" is not a question
+      about what depends on what.</li>
+  <li><strong>It cannot tell you how long the work will take.</strong> By design.</li>
+</ul>
+
+<footer>
+  PivotMap is built on Entire Graph, an offline code-analysis tool. No network access, no AI model
+  in the analysis path, no data leaves the machine. Every verdict is a rule applied to evidence that
+  is printed alongside it, so any claim in the report can be checked rather than trusted.
+</footer>
+
+</body>
+</html>
