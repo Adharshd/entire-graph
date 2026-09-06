@@ -2657,3 +2657,67 @@ Two things worth your attention, both outside my directive: the smoke run harves
 ---
 
 https://github.com/entireio/skills
+
+---
+
+No - lets just talk now -what does our skill does even >?
+
+---
+
+what are the skills that enture has now ? comm properly with me - rsearch and find what they 1 line fo each skill 0 use simole language
+
+---
+
+do the skill internally use enture cli cmds ?
+
+---
+
+ok, thats a way reason for us to use skills then - lets just find the some good skill ideas and add them - lets say 3 now - lets ideate now
+
+---
+
+it should be unqiue wwhen compoares to existing ones
+
+---
+
+abut they arent using our opivor amds man .....
+
+---
+
+yeah we cpuld add skills in our repo - it can sjust use the cli cmds we built - any issues ? comm proeprly
+
+---
+
+which 1 file u mean ?
+
+---
+
+we laready have a skill ?
+
+---
+
+god - I am asking whehtgehr in opur current repo - can we proide our cli cmds as a skill ? any issues u see - I dont care abt the skills repo at all
+
+---
+
+but we have createea new cli cmds ? right ? anaswer brioelf
+
+---
+
+can we createa a new skill that uses that cmd ? no use in cerating skill that uses existing cmds we didnt buiold
+
+---
+
+it should have a good name - like it should be goof wrapper - like validate-challenging-pivots etc
+
+---
+
+lets workshop
+
+---
+
+what-survives works, write it
+
+---
+
+and once - add in buildathon.md and highlight the refernce to what-happened skill
