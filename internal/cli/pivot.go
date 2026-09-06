@@ -30,8 +30,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"path"
 	"sort"
 	"strings"
 	"time"
@@ -67,6 +65,11 @@ type pivotFlags struct {
 	DisableCache bool
 	Depth        int
 	ExcludeTests bool
+	// RepoRoot is set by runPivot after the repo resolves. It exists only so the
+	// GENERATED role can be decided by the file's own header, which the snapshot
+	// does not carry. Left empty, classification does no disk I/O at all, which is
+	// what keeps buildPivotResponse drivable from a test with no repository.
+	RepoRoot string
 }
 
 // pivotEdge is the single piece of evidence behind one verdict: the relation that
@@ -89,6 +92,11 @@ type pivotFile struct {
 	// file itself, 1 for a direct dependent, and so on up to the depth cap.
 	Distance int    `json:"distance"`
 	Language string `json:"language,omitempty"`
+	// Role is what kind of file this is (production, test, fixture, generated,
+	// vendored). It changes how a verdict should be read, not the verdict itself:
+	// a hundred at-risk test files in one package are one command to run, while
+	// one at-risk production file is a change someone has to make by hand.
+	Role string `json:"role"`
 	// Why is a one-line reading of the evidence, in the report's own voice.
 	Why string `json:"why"`
 	// Evidence is what Why is derived from. Never empty for a non-Safe verdict.
@@ -126,6 +134,9 @@ type pivotResponse struct {
 	Safe        []pivotFile `json:"safe"`
 
 	Counts pivotCounts `json:"counts"`
+	// RoleCounts is the whole tree broken down by file role, so a consumer can see
+	// the shape of the repository the verdicts were drawn from.
+	RoleCounts map[string]int `json:"role_counts,omitempty"`
 
 	// Unreached is the honest half of the answer: files the graph could not
 	// analyze for relationships, so their verdict is unknown rather than Safe.
@@ -264,6 +275,8 @@ func runPivot(ctx context.Context, opts Options, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	flags.RepoRoot = repo
 
 	totalStarted := time.Now()
 	indexStarted := totalStarted
@@ -473,6 +486,17 @@ func buildPivotResponse(snapshot sem.ProviderSnapshot, flags pivotFlags) pivotRe
 		response.UnreachedReason = "inventory-only language: the graph parses these files for structure but not for call or import relations, so their verdict is unknown rather than Safe"
 	}
 
+	// Roles are decided once, after the verdicts are final: a role never changes a
+	// verdict, it only decides how the finished report groups and ranks it.
+	response.RoleCounts = make(map[string]int, 6)
+	for _, entry := range verdicts {
+		entry.Role = classifyPivotRole(entry.Path, flags.RepoRoot)
+		response.RoleCounts[entry.Role]++
+	}
+	for _, filePath := range response.Unreached {
+		response.RoleCounts[classifyPivotRole(filePath, flags.RepoRoot)]++
+	}
+
 	for _, entry := range verdicts {
 		switch entry.Verdict {
 		case verdictInvalidated:
@@ -663,95 +687,6 @@ func attachPivotCheckpoint(ctx context.Context, repo, checkpointID string, respo
 	mark(response.AtRisk)
 	mark(response.Safe)
 	return nil
-}
-
-// writePivotText renders the report a developer reads. It leads with the verdict
-// counts, then the two sections that require action, each line carrying the evidence
-// that produced it. Safe files are counted rather than listed: the point of the
-// report is the work that is not safe.
-func writePivotText(out io.Writer, response pivotResponse) {
-	fmt.Fprintf(out, "Pivot: %s\n", strings.Join(response.Prohibited, ", "))
-	// Depth and index provenance belong to every run, not only committed ones: they are
-	// how a reader knows how far propagation was allowed to walk and whether the verdict
-	// came off a warm cache. A worktree run has no committed head, so name that state
-	// rather than dropping the line and the two facts travelling with it.
-	revision := "uncommitted worktree"
-	if response.Commit != "" {
-		revision = "at " + shortCommit(response.Commit)
-	}
-	fmt.Fprintf(out, "Repo %s %s | depth %d | index %s (%dms)\n",
-		path.Base(response.Repo), revision, response.MaxDepth,
-		cacheWord(response.IndexCacheHit), response.IndexLatencyMS)
-	fmt.Fprintf(out, "%d invalidated, %d at-risk, %d safe",
-		response.Counts.Invalidated, response.Counts.AtRisk, response.Counts.Safe)
-	if response.Counts.Unreached > 0 {
-		fmt.Fprintf(out, ", %d unreached", response.Counts.Unreached)
-	}
-	fmt.Fprintf(out, " (of %d files)\n", response.Counts.Total)
-	if response.ExcludeTests {
-		// Said out loud rather than left as a silently shorter list: an excluded
-		// file was never classified, which is not the same as coming back Safe.
-		fmt.Fprintf(out, "--exclude-tests dropped %d test file(s) before classification; they carry no verdict.\n",
-			response.Counts.ExcludedTests)
-	}
-
-	if response.Checkpoint != "" {
-		fmt.Fprintf(out, "\nCheckpoint %s (%s..%s) touched %d file(s):\n",
-			response.Checkpoint, shortCommit(response.CheckpointBase), shortCommit(response.CheckpointHead),
-			len(response.CheckpointFiles))
-		for _, file := range response.CheckpointFiles {
-			fmt.Fprintf(out, "- %s [%s] %d changed entities, %d dependents\n",
-				file.Path, file.Status, file.ChangedEntities, file.Dependents)
-		}
-	}
-
-	if len(response.Invalidated) == 0 {
-		fmt.Fprintf(out, "\nNothing invalidated: no file reaches %s in the graph.\n", strings.Join(response.Prohibited, " or "))
-		fmt.Fprintf(out, "Either the constraint does not bite here, or the dependency is named differently in this repo.\n")
-	} else {
-		fmt.Fprintf(out, "\nINVALIDATED (%d) — breaks the constraint, must be replaced:\n", len(response.Invalidated))
-		for _, file := range response.Invalidated {
-			writePivotFileLine(out, file)
-		}
-	}
-
-	if len(response.AtRisk) > 0 {
-		fmt.Fprintf(out, "\nAT-RISK (%d) — depends on invalidated code, rework and test in this order:\n", len(response.AtRisk))
-		for _, file := range response.AtRisk {
-			writePivotFileLine(out, file)
-		}
-	}
-
-	if len(response.Safe) > 0 {
-		fmt.Fprintf(out, "\nSAFE (%d) — no dependency path to invalidated code, leave alone.\n", len(response.Safe))
-	}
-	if len(response.Unreached) > 0 {
-		fmt.Fprintf(out, "\nUNREACHED (%d) — %s\n", len(response.Unreached), response.UnreachedReason)
-	}
-
-	// Static analysis reads source without running it, so a call made through an
-	// interface or reflection leaves no edge to follow. Saying so is not a
-	// disclaimer: a reader who trusts a Safe verdict absolutely will eventually
-	// ship a break this tool could never have seen.
-	fmt.Fprintf(out, "\nVerify before acting: Safe means no path was found, not that none exists.\n")
-	fmt.Fprintf(out, "Calls through interfaces, reflection, or generated code leave no edge to follow.\n")
-}
-
-func writePivotFileLine(out io.Writer, file pivotFile) {
-	marker := ""
-	if file.InCheckpoint {
-		marker = " *"
-	}
-	fmt.Fprintf(out, "- %s%s\n", file.Path, marker)
-	fmt.Fprintf(out, "    %s\n", file.Why)
-	for _, edge := range file.Evidence {
-		location := ""
-		if edge.Line > 0 {
-			location = fmt.Sprintf(":%d", edge.Line)
-		}
-		fmt.Fprintf(out, "    evidence: %s -> %s%s (confidence %.2f) %s\n",
-			edge.Relation, edge.Target, location, edge.Confidence, edge.Reason)
-	}
 }
 
 func shortCommit(commit string) string {
