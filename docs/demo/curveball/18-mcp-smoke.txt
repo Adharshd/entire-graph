@@ -1,0 +1,233 @@
+entire-graph-pivot MCP server -- smoke transcript
+=================================================
+
+Run against this repository with a binary built from this working tree:
+
+    ENTIRE_GRAPH_BIN=/tmp/eg python3 scripts/pivot-mcp.py
+
+Newline-delimited JSON-RPC 2.0 on stdio. Four developer tools and three
+product tools. The product tools are a rendering layer over the same analysis:
+they add no new evidence, they change who can read it.
+
+Responses below are the server's own output, not a description of it.
+
+==============================================================================
+--> request 1: initialize
+==============================================================================
+{
+  "protocolVersion": "2025-06-18",
+  "capabilities": {
+    "tools": {}
+  },
+  "serverInfo": {
+    "name": "entire-graph-pivot",
+    "version": "0.1.0"
+  },
+  "instructions": "PivotMap over MCP: analysis and verification for a requirement that changed after the code was written. The graph is evidence, not an oracle -- every answer states how well it is known. Anything not marked CONFIRMED must be checked against source before you act on it or report it done, and a verdict of CANNOT_VERIFY is never a pass."
+}
+
+==============================================================================
+--> request 2: tools/list -- seven tools, four developer and three product
+==============================================================================
+  pivot
+  pivot_verify
+  impact
+  capabilities
+  assess_product_constraint_change
+  explain_product_impact
+  prepare_engineering_discovery_brief
+
+  (full descriptions and input schemas are in the tools/list response;
+   each description carries the uncertainty rule so an agent that never
+   reads this repository still receives it)
+
+==============================================================================
+--> request 3: assess_product_constraint_change -- AMBIGUOUS TARGET, refuses to guess
+==============================================================================
+isError: False
+
+MULTIPLE POSSIBLE TARGETS -- no impact claim will be made until one is confirmed.
+
+Your description: "Security has told us we can no longer run external processes with exec anywhere near customer data."
+
+It matches 2 dependencies this repository declares. These mean different things and would give different answers, so choosing one for you would be guessing:
+
+  1. os/exec
+  2. run_shard
+
+Confirm which one is meant and call this tool again with that name in the description, or ask an engineer which of these implements the capability you have in mind.
+
+Refusing to pick is deliberate. The alternative is a confident, specific, wrong answer, which is the failure mode this tool exists to prevent.
+
+==============================================================================
+--> request 4: assess_product_constraint_change -- single target, full decision brief
+==============================================================================
+isError: False
+
+DECISION BRIEF
+  8 place(s) across 5 areas use os/exec directly, with 101 further place(s) needing re-checking afterwards.
+
+WHAT WE UNDERSTOOD
+  Your description: "Security says we can no longer use exec for anything touching customer data."
+  Technical target used: os/exec
+  This was matched against the dependencies this repository actually declares, not invented. Confirm it is the one you meant before this brief is used in a decision.
+
+SCOPE CLASS: Discovery required
+  Driven by: 8 direct use(s) found, but 92 file(s) were not assessed (31% of the analyzed set), so the picture is incomplete.
+  This is a shape, not a schedule. No estimate of effort or duration is offered, because structural analysis cannot see the things that actually determine either.
+
+PRODUCT AREAS DIRECTLY AFFECTED
+  internal/gitutil                         4 directly affected, 0 needing validation
+  cmd/graph-bench                          1 directly affected, 0 needing validation
+  internal/bench                           1 directly affected, 2 needing validation
+  internal/cli                             1 directly affected, 22 needing validation
+  internal/sem                             1 directly affected, 76 needing validation
+  These groupings are directories, not user-facing capabilities. A real capability map needs ownership metadata this repository does not carry, so it is not offered.
+
+THE WORK THAT MUST HAPPEN
+  8 place(s) use it directly and cannot stay as they are, of which 8 are in shipped production code.
+
+VALIDATION SCOPE
+  101 further place(s) depend on those and need re-checking once the direct uses are replaced. They break no rule themselves.
+  359 test file(s) were excluded before analysis and carry no finding either way.
+
+WHAT COULD NOT BE ASSESSED
+  92 file(s) were not assessed. Nothing was found in them because nothing could be looked for -- treat them as unexamined, not as clear.
+  Connections made at run time -- plugin interfaces, reflection, machine-generated code -- leave no trace for any static analysis. This applies even where coverage was complete.
+
+EVIDENCE AND CONFIDENCE
+  Evidence strength     Mostly inferred. Only 23 connection(s) were read directly from source, while 86 were matched by name. An engineer should confirm those before you rely on them. A further 5 came from files the analyzer could not fully read.
+  Analysis coverage     Partial. 92 file(s) could not be assessed -- either written in a language this analyzer reads for structure but not for connections, or files it failed to parse. Nothing was found in them because nothing could be looked for. Separately, connections made at run time -- through plugin interfaces, reflection, or machine-generated code -- leave no trace for any static analysis to follow. This bounds every statement above. You asked about production code only, so test and fixture files were removed before the analysis ran. They carry no finding here even if they use it.
+  Product interpretation Weakest of the three, and the one to confirm with an owner. The areas named in this brief are directories, not user-facing capabilities. Whether a directory corresponds to a customer journey is a judgement this tool cannot make, because the repository carries no ownership metadata.
+
+THE DECISION IN FRONT OF YOU
+  It is feasible in the sense that the work is bounded and named: 8 place(s) must change. Whether it is affordable is a scheduling question this analysis cannot answer.
+
+OPEN QUESTIONS SOMEONE MUST ANSWER
+  - Does the constraint cover test and internal tooling use, or only shipped production code?
+  - Is os/exec the right technical target for what you were told?
+  - Who can confirm what is in the files that could not be assessed?
+  - Which team owns the areas listed above? The mapping from directory to capability is the weakest link in this brief.
+
+This tool scopes decisions. It does not change code and cannot be asked to.
+
+--- structured_evidence (for follow-up questions; not for reading aloud) ---
+{
+  "vocabulary_note": "These labels are deliberately different from the engineering tool's own. They are chosen so a non-specialist cannot read a coverage gap as a clean result. Use them verbatim when answering follow-ups; do not substitute the engineering terms.",
+  "understood": {
+    "change_description": "Security says we can no longer use exec for anything touching customer data.",
+    "technical_target": "os/exec",
+    "match_quality": "segment match",
+    "requires_confirmation": true,
+    "candidates_considered": 168
+  },
+  "decision_class": {
+    "class": "Discovery required",
+    "driver": "8 direct use(s) found, but 92 file(s) were not assessed (31% of the analyzed set), so the picture is incomplete",
+    "effort_estimate": null
+  },
+  "counts": {
+    "Directly affected": 8,
+    "Needs engineering validation": 101,
+    "No impact found in analyzed code": 93,
+    "Not assessed": 92,
+    "excluded_from_analysis": 359,
+    "total_analyzed": 294
+  },
+  "areas": {
+    "internal/gitutil": {
+      "directly_affected": 4,
+      "needs_validation": 0,
+      "examples": [
+        "internal/gitutil/git.go",
+        "internal/gitutil/process_descendants_notwindows.go",
+        "internal/gitutil/process_job_notwindows.go",
+        "internal/gitutil/worktree_paths.go"
+      ]
+    },
+    "cmd/graph-bench": {
+      "directly_affected": 1,
+      "needs_validation": 0,
+      "examples": [
+        "cmd/graph-bench/main.go"
+      ]
+    },
+    "internal/bench": {
+      "directly_affected": 1,
+      "needs_validation": 2,
+      "examples": [
+        "internal/bench/worker.go"
+      ]
+    },
+    "internal/cli": {
+      "directly_affected": 1,
+      "needs_validation": 22,
+      "examples": [
+        "internal/cli/verify.go"
+      ]
+    },
+    "internal/sem": {
+      "directly_affected": 1,
+      "needs_validation": 76,
+      "examples": [
+        "internal/sem/search_verify.go"
+      ]
+    }
+  },
+  "areas_are": "directories, not a capability map; ownership metadata is absent",
+  "confidence": {
+    "evidence_strength": "Mostly inferred. Only 23 connection(s) were read directly from source, while 86 were matched by name. An engineer should confirm those before you rely on them. A further 5 came from files the analyzer could not fully read.",
+    "analysis_coverage": "Partial. 92 file(s) could not be assessed -- either written in a language this analyzer reads for structure but not for connections, or files it failed to parse. Nothing was found in them because nothing could be looked for. Separately, connections made at run time -- through plugin interfaces, reflection, or machine-generated code -- leave no trace for any static analysis to follow. This bounds every statement above. You asked about production code only, so test and fixture files were removed before the analysis ran. They carry no finding here even if they use it.",
+    "product_interpretation": "Weakest of the three, and the one to confirm with an owner. The areas named in this brief are directories, not user-facing capabilities. Whether a directory corresponds to a customer journey is a judgement this tool cannot make, because the repository carries no ownership metadata."
+  },
+  "next_step": "It is feasible in the sense that the work is bounded and named: 8 place(s) must change. Whether it is affordable is a scheduling question this analysis cannot answer.",
+  "can_modify_code": false
+}
+
+==============================================================================
+--> request 5: prepare_engineering_discovery_brief -- the handoff to engineering
+==============================================================================
+isError: False
+
+ENGINEERING DISCOVERY BRIEF: os/exec
+
+CONFIRMED TARGET
+  os/exec
+  Confirmed by the requester. If this is wrong, stop -- everything below is wrong with it.
+
+WHAT HAS TO CHANGE
+  8 place(s) in shipped production code use it directly.
+    - cmd/graph-bench/main.go
+    - internal/bench/worker.go
+    - internal/cli/verify.go
+    - internal/gitutil/git.go
+    - internal/gitutil/process_descendants_notwindows.go
+    - internal/gitutil/process_job_notwindows.go
+    - internal/gitutil/worktree_paths.go
+    - internal/sem/search_verify.go
+
+VALIDATION SCOPE
+  101 place(s) depend on the above and need re-checking after the direct uses are replaced.
+  Spread across 5 area(s): cmd/graph-bench, internal/bench, internal/cli, internal/gitutil, internal/sem
+
+WHAT NOBODY HAS LOOKED AT
+  92 file(s) were not assessed -- unreadable, or written in a language the analyzer indexes without following connections.
+  86 finding(s) rest on inferred connections rather than ones read directly from source. Open the cited line before relying on any of them.
+  Run-time connections through interfaces, reflection or generated code leave no trace for static analysis, so a clean result is never proof of absence.
+
+OPEN QUESTIONS FOR PRODUCT, LEGAL OR DESIGN
+  - Does the constraint cover test and internal tooling use, or only shipped production code?
+  - Is a like-for-like replacement acceptable, or must the capability be removed entirely?
+  - Is there a deadline that changes the approach (staged migration versus one change)?
+  - Who owns each affected area, and are they aware this is coming?
+
+THE TECHNICAL WORK ORDER
+  Engineering can reproduce this analysis and get the machine-readable work order with:
+    entire graph pivot --repo . --dependency os/exec --depth 2 --exclude-tests --format plan
+  That output carries one work item per file, its priority, the evidence behind it, and a flag on every item whose evidence needs confirming against source.
+
+SCOPE OF THIS BRIEF
+  This is a discovery brief, not an implementation instruction and not a schedule. It deliberately contains no estimate. Nothing here authorises changing code.
+
+  Note on scope: You asked about production code only, so test and fixture files were removed before the analysis ran. They carry no finding here even if they use it.
+
