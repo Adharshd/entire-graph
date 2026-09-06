@@ -1,0 +1,1139 @@
+**Direct answer first:** do **not** make a Databricks-hosted interpreter agent the critical path for this build on Free Edition. An external process can call Databricks Foundation Model APIs when a compatible endpoint/model is available and you have a workspace host plus Databricks API token, but Free Edition’s endpoint/model availability and quota limits make this an unreliable two-hour dependency. Treat it as an optional, manually invoked enrichment step—not something your deterministic remediation workflow requires to function. [docs.databricks](https://docs.databricks.com/aws/en/getting-started/free-edition-limitations)
+
+Your architecture is sensible **only if “three agents” really means two bounded LLM steps around a deterministic core**: policy interpretation before graph analysis, and code execution after a reviewed work order. Do not add a Databricks “supervisor” or conversational orchestration layer. The deterministic graph and post-change re-analysis should remain the authority.
+
+## Bottom-line architecture
+
+The best shape is a **human-gated deterministic pipeline**, not an autonomous multi-agent system:
+
+```text
+Natural-language policy
+        │
+        ▼
+Databricks Interpreter (optional, structured extraction only)
+        │
+        ▼
+Human approval / canonical dependency mapping lookup
+        │
+        ▼
+Offline Go CLI: PivotMap
+  - no network
+  - no model
+  - source-linked evidence
+  - JSON work order
+        │
+        ▼
+External coding agent: Executor
+  - edits direct violations only
+  - writes implementation evidence
+  - commits
+        │
+        ▼
+Offline Go CLI rerun
+  - invalidated count must decrease
+  - diff before vs. after
+  - no LLM grade
+        │
+        ▼
+Delta history / Databricks analytics
+  - optional, asynchronous
+```
+
+The key correction is this:
+
+- **Interpreter:** may propose identifiers.
+- **Canonical mapping or human reviewer:** authorizes identifiers.
+- **PivotMap:** establishes graph-supported impact facts.
+- **Executor:** makes constrained edits.
+- **Rerun:** independently verifies whether the direct detected violation was removed.
+
+Do not let the interpreter decide whether a library handles customer data, whether a policy applies to a package, or whether remediation is complete. Those are governance decisions or deterministic verification outcomes, respectively.
+
+## Best starting point
+
+**Single best starting point: call a Databricks Foundation Model API from a small Python script or local service, request JSON-only policy extraction, validate it with Pydantic/JSON Schema locally, and persist the input/output plus approval decision into a Delta table.**
+
+Why this is the best starting point:
+
+- It proves the only essential Databricks-specific part: externally callable hosted inference.
+- It avoids deploying a custom agent endpoint, Agent Bricks, Lakebase, Apps, multi-agent supervision, MCP, and retrieval infrastructure.
+- It gives you a real audit record.
+- It can feed your existing offline CLI with an exact package list.
+- If endpoint access, quota, auth, or model availability fails, your architecture can fall back to a manually approved mapping file without breaking the core workflow.
+
+Databricks Foundation Model APIs are documented as OpenAI-compatible and callable through the OpenAI client, REST API, Foundation Models APIs SDK, or MLflow Deployments SDK; requests authenticate using a Databricks API token. [docs.databricks](https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/)
+
+***
+
+# A. Official Databricks documentation
+
+## Essential sources
+
+| Title | Author/org | Direct URL | Date | Why it matters | Free Edition |
+|---|---|---|---|---|---|
+| Databricks Free Edition limitations | Databricks | [docs.databricks.com/aws/en/getting-started/free-edition-limitations](https://docs.databricks.com/aws/en/getting-started/free-edition-limitations) | Current documentation; search result dated Jul. 20, 2026 | This is the hard constraint document: serverless-only, quota-limited compute, model-serving limitations, no GPU endpoints, no provisioned throughput, and one Lakebase project. | **WORKS, with material limits**  [docs.databricks](https://docs.databricks.com/aws/en/getting-started/free-edition-limitations) |
+| Databricks Free Edition | Databricks | [docs.databricks.com/aws/en/getting-started/free-edition](https://docs.databricks.com/aws/en/getting-started/free-edition) | Current documentation; search result dated Jul. 28, 2026 | Official entry point confirming Free Edition can build AI apps and agents, subject to the limitations page. | **WORKS, limited**  [docs.databricks](https://docs.databricks.com/aws/en/getting-started/free-edition) |
+| Foundation Model APIs | Databricks | [docs.databricks.com/aws/en/machine-learning/foundation-model-apis/](https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/) | Current documentation; search result dated Aug. 28, 2026 | The primary source for calling hosted foundation models. It explicitly states OpenAI compatibility and API-token authentication. | **UNCLEAR—model and endpoint availability are quota/region dependent**  [docs.databricks](https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/) |
+| Foundation Model APIs limits and quotas | Databricks | [docs.databricks.com/aws/en/machine-learning/foundation-model-apis/limits](https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/limits) | Current documentation; search result dated Sep. 4, 2026 | Use this to identify payload, request, token, and quota ceilings before making hosted inference part of CI. | **UNCLEAR—Free Edition quotas can be materially smaller or exhaustible**  [docs.databricks](https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/limits) |
+| Model Serving limits and regions | Databricks | [docs.databricks.com/aws/en/machine-learning/model-serving/model-serving-limits](https://docs.databricks.com/aws/en/machine-learning/model-serving/model-serving-limits) | Current documentation; search result dated Aug. 12, 2026 | Important distinction: custom/agent endpoint limits differ from Foundation Model API limits. Do not assume an available general model means custom serving is practical. | **WORKS only within Free limits; custom/agent serving is risky**  [docs.databricks](https://docs.databricks.com/aws/en/machine-learning/model-serving/model-serving-limits) |
+| Mosaic AI Agent Framework and Agent Evaluation GA release note | Databricks | [docs.databricks.com/gcp/en/release-notes/product/2025/march](https://docs.databricks.com/gcp/en/release-notes/product/2025/march) | Mar. 31, 2025 | Confirms Mosaic AI Agent Framework and Mosaic AI Agent Evaluation became GA. This is the mature path if you later need deployed custom agents, tracing, and evaluation. | **UNCLEAR—framework use may work, but deployed serving/quotas are the limiting factor**  [docs.databricks](https://docs.databricks.com/gcp/en/release-notes/product/2025/march) |
+| Agent Bricks | Databricks | [docs.databricks.com/aws/en/generative-ai/agent-bricks](https://docs.databricks.com/aws/en/generative-ai/agent-bricks) | Current documentation; search result dated Aug. 3, 2026 | Current product overview for the higher-level agent authoring/governance surface. It is more than you need for a one-purpose policy-to-package extractor. | **UNCLEAR—availability and quota are workspace/model dependent**  [docs.databricks](https://docs.databricks.com/aws/en/generative-ai/agent-bricks) |
+| Build custom agents | Databricks | [docs.databricks.com/aws/en/agents/custom-agents/build-agents](https://docs.databricks.com/aws/en/agents/custom-agents/build-agents) | Current documentation; search result dated Aug. 3, 2026 | Current route for custom agents on Databricks, including models, tools, and serving concepts. | **UNCLEAR—possible but not a two-hour Free Edition bet**  [docs.databricks](https://docs.databricks.com/aws/en/agents/custom-agents/build-agents) |
+| MLflow Tracing | Databricks | [docs.databricks.com/aws/en/mlflow3/genai/tracing/](https://docs.databricks.com/aws/en/mlflow3/genai/tracing/) | Current documentation; search result dated Jul. 15, 2026 | Primary source for recording inputs, outputs, intermediate steps, and metadata in GenAI applications and agents. | **WORKS for development; production-scale retention requires setup**  [docs.databricks](https://docs.databricks.com/aws/en/mlflow3/genai/tracing/) |
+| Store OpenTelemetry traces in Unity Catalog | Databricks | [docs.databricks.com/aws/en/mlflow3/genai/tracing/trace-unity-catalog](https://docs.databricks.com/aws/en/mlflow3/genai/tracing/trace-unity-catalog) | Current documentation; search result dated Sep. 1, 2026 | Traces can land in Unity Catalog OTel Delta tables, governed by UC and queryable through SQL; this is the strongest audit persistence option. | **UNCLEAR—requires permissions/configuration; not first build step**  [docs.databricks](https://docs.databricks.com/aws/en/mlflow3/genai/tracing/trace-unity-catalog) |
+| Trace agents deployed outside Databricks | Databricks | [docs.databricks.com/aws/en/mlflow3/genai/tracing/prod-tracing-external](https://docs.databricks.com/aws/en/mlflow3/genai/tracing/prod-tracing-external) | Current documentation; search result dated Aug. 5, 2026 | Relevant if your executor remains external: MLflow can receive traces from external agents into a Databricks experiment. | **UNCLEAR—technically viable, but auth/setup is nontrivial**  [docs.databricks](https://docs.databricks.com/aws/en/mlflow3/genai/tracing/prod-tracing-external) |
+| Query OpenTelemetry traces stored in Unity Catalog | Databricks | [docs.databricks.com/aws/en/mlflow3/genai/tracing/observe-with-traces/query-dbsql](https://docs.databricks.com/aws/en/mlflow3/genai/tracing/observe-with-traces/query-dbsql) | Current documentation; search result dated Aug. 3, 2026 | Makes provenance queryable through MLflow SDK or Databricks SQL once stored as UC OTel data. | **WORKS if trace storage is configured**  [docs.databricks](https://docs.databricks.com/aws/en/mlflow3/genai/tracing/observe-with-traces/query-dbsql) |
+| Create agent tools using Unity Catalog functions | Databricks | [docs.databricks.com/aws/en/agents/custom-agents/create-custom-tool](https://docs.databricks.com/aws/en/agents/custom-agents/create-custom-tool) | Current documentation; search result dated Aug. 3, 2026 | Explains UC functions as governed agent tools and publishes the managed MCP URL shape for function tools. | **WORKS in principle; not needed for initial interpreter**  [docs.databricks](https://docs.databricks.com/aws/en/agents/custom-agents/create-custom-tool) |
+| Unity Catalog UDFs | Databricks | [docs.databricks.com/aws/en/udf/unity-catalog](https://docs.databricks.com/aws/en/udf/unity-catalog) | Current documentation; search result dated Aug. 13, 2026 | Governing and sharing SQL/Python functions across environments; useful for canonical mapping lookups and policy validation. | **WORKS**  [docs.databricks](https://docs.databricks.com/aws/en/udf/unity-catalog) |
+| Model Context Protocol on Databricks | Databricks | [docs.databricks.com/aws/en/generative-ai/mcp](https://docs.databricks.com/aws/en/generative-ai/mcp) | Current documentation; search result dated Jun. 1, 2026 | Documents managed, external, and custom MCP support, including UC authorization and connection handling. | **UNCLEAR—feature availability and client compatibility must be checked in your workspace**  [docs.databricks](https://docs.databricks.com/aws/en/generative-ai/mcp) |
+| Genie API reference | Databricks | [docs.databricks.com/api/genie/v1](https://docs.databricks.com/api/genie/v1) | Current API reference | Confirms programmatic Genie conversation support and the `genie` API scope. | **UNCLEAR—check Free Edition feature entitlement**  [docs.databricks](https://docs.databricks.com/api/genie/v1) |
+| Genie Space API reference | Databricks | [docs.databricks.com/api/genie/v1/space](https://docs.databricks.com/api/genie/v1/space) | Current API reference | Provides programmatic management of Genie Spaces/Agents and their serialized definition. | **UNCLEAR—do not build against this in the first two hours**  [docs.databricks](https://docs.databricks.com/api/genie/v1/space) |
+| Agent state and memory | Databricks | [docs.databricks.com/aws/en/oltp/projects/state-management](https://docs.databricks.com/aws/en/oltp/projects/state-management) | Current documentation; search result dated Aug. 28, 2026 | Defines Lakebase as managed Postgres for short/long-term agent memory and describes supported deployment targets. | **WORKS in quota-limited form, but unnecessary here**  [docs.databricks](https://docs.databricks.com/aws/en/oltp/projects/state-management) |
+
+## What has been superseded
+
+- **“Mosaic AI Agent Framework” is still a valid technical capability**, and it is GA; it is not obsolete. But Databricks’ current product taxonomy prominently groups agent building under broader “agents” and Agent Bricks documentation. For code-first custom behavior, use the current custom-agent/Agent Framework documentation rather than older RAG-only examples. [docs.databricks](https://docs.databricks.com/gcp/en/release-notes/product/2025/march)
+- **“Genie Spaces” is being renamed to “Genie Agents.”** Existing API surfaces still reference `spaces` and `agent_id`; do not be surprised by mixed terminology in docs and APIs. Genie Conversation APIs became GA in 2026. [docs.databricks](https://docs.databricks.com/gcp/en/ai-bi/release-notes/2026)
+- **UC Functions as primary agent-tool packaging may be less strategic for new builds than MCP.** Databricks documentation says it recommends MCP tools for most new agent-tool use cases, though UC functions remain a sound fit for known structured retrieval and deterministic validation functions. [docs.databricks](https://docs.databricks.com/gcp/en/generative-ai/agent-framework/agent-tool)
+
+***
+
+# B. Primary announcements
+
+| Title | Author/org | Direct URL | Date | Why it matters | Free Edition |
+|---|---|---|---|---|---|
+| Databricks Launches Agent Bricks: A New Approach to Building AI Agents | Databricks | [databricks.com/company/newsroom/press-releases/databricks-launches-agent-bricks-new-approach-building-ai-agents](https://www.databricks.com/company/newsroom/press-releases/databricks-launches-agent-bricks-new-approach-building-ai-agents) | Jun. 11, 2025 | The original announcement: Agent Bricks launched in Beta and included structured extraction, knowledge assistance, transformation, and multi-agent orchestration as target categories. | **UNCLEAR**  [databricks](https://www.databricks.com/company/newsroom/press-releases/databricks-launches-agent-bricks-new-approach-building-ai-agents) |
+| Databricks Announcements at Data + AI Summit 2025 | Databricks | [databricks.com/blog/mosaic-ai-announcements-data-ai-summit-2025](https://www.databricks.com/blog/mosaic-ai-announcements-data-ai-summit-2025) | Jun. 2025; search result indexed Nov. 6, 2025 | Broader announcement context for Agent Bricks, MLflow 3.0, AI Functions, and AI Gateway. | **UNCLEAR**  [databricks](https://www.databricks.com/blog/mosaic-ai-announcements-data-ai-summit-2025) |
+| Databricks Lakebase is now Generally Available | Databricks | [databricks.com/blog/databricks-lakebase-generally-available](https://www.databricks.com/blog/databricks-lakebase-generally-available) | Mar. 2, 2026 | Defines Lakebase as operational storage for agent state/memory and notes GA on AWS, beta on Azure, with regional availability constraints. | **WORKS in limited Free form only if available in your workspace/region**  [databricks](https://www.databricks.com/blog/databricks-lakebase-generally-available) |
+| Announcing Public Preview of AI/BI Genie Conversation APIs | Databricks | [databricks.com/blog/genie-conversation-apis-public-preview](https://www.databricks.com/blog/genie-conversation-apis-public-preview) | Nov. 3, 2025 | The right primary announcement for embedding Genie conversations in Apps, Slack, Teams, or other agents; later release notes indicate the API became GA. | **UNCLEAR**  [databricks](https://www.databricks.com/blog/genie-conversation-apis-public-preview) |
+| Mosaic AI Agent Framework and Mosaic AI Agent Evaluation GA | Databricks | [docs.databricks.com/gcp/en/release-notes/product/2025/march](https://docs.databricks.com/gcp/en/release-notes/product/2025/march) | Mar. 31, 2025 | Official GA confirmation for framework and evaluation. | **UNCLEAR**  [docs.databricks](https://docs.databricks.com/gcp/en/release-notes/product/2025/march) |
+| Model Context Protocol on Databricks | Databricks | [docs.databricks.com/aws/en/generative-ai/mcp](https://docs.databricks.com/aws/en/generative-ai/mcp) | Current documentation; search result dated Jun. 1, 2026 | Official platform direction for interoperable agent tools and governed access. | **UNCLEAR**  [docs.databricks](https://docs.databricks.com/aws/en/generative-ai/mcp) |
+
+***
+
+# C. End-to-end tutorials and reference architecture
+
+| Title | Author/org | Direct URL | Date | Why it matters | Free Edition |
+|---|---|---|---|---|---|
+| MLflow 3.0 generative AI workflow | Databricks | [docs.databricks.com/aws/en/mlflow/mlflow3-genai-workflow](https://docs.databricks.com/aws/en/mlflow/mlflow3-genai-workflow) | May 29, 2025 | A concrete tutorial for tracing and evaluating a LangChain tool-calling agent, then serving it. It assumes Databricks model-serving capability, so it is not the minimum path. | **UNCLEAR—may exceed Free Edition time/quota budget**  [docs.databricks](https://docs.databricks.com/aws/en/mlflow/mlflow3-genai-workflow) |
+| Trace agents deployed on Databricks | Databricks | [docs.databricks.com/aws/en/mlflow3/genai/tracing/prod-tracing](https://docs.databricks.com/aws/en/mlflow3/genai/tracing/prod-tracing) | Current documentation; search result dated Jul. 28, 2026 | Shows deployment plus automatic tracing and explains the UC trace-location setup. | **NEEDS PAID for production-like use; Free can prototype only**  [docs.databricks](https://docs.databricks.com/aws/en/mlflow3/genai/tracing/prod-tracing) |
+| Trace agents deployed outside Databricks | Databricks | [docs.databricks.com/aws/en/mlflow3/genai/tracing/prod-tracing-external](https://docs.databricks.com/aws/en/mlflow3/genai/tracing/prod-tracing-external) | Current documentation; search result dated Aug. 5, 2026 | Best conceptual reference if the executor is an external coding agent and you want centralized observability. | **UNCLEAR—auth/tracing setup is likely too slow for a two-hour build**  [docs.databricks](https://docs.databricks.com/aws/en/mlflow3/genai/tracing/prod-tracing-external) |
+| Create custom AI agent tools with Unity Catalog functions | Databricks | [docs.databricks.com/en/generative-ai/agent-framework/create-custom-tool.html](https://docs.databricks.com/en/generative-ai/agent-framework/create-custom-tool.html) | Jan. 31, 2025 | Shows `UCFunctionToolkit` and function-backed tools; useful only after you have a working interpreter. | **WORKS, but not your first implementation**  [docs.databricks](https://docs.databricks.com/en/generative-ai/agent-framework/create-custom-tool.html) |
+| LangChain and LangGraph with Unity Catalog functions | Databricks | [docs.databricks.com/aws/en/generative-ai/agent-framework/langchain-uc-integration](https://docs.databricks.com/aws/en/generative-ai/agent-framework/langchain-uc-integration) | Jun. 24, 2026 | Reference for wiring governed UC tools into LangChain/LangGraph. This is integration plumbing, not a reason to adopt orchestration for your simple pipeline. | **UNCLEAR—requires packages, credentials, and a working compute context**  [docs.databricks](https://docs.databricks.com/aws/en/generative-ai/agent-framework/langchain-uc-integration) |
+| Integrate Unity Catalog tools with third-party AI frameworks | Databricks | [docs.databricks.com/aws/en/agents/custom-agents/unity-catalog-tool-integration](https://docs.databricks.com/aws/en/agents/custom-agents/unity-catalog-tool-integration) | Jul. 28, 2026 | Explicitly covers use from LangChain, LlamaIndex, OpenAI, and Anthropic integrations. | **UNCLEAR**  [docs.databricks](https://docs.databricks.com/aws/en/agents/custom-agents/unity-catalog-tool-integration) |
+
+### Assumed compute caveat
+
+Most “end-to-end agent” tutorials implicitly assume more than a Free Edition proof-of-concept:
+
+- A model endpoint or available Foundation Model API.
+- An experiment and permissions sufficient to log traces.
+- Often a serving endpoint for deployment.
+- A workspace region where the model and relevant preview/GA feature are available.
+- Enough quota that retries and first-run initialization do not exhaust the day’s allocation.
+
+For your architecture, begin with one **external client → Foundation Model API** invocation, no custom serving endpoint and no deployed agent.
+
+***
+
+# D. Working code, repositories, accelerators, notebooks
+
+The public source material returned by the available search does not expose a single official, current repository specifically implementing your exact “natural language policy → package identifiers → deterministic graph CLI → coding agent → deterministic verification” workflow. Do not claim one exists unless you independently inspect and validate it.
+
+The nearest official, working-code references are documentation examples rather than a complete solution accelerator.
+
+| Title | Author/org | Direct URL | Date | Why it matters | Free Edition |
+|---|---|---|---|---|---|
+| Unity Catalog Function Toolkit example | Databricks | [docs.databricks.com/en/generative-ai/agent-framework/create-custom-tool.html](https://docs.databricks.com/en/generative-ai/agent-framework/create-custom-tool.html) | Jan. 31, 2025 | Includes Python examples creating and loading UC functions as agent tools. Treat documentation sample code according to the documentation site’s applicable terms; do not assume a separate OSS license. | **WORKS, but not needed initially**  [docs.databricks](https://docs.databricks.com/en/generative-ai/agent-framework/create-custom-tool.html) |
+| MLflow 3.0 Generative AI workflow notebook/tutorial | Databricks | [docs.databricks.com/aws/en/mlflow/mlflow3-genai-workflow](https://docs.databricks.com/aws/en/mlflow/mlflow3-genai-workflow) | May 29, 2025 | Includes a practical LangChain tracing/evaluation workflow. It is a learning reference, not a drop-in architecture for your offline CLI. | **UNCLEAR**  [docs.databricks](https://docs.databricks.com/aws/en/mlflow/mlflow3-genai-workflow) |
+| MultiAgentBench / MARBLE | MultiAgentBench authors | [github.com/MultiagentBench/MARBLE](https://github.com/MultiagentBench/MARBLE) | Refer to repository history; paper dated Mar. 3, 2025 | Useful for benchmarking coordination topology and evaluating whether multi-agent structure earns its complexity. Confirm the repository license in its `LICENSE` file before reuse. | **WORKS locally; not Databricks-specific**  [arxiv](https://arxiv.org/abs/2503.01935) |
+| External-agent integration source | Entire | [github.com/entireio/external-agents](https://github.com/entireio/external-agents) | Current repository | Relevant on the executor side: a coding agent can be integrated with Entire separately from Databricks. Check repository license and current README before reuse. | **Not a Databricks feature**  [github](https://github.com/entireio/external-agents) |
+
+### Recommended implementation artifact
+
+Rather than hunt for a large accelerator, build three tiny, inspectable assets:
+
+1. `policy_schema.json` — strict contract for interpreter output.
+2. `interpret_policy.py` — local caller of the hosted model, schema validation, audit write.
+3. `canonical_dependency_mapping` Delta table or JSON file — reviewer-approved policy/domain/package mappings.
+
+That is more valuable than adopting an opaque “agent accelerator” that introduces retrieval, vector search, serving, and orchestration you do not need.
+
+***
+
+# E. Critical analysis and honest post-mortems
+
+| Title | Author/org | Direct URL | Date | Why it matters | Free Edition |
+|---|---|---|---|---|---|
+| Why Do Multiagent Systems Fail? | ICLR 2025 / research authors | [iclr.cc/virtual/2025/33314](https://iclr.cc/virtual/2025/33314) | 2025 | Strong primary research signal: across five multi-agent systems and 150+ tasks, gains were minimal relative to single-agent frameworks; identifies specification, organization, coordination, and verification failures. | **Not applicable; architecture evidence**  [iclr](https://iclr.cc/virtual/2025/33314) |
+| Why Do Multi-Agent LLM Systems Fail? | Research authors | [arxiv.org/html/2503.13657v1](https://arxiv.org/html/2503.13657v1) | 2025 | Open version of the failure-taxonomy research; use it to justify strict contracts and deterministic verification. | **Not applicable**  [arxiv](https://arxiv.org/html/2503.13657v1) |
+| MAST: Multi-Agent System Failure Taxonomy | UC Berkeley project site / research authors | [sites.google.com/berkeley.edu/mast](https://sites.google.com/berkeley.edu/mast) | 2025 | Summarizes the failure taxonomy: specification problems, inter-agent misalignment, and task-verification failures. | **Not applicable**  [sites.google](https://sites.google.com/berkeley.edu/mast) |
+| Do Multi-Agents Solve Better Than Single? Evaluating Agentic Systems | EACL SRW authors | [aclanthology.org/2026.eacl-srw.4.pdf](https://aclanthology.org/2026.eacl-srw.4.pdf) | 2026 | Nuanced counterweight: multi-agent decomposition can help open-source models, but benefits for stronger proprietary systems can be modest. | **Not applicable**  [aclanthology](https://aclanthology.org/2026.eacl-srw.4.pdf) |
+| Why Multi-Agent LLM Systems Fail & How to Fix Them | Redis | [redis.io/blog/why-multi-agent-llm-systems-fail/](https://redis.io/blog/why-multi-agent-llm-systems-fail/) | Apr. 23, 2026 | Industry critical analysis of stale state, error compounding, context rot, and coordination overhead; use it as operational—not peer-reviewed—guidance. | **Not applicable**  [redis](https://redis.io/blog/why-multi-agent-llm-systems-fail/) |
+| A Comprehensive Benchmark to Evaluate Agent Collaboration and Competition | Research authors | [arxiv.org/html/2509.10769v1](https://arxiv.org/html/2509.10769v1) | 2025 | Shows results depend heavily on agent architecture/model/task; no universal claim that multi-agent is better is defensible. | **Not applicable**  [arxiv](https://arxiv.org/html/2509.10769v1) |
+| Single-Agent LLMs Outperform Multi-Agent Systems on Multi-Hop Reasoning Under Equal Thinking Token Budgets | Research authors | [arxiv.org/html/2604.02460v1](https://arxiv.org/html/2604.02460v1) | 2026 preprint | Argues that when thinking-token budgets are held constant, single agents can match or exceed multi-agent designs on multi-hop reasoning. Treat it as a preprint, not settled evidence. | **Not applicable**  [arxiv](https://arxiv.org/html/2604.02460v1) |
+
+### What the evidence implies for your design
+
+Your use case avoids the worst form of multi-agent coordination because the agents should not deliberate, negotiate, or share mutable reasoning state.
+
+Use a **linear, typed, durable handoff**:
+
+```text
+Interpreter output:
+  policy_interpretation/v1 JSON
+
+PivotMap output:
+  pivot_work_order/v1 JSON
+
+Executor output:
+  remediation_execution/v1 JSON
+
+Verifier output:
+  pivot_verification/v1 JSON
+```
+
+Each handoff must include:
+
+- `schema_version`
+- `request_id`
+- `repository`
+- `commit_sha`
+- `tool_version`
+- `input_hash`
+- `created_at`
+- `actor`
+- `policy_text`
+- `approved_identifiers`
+- `confidence`
+- `known_unknowns`
+- `source_evidence`
+- `validation_commands`
+- `result`
+
+This makes the architecture closer to a reliable distributed workflow than a chat among autonomous agents.
+
+***
+
+# F. Videos and conference talks
+
+The search results available here did not return direct, verifiable video or conference-talk URLs with speaker names for the narrow combination of Agent Bricks, MLflow 3 tracing, MCP, Genie APIs, and Lakebase. I will not fabricate a video catalog.
+
+The closest verifiable conference/announcement sources are:
+
+| Title | Author/org | Direct URL | Date | Why it matters | Free Edition |
+|---|---|---|---|---|---|
+| Databricks Launches Agent Bricks: A New Approach to Building AI Agents | Databricks / Data + AI Summit | [databricks.com/company/newsroom/press-releases/databricks-launches-agent-bricks-new-approach-building-ai-agents](https://www.databricks.com/company/newsroom/press-releases/databricks-launches-agent-bricks-new-approach-building-ai-agents) | Jun. 11, 2025 | Official DAIS announcement source; use it instead of unverified event-video links. | **UNCLEAR**  [databricks](https://www.databricks.com/company/newsroom/press-releases/databricks-launches-agent-bricks-new-approach-building-ai-agents) |
+| Databricks announcements at Data + AI Summit 2025 | Databricks | [databricks.com/blog/mosaic-ai-announcements-data-ai-summit-2025](https://www.databricks.com/blog/mosaic-ai-announcements-data-ai-summit-2025) | 2025 | Consolidated written event context for Agent Bricks and MLflow 3.0. | **UNCLEAR**  [databricks](https://www.databricks.com/blog/mosaic-ai-announcements-data-ai-summit-2025) |
+
+***
+
+# G. Multi-agent orchestration research
+
+## Official Databricks support
+
+Databricks supports building custom agents and integrating tools, including MCP, Unity Catalog functions, and third-party authoring libraries. It also documents integrations with LangChain/LangGraph and OpenAI/Anthropic tool patterns. [docs.databricks](https://docs.databricks.com/aws/en/generative-ai/mcp)
+
+However, that does **not** mean your system needs a native multi-agent supervisor.
+
+### What is sensible
+
+Use a fixed state machine:
+
+```text
+PENDING_INTERPRETATION
+  → AWAITING_HUMAN_APPROVAL
+  → ANALYZED
+  → AWAITING_EXECUTION
+  → EXECUTED
+  → VERIFIED
+  → CLOSED | ESCALATED
+```
+
+The “orchestrator” can be ordinary workflow code, a CI pipeline, or a Databricks Workflow/job later. It does not need an LLM.
+
+### What is not sensible
+
+Do not use:
+
+- An LLM supervisor to decide whether the policy is valid.
+- An LLM to select which direct violation should be changed.
+- An LLM to evaluate whether the executor’s change passes policy.
+- A debate between interpreter and executor.
+- A multi-agent memory layer for a one-shot policy interpretation.
+
+Those add non-determinism where you already have better controls: reviewer approval, static evidence, tests, and independent post-change analysis.
+
+## MCP and A2A
+
+### MCP
+
+MCP is relevant, but not essential for your first build.
+
+Databricks documents MCP support for connecting agents to tools, data, and workflows. Managed and external MCP servers can use Unity Catalog permissions, and UC functions can be surfaced through a managed MCP endpoint shaped like:
+
+```text
+https://<workspace-hostname>/api/2.0/mcp/functions/<catalog>/<schema>
+```
+
+A specific function may be appended to that path. [docs.databricks](https://docs.databricks.com/aws/en/agents/custom-agents/create-custom-tool)
+
+A reasonable future MCP tool would be:
+
+```text
+resolve_policy_packages(
+  policy_text: string,
+  repository_language: string,
+  ecosystem: string
+) -> {
+  candidates: [...],
+  canonical_matches: [...],
+  review_required: boolean
+}
+```
+
+But for your architecture, **the local CLI should not become an MCP tool that makes it callable by arbitrary agents unless you preserve its local/no-egress boundary and access controls**. The executor can simply read a plan file.
+
+### A2A
+
+I found no official, verifiable Databricks documentation in the available search results establishing a general Agent-to-Agent protocol as the recommended interoperability layer for an external coding agent and a Databricks agent.
+
+Use:
+
+- JSON artifacts for durable workflow handoffs.
+- MCP for tool access when it materially helps.
+- Standard HTTPS/REST for invoking models or APIs.
+- Git commits and Entire checkpoints for executor provenance.
+
+Do not claim A2A interoperability unless you identify a current official product document for your cloud/workspace and validate feature access.
+
+## LangGraph, OpenAI Agents SDK, CrewAI
+
+| Framework | Fit for your architecture | Databricks relevance | Recommendation |
+|---|---|---|---|
+| Native Agent Framework / custom agent | Good if you later deploy a governed interpreter with tracing, tools, evaluations, and serving | GA framework/evaluation and integrated MLflow/UC governance | Use only after the simple external model-call proof works |
+| LangGraph | Technically compatible, especially if you later need resumable state or complex human approval | Databricks documents LangChain/LangGraph integration with UC tools | Overkill for one interpreter step |
+| OpenAI Agents SDK | Can use compatible hosted model APIs and typed tools | Lakebase docs mention Apps support for OpenAI Agents SDK-backed memory | Unnecessary unless you already standardize on it |
+| CrewAI | Possible through generic model/API connectivity | No compelling Databricks-native advantage surfaced here | Avoid for this use case |
+| Agent Bricks | Useful for enterprise-supported optimized agents and richer data-connected tasks | Current platform product for agent construction/governance | Avoid for a two-hour single-purpose extraction agent |
+
+The native framework is preferable only when you need Databricks-native deployment, trace/evaluation workflows, governed data tools, and lifecycle controls. For a single structured classification call, it is complexity without proportional benefit.
+
+***
+
+# H. Community and practitioner concerns
+
+The returned search results did not provide verifiable community threads specifically documenting Free Edition quota pain, authentication friction, latency, and model endpoint cost surprises. I will not fabricate thread links.
+
+The official Free Edition limitations page is the reliable source for the key operational risk: Free Edition is quota-limited and serverless-only, with constrained model-serving capabilities, model availability limits, no GPU serving endpoints, and no provisioned throughput. Once quota is exhausted, your ability to continue may be affected for the rest of the quota period. [docs.databricks](https://docs.databricks.com/aws/en/getting-started/free-edition-limitations)
+
+For practitioner-oriented caution, the Redis analysis is relevant but is not Databricks-specific: multi-agent systems introduce state staleness, error compounding, context rot, communication cost, and coordination latency; its claims should be treated as operational guidance rather than platform documentation. [redis](https://redis.io/blog/why-multi-agent-llm-systems-fail/)
+
+## Capability matrix: Free Edition hard filter
+
+| Capability | Free Edition status | Practical answer |
+|---|---|---|
+| External process calls a hosted Databricks model | **UNCLEAR, but technically plausible** | Foundation Model APIs use workspace/API-token auth and OpenAI-compatible clients. The unresolved part is whether your specific Free workspace, region, model, and quota allow it at the moment you need it. Validate with one curl/Python call before designing around it.  [docs.databricks](https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/) |
+| Foundation Model API experimentation | **WORKS, subject to model availability/quota** | Free Edition says it supports experimenting with foundation models, but its limitations page warns model/endpoint availability is constrained.  [docs.databricks](https://docs.databricks.com/aws/en/getting-started/free-edition) |
+| Custom Model Serving endpoint | **UNCLEAR / likely poor fit** | Free Edition has limits on active endpoints and excludes GPU/provisioned throughput. A custom agent endpoint is too much infrastructure for this architecture.  [docs.databricks](https://docs.databricks.com/aws/en/getting-started/free-edition-limitations) |
+| Mosaic AI Agent Framework authoring | **WORKS in principle** | Framework is GA, but deployment and serving are the risk. Use it only after proving simple model access.  [docs.databricks](https://docs.databricks.com/gcp/en/release-notes/product/2025/march) |
+| Agent Bricks | **UNCLEAR** | Product is real, but access/entitlements/model capacity can vary. Not suitable as the first Free Edition build dependency.  [docs.databricks](https://docs.databricks.com/aws/en/generative-ai/agent-bricks) |
+| MLflow experiment tracing | **WORKS** | Use experiment-based traces first; UC-backed traces are stronger for durable audit but require more configuration.  [docs.databricks](https://docs.databricks.com/aws/en/mlflow3/genai/tracing/) |
+| UC-backed OTel trace tables | **UNCLEAR** | Supported and recommended for production, but not required for a proof-of-concept and may require setup/permissions.  [docs.databricks](https://docs.databricks.com/aws/en/mlflow3/genai/tracing/trace-unity-catalog) |
+| Delta tables for historical work orders | **WORKS** | This is one of the most realistic Free Edition uses: append structured JSON-derived rows and query them with serverless SQL.  [docs.databricks](https://docs.databricks.com/aws/en/getting-started/free-edition) |
+| Databricks SQL analytics over work-order history | **WORKS, quota-limited** | Use the available serverless SQL warehouse, but avoid expensive repeated scans.  [docs.databricks](https://docs.databricks.com/aws/en/getting-started/free-edition-limitations) |
+| Genie / Genie Agents over history | **UNCLEAR** | APIs exist and conversation APIs are GA, but feature entitlement and Free Edition limits need live validation. It is not needed for first value.  [docs.databricks](https://docs.databricks.com/api/genie/v1) |
+| Lakebase | **WORKS, limited, but unnecessary** | One project and scale-to-zero are documented for Free Edition; agent memory is not needed for stateless policy interpretation.  [docs.databricks](https://docs.databricks.com/aws/en/getting-started/free-edition-limitations) |
+| Databricks Apps reviewer UI | **WORKS, limited** | Free Edition has a limited Apps allotment with idle auto-stop per your stated constraints; a small review UI is feasible after the core works. | 
+| MCP tool exposure | **UNCLEAR** | Official support exists, but verify client, OAuth/PAT compatibility, entitlement, and workspace feature availability.  [docs.databricks](https://docs.databricks.com/aws/en/generative-ai/mcp) |
+| A2A for external coding agent ↔ Databricks agent | **UNCLEAR / do not depend on it** | No verified official A2A basis surfaced here. Use files/REST/MCP instead. |
+
+## External invocation: exact practical model
+
+The documented model-call premise is:
+
+1. Identify your Databricks workspace host:
+   ```text
+   https://<workspace-hostname>
+   ```
+
+2. Obtain an API token with the permissions required to invoke the model endpoint.
+
+3. Invoke via an OpenAI-compatible client, Databricks REST API, Foundation Models APIs SDK, or MLflow Deployments SDK.
+
+4. Specify the available model/endpoint as the `model` value.
+
+Databricks states Foundation Model APIs require a Databricks API token and are OpenAI-compatible. [docs.databricks](https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/)
+
+A typical OpenAI-compatible Python pattern is conceptually:
+
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["DATABRICKS_TOKEN"],
+    base_url=f"{os.environ['DATABRICKS_HOST']}/serving-endpoints",
+)
+
+response = client.chat.completions.create(
+    model=os.environ["DATABRICKS_MODEL"],
+    messages=[
+        {
+            "role": "system",
+            "content": (
+                "Return only JSON matching the supplied schema. "
+                "Never return prose or Markdown."
+            ),
+        },
+        {
+            "role": "user",
+            "content": policy_text,
+        },
+    ],
+)
+```
+
+**Important:** endpoint paths and model naming vary by current Databricks API version and the exact Foundation Model API/model endpoint available in a workspace. Do not copy that skeleton into production without verifying it against the current Foundation Model API documentation and your workspace’s available endpoints. The official source confirms OpenAI compatibility but the available search excerpt does not provide an authoritative full code block or exact endpoint path for every model type. [docs.databricks](https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/)
+
+### Minimum proof before committing architecture
+
+Run this acceptance test first:
+
+```text
+Given:
+  - a Free Edition workspace
+  - a token
+  - one candidate hosted model
+
+Prove:
+  1. A process outside Databricks can authenticate.
+  2. It can make one model request.
+  3. The response arrives before your local timeout.
+  4. A local JSON Schema validator accepts it.
+  5. You can repeat it without immediately hitting rate/quota failure.
+```
+
+If any step fails, do not debug an agent framework. Use the fallback path:
+
+```text
+Natural-language policy
+  → human reviewer selects canonical package IDs
+  → checked-in mapping JSON
+  → deterministic PivotMap
+```
+
+That fallback still demonstrates the core architecture and is often more governance-correct.
+
+## Reliable structured output
+
+### Do not rely only on prompting
+
+“Return JSON only” is not reliable enough for governance-sensitive package mapping.
+
+Use three layers:
+
+1. **Native structured output / JSON schema or tool/function calling**, if the specific available Databricks model endpoint supports it.
+2. **Local schema validation** after receiving the response.
+3. **Human approval or canonical mapping resolution** before PivotMap runs.
+
+The output schema should be intentionally narrow:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PolicyInterpretationV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "policy_text",
+    "proposed_targets",
+    "ambiguities",
+    "requires_human_approval"
+  ],
+  "properties": {
+    "policy_text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "proposed_targets": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "identifier",
+          "ecosystem",
+          "target_kind",
+          "confidence",
+          "rationale"
+        ],
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "ecosystem": {
+            "type": "string",
+            "enum": ["go", "python", "java", "javascript", "other", "unknown"]
+          },
+          "target_kind": {
+            "type": "string",
+            "enum": ["package", "module", "library", "namespace", "unknown"]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "rationale": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      }
+    },
+    "ambiguities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "requires_human_approval": {
+      "type": "boolean"
+    }
+  }
+}
+```
+
+Then impose a local policy:
+
+```text
+If JSON fails schema validation → reject.
+If ecosystem is unknown → reject.
+If any identifier is not in the repository’s dependency inventory → flag for review.
+If confidence < threshold → require review.
+If multiple candidates exist → require review.
+If policy says “customer data” but graph has no data-flow certainty → annotate, do not claim enforcement.
+```
+
+### Canonical mapping should be a table, not an LLM memory
+
+A Unity Catalog function can support canonical mapping, but the canonical source should be a governed Delta table such as:
+
+```text
+governance.policy_dependency_mapping
+```
+
+| policy_concept | ecosystem | identifier | status | owner | evidence_url | approved_at | expires_at |
+|---|---|---|---|---|---|---|---|
+| customer-data-egress | go | `net/http` | approved | security-team | policy reference | timestamp | timestamp |
+| customer-data-egress | go | `github.com/acme/telemetry` | approved | security-team | policy reference | timestamp | timestamp |
+
+A UC SQL function can wrap a deterministic lookup:
+
+```sql
+resolve_policy_packages(policy_concept STRING, ecosystem STRING)
+```
+
+This is useful because UC functions are governed, shareable, and can be exposed as agent tools; Databricks specifically recommends UC functions for known structured retrieval where the agent supplies parameters. [docs.databricks](https://docs.databricks.com/aws/en/agents/custom-agents/create-custom-tool)
+
+But it should **not** be a free-form “policy text → package” function unless you deliberately maintain a mapping taxonomy. An LLM may classify the policy language, but a governed lookup should resolve the approved targets.
+
+## Governance, audit, and provenance
+
+## Audit design
+
+For each interpretation, persist a first-class immutable record:
+
+```json
+{
+  "interpretation_id": "uuid",
+  "created_at": "timestamp",
+  "requestor": "identity",
+  "repository": "org/repo",
+  "commit_sha": "sha",
+  "policy_text": "we can no longer send customer data through Library X",
+  "model_provider": "databricks",
+  "model_name": "exact configured identifier",
+  "prompt_template_version": "interpreter-v1",
+  "schema_version": "policy_interpretation/v1",
+  "raw_response": "exact raw body, access-controlled",
+  "validated_response": {
+    "proposed_targets": []
+  },
+  "canonical_mapping_version": "mapping-table snapshot/version",
+  "approval_status": "approved|rejected|needs_review",
+  "approved_targets": [],
+  "approver": "identity",
+  "approval_at": "timestamp",
+  "pivot_plan_id": "uuid",
+  "work_order_uri": "durable artifact reference",
+  "verification_result": "pass|fail|partial"
+}
+```
+
+The minimum reviewer replay must be possible from:
+
+- Exact policy wording.
+- Prompt template version.
+- Exact model identifier.
+- Model parameters, including temperature and seed if supported.
+- Exact raw response.
+- Schema-validation result.
+- Mapping-table version/snapshot.
+- Reviewer approval decision.
+- Repo commit SHA.
+- Graph snapshot/tool version.
+- Generated plan hash.
+- Executor commit SHA.
+- Verification rerun result.
+
+### Reproducibility caveat
+
+You can make an interpretation **auditable and replayable**, but you cannot promise bit-for-bit LLM reproducibility across model version changes, provider updates, non-deterministic serving, or unavailable seeds.
+
+The appropriate claim is:
+
+> “We preserve the original evidence and decision context so a reviewer can audit it. Replays are comparative evaluations, not proof that a hosted model will regenerate identical output.”
+
+MLflow Tracing is useful because it records agent/application inputs, outputs, intermediate steps, and metadata. Databricks recommends Unity Catalog-backed trace storage for new production workloads; these traces can be stored as governed OTel Delta tables and queried through SQL. [docs.databricks](https://docs.databricks.com/aws/en/mlflow3/genai/tracing/)
+
+### MLflow evaluation
+
+For the interpreter, create a small curated evaluation dataset:
+
+| policy_text | repo ecosystem | allowed identifiers | forbidden identifiers | reviewer-approved expected result |
+|---|---|---|---|---|
+| “No customer data through Library X” | Go | `library/x` | unrelated packages | target list + `requires_human_approval=true` |
+| “Ban deprecated HTTP package” | Go | package path | similarly named package | exact target only |
+| “Do not use analytics SDK Y in production” | Python | module path | test-only mock package | target list plus scope annotation |
+
+Score at least:
+
+- JSON schema valid: deterministic Boolean.
+- Identifiers parse in the ecosystem: deterministic Boolean.
+- Identifiers occur in dependency inventory: deterministic Boolean.
+- Approved-target precision/recall: deterministic against reviewer labels.
+- Unsupported inference count: reviewer metric.
+- False policy-to-package mapping rate: reviewer metric.
+- Human approval override rate: governance metric.
+
+Do **not** score it with an LLM judge as the only standard. Your domain is perfectly suited to deterministic and human-reviewed metrics.
+
+## Analytics: genuine second use
+
+The analytics layer is legitimate if it answers questions the one-off CLI cannot:
+
+- Which prohibited dependencies recur across repositories and time?
+- Which policies generate the largest direct remediation burden?
+- Which packages produce large downstream blast radii?
+- Which directories repeatedly become `UNREACHED` due to parser coverage gaps?
+- How often does the interpreter require human override?
+- How often does the executor reduce `INVALIDATED` to zero on the first attempt?
+- Which policy categories correlate with slow remediation?
+
+## Suggested Delta tables
+
+```text
+governance.policy_interpretations
+governance.canonical_dependency_mapping
+analysis.pivot_runs
+analysis.pivot_file_verdicts
+analysis.pivot_evidence_edges
+workflow.remediation_work_orders
+workflow.executor_runs
+workflow.verification_runs
+observability.mlflow_trace_links
+```
+
+### Critical fact table: file verdicts
+
+```text
+analysis.pivot_file_verdicts
+```
+
+| column | purpose |
+|---|---|
+| `pivot_run_id` | Join key to run/work-order |
+| `repository` | Repository identifier |
+| `commit_sha` | Exact source snapshot |
+| `observed_at` | Time series |
+| `policy_id` | Normalized policy concept |
+| `prohibited_identifier` | Concrete CLI input |
+| `path` | File path |
+| `verdict` | `INVALIDATED`, `AT_RISK`, `SAFE`, `UNREACHED` |
+| `file_role` | production, test, fixture, generated, unknown |
+| `distance` | Reachability distance |
+| `root_invalidated_path` | Direct violation root |
+| `confidence` | Edge confidence |
+| `edge_relation` | `IMPORTS`, `CALLS`, etc. |
+| `source_line` | Inspectable evidence |
+| `graph_version` | Analysis-version reproducibility |
+| `plan_id` | Work order reference |
+
+### Example queries
+
+**Policies with most direct remediation work:**
+
+```sql
+SELECT
+  policy_id,
+  prohibited_identifier,
+  COUNT(*) AS direct_violating_files,
+  COUNT(DISTINCT repository) AS repositories
+FROM analysis.pivot_file_verdicts
+WHERE verdict = 'INVALIDATED'
+GROUP BY policy_id, prohibited_identifier
+ORDER BY direct_violating_files DESC;
+```
+
+**Repeat-offender files:**
+
+```sql
+SELECT
+  repository,
+  path,
+  COUNT(DISTINCT pivot_run_id) AS violation_events,
+  COUNT(DISTINCT prohibited_identifier) AS distinct_constraints
+FROM analysis.pivot_file_verdicts
+WHERE verdict = 'INVALIDATED'
+GROUP BY repository, path
+HAVING COUNT(DISTINCT pivot_run_id) > 1
+ORDER BY violation_events DESC;
+```
+
+**Blast-radius trend:**
+
+```sql
+SELECT
+  date_trunc('month', observed_at) AS month,
+  prohibited_identifier,
+  AVG(CASE WHEN verdict = 'AT_RISK' THEN 1 ELSE 0 END) AS average_at_risk_per_row,
+  COUNT_IF(verdict = 'INVALIDATED') AS invalidated_files,
+  COUNT_IF(verdict = 'UNREACHED') AS coverage_gaps
+FROM analysis.pivot_file_verdicts
+GROUP BY 1, 2
+ORDER BY 1, 2;
+```
+
+### Genie: useful later, not now
+
+Genie is a plausible analyst interface once the Delta tables exist:
+
+> “Which policy produced the largest production blast radius in the past 90 days?”
+
+> “Which repositories have the highest share of `UNREACHED` files under customer-data egress policies?”
+
+> “Which mappings did reviewers override most often?”
+
+Genie Conversations can be invoked programmatically; the API documentation exposes Genie conversation endpoints and requires the `genie` API scope. Databricks’ announcement says the API can embed Genie into other apps and agents, and 2026 release notes indicate Conversation API GA. [docs.databricks](https://docs.databricks.com/api/genie/v1)
+
+But a Genie Space is not part of the remediation control plane. It is an **analytics and discovery surface**. Do not let Genie choose package identifiers or approve work orders.
+
+## Lakebase: what it is and whether you need it
+
+Lakebase is a managed Postgres operational database integrated with Databricks, positioned for transactional application state, agent memory, configuration, and real-time decisioning. It supports short-term conversation state and long-term agent memory; the current documentation describes integration with Databricks Apps and Model Serving, including LangGraph checkpointers and OpenAI Agents SDK support. [docs.databricks](https://docs.databricks.com/aws/en/oltp/projects/state-management)
+
+For your architecture:
+
+| Use case | Lakebase fit |
+|---|---|
+| Single policy interpretation → approved work order | No; a Delta table or artifact file is enough |
+| Durable reviewer queue with status transitions | Maybe, but Delta plus a simple App is enough initially |
+| Conversational, stateful policy-review assistant | Yes, later |
+| Multi-turn supervisor coordinating many remediation jobs | Maybe, but only after proving need |
+| Canonical policy-to-package mappings | Usually no; Delta/UC table is better for analytical governance |
+| Session memory for executor | No; Git commit, work order, and Entire checkpoint are better sources of truth |
+
+**Verdict:** do not use Lakebase in your first iteration. It adds a stateful operational data plane to a workflow that should be deliberately stateless and artifact-driven.
+
+## Databricks Apps reviewer UI
+
+A reviewer-facing App can be valuable after you have stored interpretation/work-order rows:
+
+- Display original policy text.
+- Show candidate packages and canonical mapping matches.
+- Show relevant dependency inventory.
+- Show direct violations and graph evidence.
+- Let a reviewer approve/reject/modify the concrete targets.
+- Generate an immutable approved work order.
+- Link the executor commit and post-execution verification run.
+
+The App should not render giant graph dumps. Its central review object should be:
+
+```text
+Policy → proposed targets → approved targets → direct violation roots
+→ evidence → execution state → verification result
+```
+
+On Free Edition, Apps are limited and auto-stop when idle per the constraints you supplied. That is acceptable for a reviewer demo, but it is not a dependable always-on enterprise approval service. The Free Edition limitations document confirms quota-limited Apps as part of the environment constraints. [docs.databricks](https://docs.databricks.com/aws/en/getting-started/free-edition-limitations)
+
+## Two-hour build reality
+
+| Component | Build estimate | Two-hour verdict | Recommendation |
+|---|---:|---|---|
+| Strict `policy_interpretation/v1` JSON schema | 15–25 min | Achievable | Do it first |
+| Local schema validator and audit JSONL file | 15–30 min | Achievable | Do it |
+| One external call to a Foundation Model API | 30–90 min, assuming endpoint works | Achievable only if auth/model is immediately available | Validate first; abandon quickly if blocked |
+| Feed approved output to your existing CLI | 10–20 min | Achievable | Do it |
+| Local/checked-in canonical mapping file | 20–40 min | Achievable | Better than UC function for initial build |
+| Append work orders to Delta table from notebook | 30–60 min | Achievable if SQL workspace is ready | Good optional analytics proof |
+| One SQL dashboard/query over work-order history | 20–45 min | Achievable | Best genuine analytics add-on |
+| MLflow basic trace capture | 45–120 min | Risky | Only attempt after the hosted call works |
+| UC table/function mapping tool | 1–3 hours | Risky | Skip in first build |
+| Databricks App reviewer UI | 2–6 hours | Not worth attempting in two hours from scratch | Mock with a notebook/table if needed |
+| Genie Space setup and reliable programmatic query | 2–5 hours | Not worth attempting | Later |
+| Custom Agent Framework deployment | 3–8 hours | Not worth attempting | Later |
+| Agent Bricks configuration/evaluation | Half day to multiple days | Not worth attempting | Later |
+| Lakebase-backed memory | 3–8 hours | Not worth attempting | Skip |
+| MCP integration for local CLI/executor | 3–8 hours | Not worth attempting | Later |
+| Full multi-agent supervisor | 1–3 days minimum | Do not attempt | Architecturally unnecessary |
+
+## Known setup traps
+
+### 1. Confusing Foundation Model APIs with custom serving
+
+A hosted foundation model call and a custom Model Serving endpoint are not the same setup path. The latter adds deployment, endpoint lifecycle, permission, and quota complexity. Foundation Model APIs are the fastest viable external-call path. [docs.databricks](https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/)
+
+### 2. Assuming a model is available everywhere
+
+Databricks documents supported regions and model availability constraints. Free Edition further limits which models/endpoints are available. Confirm the exact model in your actual workspace before writing integration code. [docs.databricks](https://docs.databricks.com/aws/en/getting-started/free-edition-limitations)
+
+### 3. Treating Free Edition as a reliable CI dependency
+
+Do not put quota-limited hosted inference in a production CI gate. A quota exhaustion or temporary endpoint unavailability should not stop deterministic remediation analysis. Keep the interpreter asynchronous and cache approved interpretations.
+
+### 4. Mixing API-token identity with governance identity
+
+For audit, record:
+
+- who submitted the policy;
+- which service principal or PAT invoked the model;
+- which reviewer approved targets;
+- which agent/executor authored the commit.
+
+Do not collapse these into “the agent did it.”
+
+### 5. Logging secrets or sensitive source context
+
+Store the original policy and model output carefully. Avoid sending repository source indiscriminately to the interpreter. Your interpreter should need the policy text plus a compact local dependency inventory, not proprietary source code.
+
+### 6. Claiming structured output guarantees correctness
+
+Schema validity only proves shape. It does not prove that `Library X` maps to the right Go module path, or that a package actually handles customer data. Require canonical mapping and approval where consequences matter.
+
+### 7. Graph false negatives
+
+Your own observed interface-dispatch failure is central. `SAFE` means:
+
+> “No path was detected under this parser, graph, relation set, and analysis snapshot.”
+
+It must never mean:
+
+> “Proven policy compliant.”
+
+Make this statement part of every work order and reviewer UI.
+
+## Is the three-agent architecture sensible?
+
+## The case for it
+
+Yes—**as a typed, linear workflow**, it cleanly separates fundamentally different kinds of work:
+
+- The interpreter handles ambiguous human policy language.
+- PivotMap handles deterministic structural reasoning and evidence extraction.
+- The executor handles code modification.
+- The verifier independently checks graph-supported outcomes.
+
+This separation is excellent governance design because it prevents the executor from reinterpreting policy and prevents an LLM from grading its own changes. It also yields a strong provenance chain:
+
+```text
+Policy wording
+→ interpreted targets
+→ approved targets
+→ graph evidence
+→ bounded code edits
+→ commit/checkpoint
+→ independent verification
+```
+
+Databricks contributes real value if you need:
+
+- Centralized model access and identity controls.
+- MLflow trace retention and evaluation.
+- Unity Catalog-governed canonical policy mappings.
+- Delta analytics across many repositories/work orders.
+- Reviewer workflow at organizational scale.
+- Genie-based exploration of accumulated remediation history.
+
+## The case against it
+
+For a small system or hackathon, Databricks is likely unnecessary complexity.
+
+The interpreter is a single structured extraction/classification call. It does not require:
+
+- A deployed agent.
+- Agent Bricks.
+- Lakebase memory.
+- A multi-agent supervisor.
+- LangGraph/CrewAI.
+- MCP.
+- A reviewer App.
+- Genie.
+
+The Databricks overhead is real:
+
+- Workspace/auth/token setup.
+- Model and region availability uncertainty.
+- Free Edition daily quota risk.
+- Endpoint semantics and SDK version drift.
+- Auditing setup that is more involved than writing immutable artifacts.
+- Vendor lock-in around serving, UC governance, and trace storage.
+- Latency from an external model call in a workflow otherwise designed to be local and deterministic.
+
+Research also supports avoiding gratuitous multi-agent architecture: multi-agent systems often show small gains over strong single-agent baselines and introduce specification, coordination, and verification failures. Your design avoids much of that only if the agents are not free-form collaborators. [iclr](https://iclr.cc/virtual/2025/33314)
+
+## Verdict
+
+**Build the architecture as “one optional hosted interpreter + deterministic core + one external executor + deterministic verifier,” not as a Databricks-native three-agent system.**
+
+For now:
+
+- Keep the policy interpreter behind an interface.
+- Make its output an auditable, versioned JSON artifact.
+- Support a human-approved mapping-file fallback.
+- Keep PivotMap entirely local and no-egress.
+- Keep executor integration separate from Databricks.
+- Store results in Delta only once you have enough runs to analyze.
+- Add MLflow tracing, UC functions, Apps, Genie, Lakebase, MCP, and Agent Bricks only when there is a demonstrated organizational need.
+
+That preserves the compelling part of your architecture—deterministic, evidence-backed remediation—without making an unavailable or quota-exhausted model endpoint a single point of failure.
+
+## Follow-up research topics
+
+1. **Databricks Free Edition live endpoint validation:** Verify your exact workspace region, available Foundation Model API models, token scopes, and external-call behavior before spending implementation time on agent frameworks.
+
+2. **Policy-to-package canonicalization design:** Define the governed mapping schema, ownership, review lifecycle, expiry, and how policies map differently across Go modules, Python distributions/imports, Java Maven coordinates, and JavaScript packages.
+
+3. **Deterministic policy verification extensions:** Research how to combine import/call graph evidence with package manifests, SBOMs, taint/data-flow analysis, and test execution without overstating compliance.
+
+4. **Evaluation corpus for policy interpretation:** Build a labeled set of real historical policies, intended dependency targets, ambiguous cases, and reviewer overrides to measure interpreter precision, recall, schema compliance, and unsafe inference rate.
+
+5. **Repository-scale remediation analytics:** Design Delta schemas and metrics for blast radius, direct-violation recurrence, `UNREACHED` coverage debt, work-order completion time, and verification-first-pass success.
+
+---
+
+Give me final plan after verifying
+
+---
+
+<task-notification>
+<task-id>bj6v7j506</task-id>
+<tool-use-id>toolu_01RbeskuafRWcJyKWQWecZ89</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/35d4b996-6719-4222-bad6-d146f66c0cfa/tasks/bj6v7j506.output</output-file>
+<status>completed</status>
+<summary>Background command "Build and test internal/cli" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>be4hv6a3u</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/35d4b996-6719-4222-bad6-d146f66c0cfa/tasks/be4hv6a3u.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for build and test results" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bsfo0l7j8</task-id>
+<tool-use-id>toolu_01RajwVBtPwtBLc2t5TZYLcQ</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/35d4b996-6719-4222-bad6-d146f66c0cfa/tasks/bsfo0l7j8.output</output-file>
+<status>completed</status>
+<summary>Background command "Verify format plan output structure" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+/research-prompt follow up promt on how can include data bricks in last few hours of the ahckathon if needed
+
+---
+
+Ignore teh dtaabricks - start on thge rest of the plan - the operninal has completed here is the statrus it provided me 
+
+
+Sync-up: the other terminal (session 28313b15) has finished a block of work on
+`entire graph pivot` and pushed everything. Read this before you touch the repo,
+because your working copy is behind and BUILDATHON.md has changed under you.
+
+FIRST THING, BEFORE ANY EDIT OR COMMIT:
+
+    git pull --rebase origin pivot-work-order
+
+We are BOTH committing to the same worktree
+(/Users/adharsh/git/BTW-buildathon/entire-graph) on branch `pivot-work-order`.
+`main` is PROTECTED on the Entire mirror — a direct push to main is rejected, which
+is why the branch exists. Ignore PRs for now; the branch itself is the deliverable.
+
+STATE RIGHT NOW — everything below is committed, checkpointed AND pushed.
+Local and remote are both at d94ff49. Nothing is outstanding.
+
+  d94ff49  docs(buildathon): document the role pass and the pivot-plan/v1 work order   [ckpt 7837f7ecee97]
+  53ff6bd  feat(pivot): --format plan, an agent work order rather than a graph dump    [ckpt 3cbbf2592d6f]
+  04c77bb  docs(buildathon): re-measure the findings table instead of carrying forward [ckpt 65e0b87b0eb5]  <- YOURS
+  934d180  feat(pivot): file roles, so the report ranks work instead of listing files  [ckpt 4a14d2327199]
+  2ff8446  fix(pivot): keep depth and index provenance on uncommitted runs             [ckpt bb0d72d79dbc]
+  4a0a219  feat(pivot): --exclude-tests, applied before classification                 [NO checkpoint]
+  abbf061  feat(pivot): classify what survives a changed requirement                   [NO checkpoint]
+
+The Entire checkpoint ref is pushed too: refs/heads/entire/checkpoints/v1 at ce28ea9.
+
+WHAT WAS BUILT (three steps)
+
+STEP 1 — proved Entire checkpoints bind from this launch directory. `entire
+checkpoint list` went 0 -> 1 on the first commit. The earlier zero-checkpoint
+commits were caused by sessions launched from the parent folder, not by broken
+hooks.
+
+STEP 2 — file roles, to fix at-risk noise (commit 934d180, new file
+internal/cli/pivot_roles.go). Every file is classified deterministically as
+PRODUCTION | TEST | TEST_FIXTURE | GENERATED | VENDOR | UNKNOWN, from signals that
+cannot be argued with: a vendor/ path segment, a testdata|fixtures|mocks segment,
+the _test.go suffix, or the "Code generated ... DO NOT EDIT." header read from the
+file itself. Precedence is deliberate: vendor wins outright, testdata/ beats the
+_test.go suffix because the Go toolchain never builds those, and the generated
+probe runs only for files that would otherwise be production. UNKNOWN means the
+snapshot lists a file the working tree does not have, so the last signal could not
+be checked.
+
+The role NEVER changes a verdict — only how the report is grouped and ranked. Text
+output now leads with four counted lines:
+
+    Required remediation:  32 direct violation(s) (8 production, 24 test across 5 package(s))
+    Production follow-up:  100 at-risk production file(s)
+    Test fallout:          187 file(s) across 4 package(s)
+    Coverage gaps:         85 unreached
+
+Production work stays listed file by file with its evidence. Test fallout collapses
+to ONE LINE PER PACKAGE carrying a targeted `go test ./pkg`. Nothing is deleted —
+the JSON carries all 636 files with their roles, and every collapsed line carries
+its count. A package with no Go in it is told so rather than handed a command that
+would fail.
+
+STEP 3 — `--format plan`, emitting pivot-plan/v1 (commit 53ff6bd, new file
+internal/cli/pivot_plan.go). An agent work order, not a graph dump. Carries a
+deterministic plan_id (digest of head commit + constraint + depth + flags + counts),
+head_commit, graph tool provenance, the constraint, and counts by verdict, priority
+and role. Every classified file becomes exactly one work item so nothing falls
+between the report and the plan: INVALIDATED -> REPLACE_OR_REMOVE, AT-RISK ->
+VERIFY_AFTER_ROOT_FIX, SAFE -> NO_ACTION, UNREACHED -> MANUAL_REVIEW. SAFE files are
+included deliberately — a file that was analysed and cleared is a different thing
+from a file nobody looked at. Items carry priority, role, distance,
+root_invalidated, evidence[], agent_instructions[] and acceptance_criteria[], and
+are sorted BEFORE ids are assigned so reading top to bottom is reading execution
+order. P0 = direct violation in shipped code, P1 = violation in a test or shipped
+code on an invalidated foundation, P2 = covered by a package command or not a change
+at all.
+
+Two parts of the schema exist because of how an AGENT fails rather than how the
+graph works: known_blind_spots (6, each pairing a limitation with its consequence,
+stated before the work items) and execution_contract.must_not_claim (6, forbidding
+the real failure — a confident report of success nobody ran a command to check).
+validation.required_commands ends with the exact pivot re-run that proves the
+invalidated count reached zero.
+
+A real bug was fixed on the way: propagation now carries the originating invalidated
+file along the BFS. At two hops an at-risk item used to report the intermediate
+neighbour it was reached through; root_invalidated now names the file that actually
+has to be fixed first.
+
+BUILDATHON.md — I ADDED, YOU MAY HAVE MORE TO SAY
+
+Your 04c77bb re-measured findings table was kept as-is; its numbers match what I
+measured independently. On top of it I added:
+  - "Three design decisions worth defending" (was Two) — the third is that roles
+    rank the report and never filter it.
+  - Architecture pipeline steps 6 (role pass) and 7 (render), and the three-file
+    source layout.
+  - New section "What the grouped report looks like".
+  - New section "The work order: --format plan".
+  - A note in the run instructions that `mise run test` is not fully green on every
+    machine.
+The "Noon Curveball" section is still stubbed and is yours if you get to it first.
+
+VERIFIED NUMBERS (real runs at 53ff6bd, 636 files)
+
+  --dependency net/http                            3 inv |  78 at-risk | 468 safe | 85 unreached
+  --dependency net/http --exclude-tests            0 inv |   0 at-risk | 204 safe | 73 unreached
+  --dependency os/exec                            32 inv | 287 at-risk | 232 safe | 85 unreached
+  --dependency os/exec --exclude-tests             8 inv | 100 at-risk |  96 safe | 73 unreached
+  --dependency os/exec --exclude-tests --depth 1   8 inv |  11 at-risk | 185 safe | 73 unreached
+
+Plan at os/exec --exclude-tests --depth 1: 278 work items, 8 P0 / 11 P1 / 259 P2.
+
+TESTS — read this before claiming anything about the suite
+
+Full `go test ./...` was run to completion. Every package passes EXCEPT
+cmd/graph-bench, which fails because the local git rejects
+`checkout --end-of-options`. That is PRE-EXISTING: I reproduced the identical
+failures at 4a0a219 in a detached scratch worktree, before any of this work. Do not
+try to "fix" it and do not claim a fully green suite on this machine.
+internal/cli — the only package this feature touches — passes in full (75s).
+internal/sem passes (260s).
+
+THINGS TO WATCH
+
+1. `.entire/pivot-agent-brief.md` is UNTRACKED in the worktree (4956 bytes, yours
+   from 10:30). It is not committed and therefore not pushed. Commit it or delete
+   it — right now it is invisible to the mirror.
+2. Checkpoint prompts are CROSS-ATTRIBUTING between our two sessions: commit d94ff49
+   is mine but its checkpoint carries your prompt text. The commit linkage is
+   correct; only the prompt label is misleading. Worth knowing before anyone reads
+   the checkpoint list as a narrative.
+3. abbf061 and 4a0a219 still carry no checkpoints. Leave them. `entire session
+   attach --force` would amend already-pushed history to add the trailer, which is
+   worse than the honest note you already wrote in BUILDATHON.md.
+4. Always `git pull --rebase` before committing, and stage by explicit path rather
+   than `git add -A`, so we stop stepping on each other.
+
+STILL OPEN
+
+  - Noon Curveball at 12:00 (unknown; BUILDATHON.md section stubbed).
+  - PR from pivot-work-order -> main. Deliberately deferred for now.
+  - Optional: demo script or screenshots for judging.
+
+
+
+based on provide steps from now on till the curveball
+
+---
+
+fins stuff that can be done parartellly
+
+---
+
+I need a plan with steps first - before u start
+
+---
+
+<task-notification>
+<task-id>bqjm0xkrf</task-id>
+<tool-use-id>toolu_011G63Pb5tAAD5UbHxG1ytMr</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/35d4b996-6719-4222-bad6-d146f66c0cfa/tasks/bqjm0xkrf.output</output-file>
+<status>completed</status>
+<summary>Background command "Capture the three required graph artifacts" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+we are doing everything ins single terminal - can spawn different agents or ?
+
+---
+
+What is lopp target ?ex plain the decision
