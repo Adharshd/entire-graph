@@ -3,7 +3,7 @@
   "checkpoint_id": "6bfc359cee62",
   "strategy": "manual-commit",
   "branch": "pivot-work-order",
-  "checkpoints_count": 1,
+  "checkpoints_count": 12,
   "files_touched": [
     "BUILDATHON.md",
     "docs/demo/curveball/19-impact-before-from-flag.txt",
@@ -19,13 +19,20 @@
       "compact_transcript": "/6b/fc359cee62/0/transcript.jsonl",
       "content_hash": "/6b/fc359cee62/0/content_hash.txt",
       "prompt": ""
+    },
+    {
+      "metadata": "/6b/fc359cee62/1/metadata.json",
+      "transcript": "/6b/fc359cee62/1/full.jsonl",
+      "compact_transcript": "/6b/fc359cee62/1/transcript.jsonl",
+      "content_hash": "/6b/fc359cee62/1/content_hash.txt",
+      "prompt": "/6b/fc359cee62/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 0,
-    "cache_creation_tokens": 0,
-    "cache_read_tokens": 0,
-    "output_tokens": 0,
-    "api_call_count": 0
+    "input_tokens": 612,
+    "cache_creation_tokens": 389965,
+    "cache_read_tokens": 78617423,
+    "output_tokens": 221191,
+    "api_call_count": 306
   }
 }
