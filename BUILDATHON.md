@@ -15,6 +15,9 @@
 Three layers, shallowest first. Stop at whichever answers your question.
 
 **1 — What it is, in one screen**
+[What this is for, beyond one report](#what-this-is-for-beyond-one-report) — the loop and
+harness a developer can build around a hard migration, and what it deliberately is not.
+
 [One-sentence summary](#one-sentence-summary) · [Problem](#problem-intended-user-and-why-it-matters) ·
 [Why Entire is essential](#selected-entire-track-and-why-entire-is-essential)
 
@@ -56,6 +59,41 @@ A captured example is `docs/demo/curveball/14-pivot-on-itself-plan.json`.
 `entire graph pivot` answers what survives a requirement that changed after the code was already
 written: which files break the new rule, which ones are built on the files that break it, and which
 ones can be left alone.
+
+## What this is for, beyond one report
+
+A pivot is the hard case for an agent, and the reason is not the editing. It is that
+nobody can say when it is finished. "Remove this dependency" has no natural stopping
+condition an agent can check itself against, so the work either stops early or runs on
+confidently past the point where it was still right.
+
+PivotMap ships the three pieces a developer needs to put a harness around that work, and
+they are deliberately separable — take one, take all three:
+
+| Piece | What it is | What it replaces |
+|---|---|---|
+| `pivot --format plan` | a bounded work order: one item per file, priority, evidence, and how well that evidence is known | an agent inventing its own plan, differently each run, with no way afterwards to tell what it was supposed to have done |
+| `validation.invariants` | acceptance criteria as **data** — files that must still exist, a deletion budget, flags that must match, and an explicit list of what cannot be checked mechanically | "looks right to me" |
+| `scripts/pivot-verify.py` | a deterministic referee: no model, no network. `PASS / FAIL / PARTIAL / CANNOT_VERIFY` | the agent grading its own homework |
+
+The loop is producer → executor → referee, and the referee is code rather than a model on
+purpose. An LLM judge would move the trust problem rather than solve it, and it can be
+argued with. `files_must_still_exist` cannot.
+
+What that buys a developer on a genuinely hard migration: a scope the agent did not choose
+for itself, a stopping condition it cannot satisfy by deleting the problem, and a verdict
+that distinguishes "this is wrong" from "I could not check this". The three verdicts in
+[Closing the loop](#closing-the-loop-a-verifier-with-no-model-in-it) are that claim tested
+rather than asserted — including the case where the agent deletes the file, the original
+check certifies it, and the harness catches it anyway.
+
+**What it is not.** This is not a complete verification harness, and the difference is
+worth being exact about. There is no sandbox, no pinned analyzer image, no signed
+baseline, and no protected-path enforcement — a determined agent with write access to the
+verifier can still defeat it. What is here is the analysis half: the work order, the
+acceptance criteria, and a referee that runs from a clean checkout. The isolation half is
+a CI concern and is named in [Known limitations](#known-limitations-and-next-steps) rather
+than implied.
 
 ## Problem, intended user and why it matters
 
@@ -636,6 +674,15 @@ package this feature touches, passes in full.
   test paths (`_test.go`, `*.test.*`, a `test/`/`testdata/` directory segment, and the equivalents in
   the other supported languages). A test helper that lives in a normally-named file is still
   classified, and a production file that happens to sit under `testdata/` is still excluded.
+- **The verifier has no isolation, and that is the honest gap.** It runs from a clean checkout
+  of the candidate commit, which defeats an agent's uncommitted state and local shell — but the
+  contract, the checker script and the analyzer binary all live in the same repository the agent
+  can write to. The published work on this (UC Berkeley RDI, *How We Broke Top AI Agent
+  Benchmarks*) is blunt that shared agent/evaluator state is the pervasive exploit path, and its
+  remedies are CI concerns rather than tool concerns: run the verifier outside the agent's
+  container, pin the analyzer image, sign the baseline, and protect the workflow paths. None of
+  that is built here. What is built is the analysis half — the work order, the acceptance
+  criteria as data, and a referee that does not consult a model.
 - **What deterministic checking still cannot decide.** The verifier below closes the two loop findings,
   but it is explicit about its own ceiling: whether behaviour was preserved, whether a replacement is
   semantically equivalent, whether a HEURISTIC edge holds, and whether SAFE reflects the absence of a
