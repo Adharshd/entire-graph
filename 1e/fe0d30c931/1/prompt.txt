@@ -2867,3 +2867,11 @@ the buildathon.md has mcp serevr details ?
 ---
 
 yes man - pls add it - and highlight the non devs part
+
+---
+
+did u add stuff abt mcp is hackathon =.md ?
+
+---
+
+did u mention its for product managers and designers ? did u mention the mcp tools ?
