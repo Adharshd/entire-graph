@@ -1,0 +1,33 @@
+We an psuh - what is the issue u see ? we are in ahackathon
+
+---
+
+createa a prompt on the task ur working on - and copy to clip pls
+
+---
+
+Give me running commentary on the status
+
+---
+
+status ?
+
+---
+
+<task-notification>
+<task-id>b1e289rxh</task-id>
+<tool-use-id>toolu_01JWpYXFmyD321q2Q6KDNJoQ</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/28313b15-bbfe-4786-a59e-d070c5128f5a/tasks/b1e289rxh.output</output-file>
+<status>failed</status>
+<summary>Background command "Full test suite" failed with exit code 144</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bupx6d7q4</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/28313b15-bbfe-4786-a59e-d070c5128f5a/tasks/bupx6d7q4.output</output-file>
+<status>failed</status>
+<summary>Background command "Run full test suite and show failures" failed with exit code 144</summary>
+</task-notification>
