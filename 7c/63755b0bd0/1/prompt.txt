@@ -1,0 +1,657 @@
+BTW Buildathon 2026, Track 2. The Noon Curveball has landed. You are the FRESH session the rules require — reconstruct from Checkpoint context, do not assume you know this codebase.
+
+CONFIRM FIRST, STOP IF ANY FAILS
+  pwd                        -> /Users/adharsh/git/BTW-buildathon/entire-graph
+  git branch --show-current  -> pivot-work-order
+  entire session current     -> must NAME a session, not "No active session found"
+  git remote -v              -> entire://aws-ap-south-1.entire.io/gh/adharshd/entire-graph
+
+WHERE THINGS STAND
+Last stable pre-curveball commit: 90d1939, Entire checkpoint 9ab0f807a913, pushed, remote in sync.
+`main` is PROTECTED on the mirror and a push to it is rejected — all work stays on pivot-work-order.
+Do not rewrite history: two early commits (abbf061, 4a0a219) carry no checkpoint, and backfilling
+them would break the ten that work.
+
+STEP 1 — RECONSTRUCT FROM CHECKPOINT (graded — do this before reading anything else)
+  entire checkpoint list
+  entire checkpoint show 9ab0f807a913      # if that verb is wrong: entire checkpoint --help
+  git show 90d1939 --stat                  # its message carries intent/architecture/completed/open risks
+
+THEN READ, IN THIS ORDER
+  docs/ENTIRE-TIPS.md            <- START HERE. Part 1 is the exact command sequence for this
+                                    curveball, step by step. Part 2 is 14 navigation gotchas
+                                    already paid for today (checkpoint traps, protected main,
+                                    two-agents-one-worktree rules, test gotchas).
+  docs/POST-CURVEBALL-PLAN.md    the plan written before the constraint landed
+  BUILDATHON.md                  problem, architecture, verified findings
+  docs/demo/                     graph evidence + the mux verification loop already captured
+
+THE TRACK 2 CARD
+"Graph is evidence, not an oracle." Requirements: must not present incomplete graph relationships as
+certain; must identify when analysis may be partial; must provide a safe fallback or verification
+path; existing behaviour for fully resolved code must keep working; must include a test or fixture
+representing incomplete analysis; use Entire Graph to identify which parts of the implementation
+consume relationship/impact/semantic-diff evidence. Users AND agents must be able to tell apart:
+confirmed structural evidence / heuristic or incomplete evidence / claims needing source or test
+verification. A partial-analysis fixture is attached — get it from the organisers, do not invent one.
+
+THE TRAP — READ THIS TWICE
+PivotMap's existing thesis is already "graph is evidence, not an oracle": it has UNREACHED, it prints
+"SAFE means no path found", it ships known_blind_spots. The tempting response is "we already did
+this." That scores in the PARTIAL band, because the rubric wants a clear statement of which
+assumption the curveball INVALIDATED. Claiming nothing changed means no adaptation to score.
+
+THE ASSUMPTION THAT WAS ACTUALLY INVALIDATED (verify this, do not take it on trust)
+Uncertainty is tiered at the LANGUAGE level (semantic vs inventory-only) but NOT at the EDGE level.
+Inside Go these two are rendered identically and treated identically by the classifier:
+    IMPORTS os/exec         confidence 1.00   <- a fact
+    CALLS   regexp.go       confidence 0.68   <- "matched globally unique method name", a heuristic
+A P0 work item can rest entirely on the second, and nothing says so. Confidence is carried through
+the whole pipeline and never used to affect a verdict, a priority, an action, or the plan.
+
+STRONGEST SUSPECTED FINDING — CONFIRM IT IN SOURCE FIRST
+buildPivotResponse (internal/cli/pivot.go) copies snapshot.Header.Warnings and
+snapshot.Header.PartialFailures into the response but appears never to consult them when assigning a
+verdict. Meanwhile `entire graph impact` self-reports "Completeness: degraded for Go" with
+W_DATA_FLOW_EVIDENCE_UNMERGED. If that holds, SAFE currently conflates "fully parsed, no path found"
+with "the parser had diagnostics here, and no path found" — which is exactly the distinction the card
+demands. Verify against source before claiming it.
+
+PROPOSED REVISION — focused, preserves existing behaviour
+Three evidence tiers, surfaced to BOTH audiences (the card says "users and agents"):
+    CONFIRMED   import/declaration edges, high confidence, clean parse        -> trust
+    HEURISTIC   name-matched calls, low confidence                            -> verify against source
+    UNVERIFIED  file had parse warnings or partial failures                   -> cannot be SAFE
+  - text output tags each evidence line with its tier
+  - plan JSON gains evidence_quality per work item and verification_required
+  - execution_contract.must_not_claim gains a clause forbidding an agent from treating a heuristic
+    edge as fact
+  - fully-resolved code must behave EXACTLY as before — that is the "preserve existing behaviour"
+    requirement and what keeps this a focused revision rather than a rewrite
+
+SCORING CONSTRAINTS — these decide the 15 points
+  - "Graph use that happens AFTER implementation, or an explanation given verbally rather than
+    captured in context, scores in the partial band." So: run every graph command BEFORE the first
+    edit, and pipe each one to a file under docs/demo/curveball/ so it is captured, not spoken.
+  - Run `entire graph impact` before editing. Save the output.
+  - Dogfood it: `entire graph pivot --repo . --dependency internal/sem --exclude-tests --depth 1
+    --format plan` should name your own evidence consumers. UNVERIFIED — if it returns zero
+    invalidated files the matcher did not resolve an internal package path; fall back to search and
+    impact, and record that as a finding rather than reporting an empty result.
+  - Tests are required for the new behaviour, plus a fixture for incomplete analysis.
+  - Final commit message must state: what assumption changed, how the design changed, why the new
+    result is safe. That message becomes the final Checkpoint.
+
+TESTING NOTES
+  go build ./... && go test ./internal/cli/ -count=1     # ~55-75s
+  If a colour assertion fails, re-run with `env -u FORCE_COLOR` before believing you broke it.
+  cmd/graph-bench fails on this machine (local git rejects `checkout --end-of-options`) — pre-existing,
+  unrelated. Never claim a fully green suite; name the condition.
+  Before believing any failure is yours: git stash your changes, re-run, unstash.
+
+HOW I WANT YOU TO WORK
+  - Commit after each meaningful step; every commit must carry an Entire checkpoint. Verify with
+    `git log --format="%(trailers:key=Entire-Checkpoint,valueonly)" -1`, never assume.
+  - `git pull --rebase origin pivot-work-order` before committing; stage by explicit path, never -A.
+    A second agent session may be working in this same worktree.
+  - Graph output is evidence, not an oracle — read the cited source before acting on it. That is
+    literally this track's theme, so behave accordingly.
+  - Explain changes to me in plain language as you go; I must be able to defend the code myself.
+  - A smaller working thing beats an ambitious broken one. If time runs short, stop and commit.
+  - Never report that tests pass without having run them.
+
+---
+
+did u use the entire checkpoints - to learn what we ahev done -use the tips menu for commands
+
+---
+
+Ok what did u elarn from checkpoints - ? like what we committed - one ruke -we are in a time crunch - sop u need to comunicate effetcvely and briefly with me as we are in ahckathon
+
+---
+
+adharshd osuhes these ? I think this sounds good - what next in the plan ? I provided at the beginning - let me and provide a good running commentary for me
+
+---
+
+once step 2 is done - let me know
+
+---
+
+The guy in teh hackathon just - use any complex open source repos - to find the graph - lets dicss this briefly
+
+---
+
+the biugger the complexity - the more impressive he will be is what he said
+
+---
+
+<task-notification>
+<task-id>b7k27zmbo</task-id>
+<tool-use-id>toolu_0152VWtDizoK6w5ep9c8ptKd</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/ed08012a-2b63-4060-9643-0156dde8cf2d/tasks/b7k27zmbo.output</output-file>
+<status>completed</status>
+<summary>Background command "Impacts on propagation and renderer, plus evidence-line callers" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bk92r5ie2</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/ed08012a-2b63-4060-9643-0156dde8cf2d/tasks/bk92r5ie2.output</output-file>
+<status>completed</status>
+<summary>Background command "Shallow-clone two large Go repos for the demo" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+quick question - the oopen source wont have entire checkpoints - what are we doing with those repos ? answer briefly
+
+---
+
+what is step 2 in simple language ?
+
+---
+
+which code are we asking questions on ?
+
+---
+
+what abt the curveball and open spurce repos thing ? i am slighly confisued - just focus on this for now ?
+
+---
+
+so it stops treating a guessed edge and a proven edge as the
+  same thing. That's edits to pivot.go, tests, a fixture, a commit. This is the deliverable.
+
+
+which doc said so ?
+
+---
+
+Ok, here is teh curveball from actual text: TRACK 2: GRAPH IS EVIDENCE, NOT AN ORACLE
+Your Graph-powered experience has encountered a repository using dynamic dispatch, generated code, reflection, or another pattern that static analysis cannot fully resolve.
+
+The new requirements:
+
+The product must not present incomplete Graph relationships as certain.
+
+It must identify when analysis may be partial.
+
+It must provide a safe fallback or verification path.
+
+Existing behaviour for fully resolved code must continue to work.
+
+You must include a test or fixture representing incomplete analysis.
+
+Use Entire Graph to identify which parts of your implementation consume relationship, impact, or semantic diff evidence.
+
+Users and agents must be able to tell apart:
+
+Confirmed structural evidence
+
+Heuristic or incomplete evidence
+
+Claims that require source or test verification
+
+A partial analysis repository fixture is attached.
+
+
+
+dxoes the above make sense ? is it same what i pasted iunb the beginneing ? give me yes 1 line answers here
+
+---
+
+Now in simople ;anguage explain what the below mean 
+
+
+dynamic dispatch, generated code, reflection, or another pattern that static analysis cannot fully resolve.
+
+
+and the open sou7dce repos have those ? simple brioef langauge
+
+---
+
+sure - hionestly did we alrady have a silution for these stuffs earliert in plan? bvrioef answer again
+
+---
+
+so what are the next few steps. Is it 1) Make changes as per the curveball 2) asses suing a k8s repo ?
+
+---
+
+Ok get started. ceratea a plam of list
+
+---
+
+status pls
+
+---
+
+Guve me list and mark as done, inporgress and tbd - have commenst for in progress -let me know if there are issues
+
+---
+
+what is ortganiuzer fioxture and where did u see it ?
+
+---
+
+pls commmuncaite bnrioefly - where did u come to know abt teh fixture ?
+
+---
+
+TRACK 2: GRAPH IS EVIDENCE, NOT AN ORACLE
+Your Graph-powered experience has encountered a repository using dynamic dispatch, generated code, reflection, or another pattern that static analysis cannot fully resolve.
+
+The new requirements:
+
+The product must not present incomplete Graph relationships as certain.
+
+It must identify when analysis may be partial.
+
+It must provide a safe fallback or verification path.
+
+Existing behaviour for fully resolved code must continue to work.
+
+You must include a test or fixture representing incomplete analysis.
+
+Use Entire Graph to identify which parts of your implementation consume relationship, impact, or semantic diff evidence.
+
+Users and agents must be able to tell apart:
+
+Confirmed structural evidence
+
+Heuristic or incomplete evidence
+
+Claims that require source or test verification
+
+A partial analysis repository fixture is attached.
+
+
+I think the last line is requirement - not somnething we are waiting for - brioef answer
+
+---
+
+no, I think repo might have partial analyis ficture and the users and agents should be abale to tell apart is what is expectted
+
+---
+
+whats the next issue ?
+
+---
+
+if we have changed code - bt didnt uypdate the test - we can update it - pls add it to task list 
+
+
+once done - give me the status in the same done, in progressm tdb format.
+
+---
+
+what dod u mean ficture here ?
+
+---
+
+⏺ Test expectation was wrong, not the code. zz_generated.go has a real path to invalidated code, so it stays AT-RISK with
+  UNVERIFIED evidence — only a file that would otherwise be SAFE moves into the UNVERIFIED bucket. That's the correct behaviour; I
+  asserted 2 where it should be 1.
+
+
+whiuch test ? ours or existing ?
+
+---
+
+if anything is blocked by claude - raise it and let me know - dont stay silent and be brief and clear in ur comms here
+
+---
+
+<task-notification>
+<task-id>bh2oidc8r</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/ed08012a-2b63-4060-9643-0156dde8cf2d/tasks/bh2oidc8r.output</output-file>
+<status>completed</status>
+<summary>Background command "Fix shared helper and run full cli suite" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bpst37pwo</task-id>
+<tool-use-id>toolu_01KkbmGrFjYHq8oLNqSHrThr</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/ed08012a-2b63-4060-9643-0156dde8cf2d/tasks/bpst37pwo.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for full suite to finish" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+status pls
+
+---
+
+in the sam format
+
+---
+
+<task-notification>
+<task-id>bdan8vzhw</task-id>
+<tool-use-id>toolu_01PToa2hk4rudchgViaoDwMM</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/ed08012a-2b63-4060-9643-0156dde8cf2d/tasks/bdan8vzhw.output</output-file>
+<status>completed</status>
+<summary>Background command "Run full cli suite in foreground" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+do we have k8s repo in local ?
+
+---
+
+leave entire tuips - that needs not ne committed
+
+---
+
+I think k8s can be down in bg
+
+---
+
+any issues ? status pls again
+
+---
+
+lets not do promemteus - I think k8s is eniough for now
+
+---
+
+Semantic diff captured — entirely additive, nothing removed
+
+
+explain in simple terms what that kmeans?
+
+---
+
+so why is that ? dhould entire cmds provide those stuffs ? and how did we do the semantic diff - suinge xuitsing enntire smds or pivotmaps cmds ?
+
+---
+
+So that should have worked ? is that a bug or ?
+
+---
+
+opk, no issues = status pls - and pls communicate beriofly from now - i dont have time to erad paragraphs
+
+---
+
+did the buildathoin.md have details abt how we tackled the curveball as epr expectatuiopns ?
+
+---
+
+and then u can oush
+
+---
+
+while the bg agents - what else is pending ?
+
+---
+
+do 1 - explain 2 to mne
+
+---
+
+<task-notification>
+<task-id>bzyp5aq0z</task-id>
+<tool-use-id>toolu_016kTWkck2DcxZJgjLXMvnX1</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/ed08012a-2b63-4060-9643-0156dde8cf2d/tasks/bzyp5aq0z.output</output-file>
+<status>completed</status>
+<summary>Background command "Run pivot on kubernetes" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bdhf856ts</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/ed08012a-2b63-4060-9643-0156dde8cf2d/tasks/bdhf856ts.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for kubernetes pivot to finish" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bi6rl12v9</task-id>
+<tool-use-id>toolu_01DFdpyCxDB16uXeZodcHrUy</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/ed08012a-2b63-4060-9643-0156dde8cf2d/tasks/bi6rl12v9.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait up to 13 min for kubernetes run" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+explian k8s result -
+
+---
+
+is 1 PM man - we ahve 1 hr 50 mins left - lets fix it
+
+---
+
+status pls -
+
+---
+
+<task-notification>
+<task-id>b81duw228</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/ed08012a-2b63-4060-9643-0156dde8cf2d/tasks/b81duw228.output</output-file>
+<status>completed</status>
+<summary>Background command "Full cli suite after matcher fix" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+we casn refer to the curtveballl from the buildathon.md - we are commitimg teh demo files ?
+
+---
+
+do progressive unveiling I guess - lets follow that buildathon can be the index that points to ouyr work
+
+---
+
+its probably an agent that does this
+
+---
+
+Ok, what the multi agent system we have and what it does ?
+
+---
+
+Ok, what the multi agent system we have and what it does ? comm as i saif
+
+---
+
+we had a loop ?
+
+---
+
+yes pls
+
+---
+
+use entire checkpoints to get what all converstions we had previously - so we found some issues with loop
+
+---
+
+in previous session
+
+---
+
+<task-notification>
+<task-id>bmwl4daps</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/ed08012a-2b63-4060-9643-0156dde8cf2d/tasks/bmwl4daps.output</output-file>
+<status>completed</status>
+<summary>Background command "Fix the stale demo line and TODO" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+we also wanted to build it like multi agent thing as the hackathon guy mentioned
+
+---
+
+seatch for those in checkpiints
+
+---
+
+That's a strong narrative for the demo — our own loop found the problem before the curveball named it. Want me to add it to
+  BUILDATHON.md? ~5 min.
+
+---
+
+dod we have evicence for above ?
+
+---
+
+yes - refer toi checkpoijnts - thats a good idea
+
+---
+
+/Users/adharsh/git/BTW-buildathon/entire-graph/docs/loop engg config options in agent loop of pivotmap plan.txt
+
+---
+
+from here ?
+
+---
+
+check this - we have some time - get the high value items here
+
+---
+
+check this - we have some time - get the high value items here
+
+---
+
+let me know what we are doing once ? talk to me here
+
+---
+
+Added must_not_do to the plan's execution contract — 6 invariants:
+  1. Don't delete production code to remove the dependency
+  2. Don't delete/skip/weaken a test to make a command pass
+  3. Don't change the constraint to fit the result
+  4. Don't narrow the analysed set (ignore rules, reduced profile)
+  5. Don't "fix" an UNVERIFIED file by suppressing the parser diagnostic
+  6. Must attach git diff --stat — the count alone is never the evidence
+
+---
+
+those sounds like non deterministic guardrails - do we have other options ?
+
+---
+
+<task-notification>
+<task-id>b4nbb75aa</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/ed08012a-2b63-4060-9643-0156dde8cf2d/tasks/b4nbb75aa.output</output-file>
+<status>completed</status>
+<summary>Background command "Full suite after contract change" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+dont sytart building - talk to me
+
+---
+
+teach me how dteermistic works - are we not allowing certain atuff ? how can we control an agent though ?
+
+---
+
+Sure - we use the agent to verify another ahgenr ? pls comm breifly with me 0- I have told u a 1000 times
+
+---
+
+we have 1.5 hours left - stop with time tarcking
+
+---
+
+yes add teh determisnistic guardrails - what abt loop improvement ?
+
+---
+
+anaswer me first
+
+---
+
+yes pls - but thera er stuff here that cant be verifed determistically ?
+
+---
+
+WHat is PARTIAL ? ewhat type is that ? broef answer pls
+
+---
+
+this is aftre the build loop ?
+
+---
+
+yes pls go ahead - if possible use a bg agent for this
+
+---
+
+what other extrenal agents free to usee we can talk ? thats part of the ahckathon ? lets ask what other agents will be sueful - we should be solving a good problenm
+
+---
+
+i meant - extrenal as in like mcp servers - other agents using a2a - so its a complete workflow - u get me ?
+
+---
+
+we have 1 hr lefy
+
+---
+
+Track 3 — Bring Entire to a New Agent or Workflow
+Extend or create an Entire integration for a coding agent, editor, development environment, CI process or
+software-delivery workflow. The integration must capture meaningful development context and keep working in
+its intended operating mode.
+●
+Support for a new coding agent or editor workflow.
+●
+A CI or pull-request workflow that uses checkpoint context.
+●
+A multi-agent coordination workflow.
+●
+A protocol adapter between Entire and another developer tool.
+External SDKs and fixtures are allowed, but the submitted implementation must live in
+
+---
+
+this isbtarck 3 - anything simple we can do ?
+
+---
+
+this isbtarck 3 - anything simple we can do ?
+
+
+listen to me - these guys care abt track stuff - we will submit unders trackl 2 but have elements of 3 - like what they expect
+
+---
+
+this isbtarck 3 - anything simple we can do ?
+
+
+listen to me - these guys care abt track stuff - we will submit unders trackl 2 but have elements of 3 - like what they expect
+
+
+ai am looking for valuable poiunts I can add in 1 hr
+
+---
+
+stay with me - comm with me properly
+
+---
+
+/research-prompt this
