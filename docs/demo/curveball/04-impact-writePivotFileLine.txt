@@ -1,0 +1,20 @@
+Index: cache-miss (29540ms) | Query: 7ms | Total: 29548ms
+Completeness: no parse failures in Go (421 files parsed); 1 elsewhere (JSON 1) cannot affect this answer — see --format json.
+Impact: writePivotFileLine (internal/cli/pivot_roles.go:385) def=385 span=385-411 [function]
+Blast radius: 3 callers (1 direct, 2 transitive), 2 callees, 2 type consumers, 1 data flow, 1 co-change file, 0 siblings.
+Callers (1 direct, 2 transitive; who breaks if behavior changes):
+- writePivotText (internal/cli/pivot_roles.go:286, def :228) [+1 more call site]
+- runPivot (internal/cli/pivot.go:334, def :273) [via writePivotText]
+- TestWritePivotTextGroupsAndCollapses (internal/cli/pivot_roles_test.go:137, def :114) [via writePivotText]
+Callees (2; what it depends on):
+- fmt.Fprintf
+- fmt.Sprintf
+Type consumers (0 in, 2 out; USES_TYPE/PARAM_TYPE/RETURNS_TYPE):
+- -> pivotFile (internal/cli/pivot.go:92) [PARAM_TYPE]
+- -> pivotFile (internal/cli/pivot.go:92) [USES_TYPE]
+Data flows (1 in, 0 out):
+- <- writePivotText (internal/cli/pivot_roles.go:228)
+Co-change coupling (1; files that historically change with internal/cli/pivot_roles.go):
+- internal/cli/pivot.go [files changed together in 2 recent commits]
+Same-container siblings (0):
+- none

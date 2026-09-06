@@ -1,0 +1,25 @@
+Index: cache-miss (29399ms) | Query: 5ms | Total: 29404ms
+Completeness: no parse failures in Go (421 files parsed); 1 elsewhere (JSON 1) cannot affect this answer — see --format json.
+Impact: buildFileDependents (internal/cli/pivot.go:563) def=563 span=563-585 [function]
+Blast radius: 4 callers (1 direct, 3 transitive), 1 callee, 4 type consumers, 2 data flows, 3 co-change files, 0 siblings.
+Callers (1 direct, 3 transitive; who breaks if behavior changes):
+- buildPivotResponse (internal/cli/pivot.go:443, def :340)
+- runPivot (internal/cli/pivot.go:303, def :273) [via buildPivotResponse]
+- TestPivotClassifiesTestFilesWithoutExclusion (internal/cli/pivot_test.go:72, def :71) [via buildPivotResponse]
+- TestPivotExcludeTestsDropsTestsAndTheirPropagation (internal/cli/pivot_test.go:95, def :94) [via buildPivotResponse]
+Callees (1; what it depends on):
+- firstEvidenceLine (internal/cli/pivot.go:648)
+Type consumers (0 in, 4 out; USES_TYPE/PARAM_TYPE/RETURNS_TYPE):
+- -> fileDependentEdge (internal/cli/pivot.go:552) [RETURNS_TYPE]
+- -> fileDependentEdge (internal/cli/pivot.go:552) [USES_TYPE]
+- -> ProviderSnapshot (internal/sem/provider.go:417) [PARAM_TYPE]
+- -> ProviderSnapshot (internal/sem/provider.go:417) [USES_TYPE]
+Data flows (2 in, 0 out):
+- <- buildPivotResponse (internal/cli/pivot.go:340)
+- <- make (internal/sem/testdata/fixtures/typescript-oo/shapes.ts:36)
+Co-change coupling (3; files that historically change with internal/cli/pivot.go):
+- BUILDATHON.md [files changed together in 2 recent commits]
+- internal/cli/help.go [files changed together in 3 recent commits]
+- internal/cli/pivot_roles.go [files changed together in 2 recent commits]
+Same-container siblings (0):
+- none

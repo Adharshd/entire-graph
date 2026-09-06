@@ -55,7 +55,10 @@ func pivotTestSnapshot() sem.ProviderSnapshot {
 }
 
 func pivotVerdict(response pivotResponse, path string) string {
-	for _, group := range [][]pivotFile{response.Invalidated, response.AtRisk, response.Safe} {
+	// response.Unverified is in this list because leaving it out would make an
+	// unparsed file look like one that was never classified at all, which is the
+	// exact confusion evidence tiers exist to remove.
+	for _, group := range [][]pivotFile{response.Invalidated, response.AtRisk, response.Safe, response.Unverified} {
 		for _, file := range group {
 			if file.Path == path {
 				return file.Verdict

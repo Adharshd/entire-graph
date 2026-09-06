@@ -1,0 +1,43 @@
+Index: cache-miss (29177ms) | Query: 7ms | Total: 29185ms
+Completeness: no parse failures in Go (421 files parsed); 1 elsewhere (JSON 1) cannot affect this answer — see --format json.
+Impact: buildPivotResponse (internal/cli/pivot.go:340) def=340 span=340-548 [function]
+Blast radius: 4 callers (3 direct, 1 transitive), 14 callees, 6 type consumers, 5 data flows, 3 co-change files, 0 siblings.
+Callers (3 direct, 1 transitive; who breaks if behavior changes):
+- runPivot (internal/cli/pivot.go:303, def :273)
+- TestPivotClassifiesTestFilesWithoutExclusion (internal/cli/pivot_test.go:72, def :71)
+- TestPivotExcludeTestsDropsTestsAndTheirPropagation (internal/cli/pivot_test.go:95, def :94)
+- Run (internal/cli/root.go:105, def :43) [via runPivot]
+Callees (14; what it depends on):
+- fmt.Sprintf
+- sort.Slice
+- sort.Strings
+- strings.Join
+- isConventionalTestPath (internal/cli/neighbors.go:579)
+- buildFileDependents (internal/cli/pivot.go:563)
+- pivotAtRiskWhy (internal/cli/pivot.go:587)
+- prohibitedMatch (internal/cli/pivot.go:600)
+- prohibitedTargets (internal/cli/pivot.go:623)
+- fileRecordPath (internal/cli/pivot.go:639)
+- firstEvidenceLine (internal/cli/pivot.go:648)
+- semanticLanguages (internal/cli/pivot.go:655)
+- sortPivotFiles (internal/cli/pivot.go:667)
+- classifyPivotRole (internal/cli/pivot_roles.go:62)
+Type consumers (0 in, 6 out; USES_TYPE/PARAM_TYPE/RETURNS_TYPE):
+- -> pivotFlags (internal/cli/pivot.go:57) [PARAM_TYPE]
+- -> pivotFlags (internal/cli/pivot.go:57) [USES_TYPE]
+- -> pivotResponse (internal/cli/pivot.go:124) [RETURNS_TYPE]
+- -> pivotResponse (internal/cli/pivot.go:124) [USES_TYPE]
+- -> ProviderSnapshot (internal/sem/provider.go:417) [PARAM_TYPE]
+- -> ProviderSnapshot (internal/sem/provider.go:417) [USES_TYPE]
+Data flows (1 in, 4 out):
+- -> buildFileDependents (internal/cli/pivot.go:563)
+- -> prohibitedMatch (internal/cli/pivot.go:600)
+- <- fileRecordPath (internal/cli/pivot.go:639)
+- -> semanticLanguages (internal/cli/pivot.go:655)
+- -> classifyPivotRole (internal/cli/pivot_roles.go:62)
+Co-change coupling (3; files that historically change with internal/cli/pivot.go):
+- BUILDATHON.md [files changed together in 2 recent commits]
+- internal/cli/help.go [files changed together in 3 recent commits]
+- internal/cli/pivot_roles.go [files changed together in 2 recent commits]
+Same-container siblings (0):
+- none

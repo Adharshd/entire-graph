@@ -43,6 +43,11 @@ const (
 	verdictInvalidated = "INVALIDATED"
 	verdictAtRisk      = "AT-RISK"
 	verdictSafe        = "SAFE"
+	// verdictUnverified is Safe's honest twin: no path to an invalidated file was
+	// found, but this file did not parse cleanly, so the absence of a path is not
+	// a finding about the code. Splitting it out is the point -- Safe used to
+	// absorb both, and a reader could not tell which one they were holding.
+	verdictUnverified = "UNVERIFIED"
 )
 
 // pivotMaxDepth bounds how far At-Risk propagates from an invalidated file.
@@ -79,6 +84,16 @@ type pivotEdge struct {
 	Target     string  `json:"target"`
 	Confidence float64 `json:"confidence"`
 	Reason     string  `json:"reason"`
+	// Resolution is the graph's own word for how it found this edge -- "exact"
+	// when it followed a call to a definition, "name_only" when it matched a
+	// globally unique method name. It was previously dropped on the floor, which
+	// is what made a resolved edge and a guessed one indistinguishable.
+	Resolution string `json:"resolution,omitempty"`
+	// Tier grades this edge CONFIRMED, HEURISTIC or UNVERIFIED. It is derived
+	// from Resolution, Confidence and whether the file parsed cleanly, so a
+	// reader does not have to know the resolution vocabulary to know what to
+	// trust. See pivot_evidence.go.
+	Tier string `json:"evidence_tier"`
 	// SourceFile is the file at the other end when this is a propagation edge,
 	// empty when the edge points at the prohibited dependency itself.
 	SourceFile string `json:"source_file,omitempty"`
@@ -92,6 +107,18 @@ type pivotEdge struct {
 type pivotFile struct {
 	Path    string `json:"path"`
 	Verdict string `json:"verdict"`
+	// EvidenceQuality is the weakest tier among this file's evidence, because a
+	// verdict is only as good as the shakiest edge holding it up. Empty when the
+	// file has no evidence at all, which is what Safe means.
+	EvidenceQuality string `json:"evidence_quality,omitempty"`
+	// VerificationRequired says this verdict must not be acted on from the graph
+	// alone. It is the safe fallback the report owes a reader whenever the
+	// evidence is heuristic or the parse was incomplete.
+	VerificationRequired bool `json:"verification_required"`
+	// AnalysisNote carries the parser's own reason when this file did not parse
+	// cleanly, so the caveat travels attached to the file it applies to rather
+	// than sitting in a header the reader has to correlate by hand.
+	AnalysisNote string `json:"analysis_note,omitempty"`
 	// Distance is hops from the nearest invalidated file: 0 for an invalidated
 	// file itself, 1 for a direct dependent, and so on up to the depth cap.
 	Distance int    `json:"distance"`
@@ -148,8 +175,16 @@ type pivotResponse struct {
 
 	// Unreached is the honest half of the answer: files the graph could not
 	// analyze for relationships, so their verdict is unknown rather than Safe.
-	Unreached       []string               `json:"unreached,omitempty"`
-	UnreachedReason string                 `json:"unreached_reason,omitempty"`
+	Unreached       []string `json:"unreached,omitempty"`
+	UnreachedReason string   `json:"unreached_reason,omitempty"`
+	// Unverified holds files that reached no invalidated file AND did not parse
+	// cleanly. They were previously reported Safe.
+	Unverified       []pivotFile `json:"unverified"`
+	UnverifiedReason string      `json:"unverified_reason,omitempty"`
+	// EvidenceCounts totals the classified files by evidence tier, so a reader
+	// sees how much of the report rests on inference before reading any of it.
+	EvidenceCounts map[string]int `json:"evidence_counts,omitempty"`
+
 	Warnings        []sem.ProviderWarning  `json:"warnings,omitempty"`
 	PartialFailures []sem.PartialFailure   `json:"partial_failures"`
 	Stats           sem.ProviderStats      `json:"stats"`
@@ -165,8 +200,11 @@ type pivotCounts struct {
 	Invalidated int `json:"invalidated"`
 	AtRisk      int `json:"at_risk"`
 	Safe        int `json:"safe"`
-	Unreached   int `json:"unreached"`
-	Total       int `json:"total"`
+	// Unverified is Safe minus the certainty: no path found, in a file the parser
+	// could not fully read.
+	Unverified int `json:"unverified"`
+	Unreached  int `json:"unreached"`
+	Total      int `json:"total"`
 	// ExcludedTests is how many files --exclude-tests removed from the run. It is
 	// reported rather than silently dropped: a file that was never classified is
 	// not a file that came back Safe.
@@ -348,6 +386,13 @@ func buildPivotResponse(snapshot sem.ProviderSnapshot, flags pivotFlags) pivotRe
 		Warnings:      snapshot.Header.Warnings,
 	}
 
+	// The parser's own diagnostics, keyed by the file they were reported against.
+	// buildPivotResponse used to copy these into the response and never read them,
+	// so a file whose parse had failed could still be reported Safe. They are now
+	// consulted at the two places it matters: grading an edge, and deciding
+	// whether "no path found" is a finding or an absence of information.
+	incompleteFiles := incompleteAnalysisFiles(snapshot.Header)
+
 	symbolFile := make(map[string]string, len(snapshot.Symbols))
 	for _, symbol := range snapshot.Symbols {
 		symbolFile[symbol.ID] = symbol.FilePath
@@ -427,7 +472,10 @@ func buildPivotResponse(snapshot sem.ProviderSnapshot, flags pivotFlags) pivotRe
 			Target:     target,
 			Confidence: relation.Confidence,
 			Reason:     relation.Reason,
-			Line:       firstEvidenceLine(relation),
+			Resolution: relation.Resolution,
+			Tier: classifyEvidenceTier(relation.Type, relation.Resolution, relation.Confidence,
+				relation.WarningCodes, filePath, incompleteFiles),
+			Line: firstEvidenceLine(relation),
 		})
 	}
 	for _, entry := range verdicts {
@@ -475,6 +523,9 @@ func buildPivotResponse(snapshot sem.ProviderSnapshot, flags pivotFlags) pivotRe
 					Target:     invalidatedPath,
 					Confidence: edge.confidence,
 					Reason:     edge.reason,
+					Resolution: edge.resolution,
+					Tier: classifyEvidenceTier(edge.relation, edge.resolution, edge.confidence,
+						edge.warningCodes, edge.from, incompleteFiles),
 					SourceFile: invalidatedPath,
 					Line:       edge.line,
 				})
@@ -500,12 +551,45 @@ func buildPivotResponse(snapshot sem.ProviderSnapshot, flags pivotFlags) pivotRe
 			delete(verdicts, filePath)
 			continue
 		}
+		if code, incomplete := incompleteFiles[filePath]; incomplete {
+			// The distinction this whole change exists for. "No path found" in a
+			// file the parser fully read is a finding about the code. The same
+			// sentence about a file it could not read is a finding about the
+			// parser, and calling it Safe presents the second as the first.
+			entry.Verdict = verdictUnverified
+			entry.Why = "no dependency path found, but this file did not parse cleanly (" + code + "), so no path found is not the same as no path"
+			entry.AnalysisNote = code
+			entry.Distance = -1
+			continue
+		}
 		entry.Why = "no dependency path to any invalidated file"
 		entry.Distance = -1
 	}
 	if len(response.Unreached) > 0 {
 		sort.Strings(response.Unreached)
 		response.UnreachedReason = "inventory-only language: the graph parses these files for structure but not for call or import relations, so their verdict is unknown rather than Safe"
+	}
+
+	// Evidence quality is graded once the verdicts are final, and like roles it
+	// never changes one. It answers a different question: not "what is this file"
+	// but "how well does the graph actually know that". A CONFIRMED verdict can be
+	// acted on from the report; anything else has to be checked against source.
+	response.EvidenceCounts = make(map[string]int, 3)
+	for _, entry := range verdicts {
+		entry.EvidenceQuality = weakestEvidenceTier(entry.Evidence)
+		if entry.Verdict == verdictUnverified {
+			entry.EvidenceQuality = evidenceUnverified
+		}
+		switch entry.EvidenceQuality {
+		case "":
+			// Safe with no evidence is not weak evidence. The verdict is the
+			// absence of a path, and the report already says so.
+		case evidenceConfirmed:
+			response.EvidenceCounts[evidenceConfirmed]++
+		default:
+			response.EvidenceCounts[entry.EvidenceQuality]++
+			entry.VerificationRequired = true
+		}
 	}
 
 	// Roles are decided once, after the verdicts are final: a role never changes a
@@ -525,6 +609,8 @@ func buildPivotResponse(snapshot sem.ProviderSnapshot, flags pivotFlags) pivotRe
 			response.Invalidated = append(response.Invalidated, *entry)
 		case verdictAtRisk:
 			response.AtRisk = append(response.AtRisk, *entry)
+		case verdictUnverified:
+			response.Unverified = append(response.Unverified, *entry)
 		default:
 			response.Safe = append(response.Safe, *entry)
 		}
@@ -532,13 +618,18 @@ func buildPivotResponse(snapshot sem.ProviderSnapshot, flags pivotFlags) pivotRe
 	sortPivotFiles(response.Invalidated)
 	sortPivotFiles(response.AtRisk)
 	sortPivotFiles(response.Safe)
+	sortPivotFiles(response.Unverified)
+	if len(response.Unverified) > 0 {
+		response.UnverifiedReason = "the parser reported a warning or partial failure against these files, so the absence of a dependency path is unknown rather than established; verify against source or a test before treating one as Safe"
+	}
 
 	response.Counts = pivotCounts{
 		Invalidated:   len(response.Invalidated),
 		AtRisk:        len(response.AtRisk),
 		Safe:          len(response.Safe),
+		Unverified:    len(response.Unverified),
 		Unreached:     len(response.Unreached),
-		Total:         len(response.Invalidated) + len(response.AtRisk) + len(response.Safe) + len(response.Unreached),
+		Total:         len(response.Invalidated) + len(response.AtRisk) + len(response.Safe) + len(response.Unverified) + len(response.Unreached),
 		ExcludedTests: excludedTests,
 	}
 	response.PartialFailures = snapshot.Header.PartialFailures
@@ -554,7 +645,12 @@ type fileDependentEdge struct {
 	relation   string
 	confidence float64
 	reason     string
-	line       int
+	// resolution and warningCodes travel with the edge so propagation can be
+	// graded the same way a direct conflict is. Without them an At-Risk verdict
+	// two hops out would carry no indication of how it was reached.
+	resolution   string
+	warningCodes []string
+	line         int
 }
 
 // buildFileDependents inverts the relation list into "who depends on this file",
@@ -574,11 +670,13 @@ func buildFileDependents(snapshot sem.ProviderSnapshot, endpointFile func(string
 			continue
 		}
 		dependents[toFile] = append(dependents[toFile], fileDependentEdge{
-			from:       fromFile,
-			relation:   relation.Type,
-			confidence: relation.Confidence,
-			reason:     relation.Reason,
-			line:       firstEvidenceLine(relation),
+			from:         fromFile,
+			relation:     relation.Type,
+			confidence:   relation.Confidence,
+			resolution:   relation.Resolution,
+			warningCodes: relation.WarningCodes,
+			reason:       relation.Reason,
+			line:         firstEvidenceLine(relation),
 		})
 	}
 	return dependents

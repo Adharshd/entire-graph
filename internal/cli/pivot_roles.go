@@ -240,10 +240,18 @@ func writePivotText(out io.Writer, response pivotResponse) {
 		cacheWord(response.IndexCacheHit), response.IndexLatencyMS)
 	fmt.Fprintf(out, "%d invalidated, %d at-risk, %d safe",
 		response.Counts.Invalidated, response.Counts.AtRisk, response.Counts.Safe)
+	if response.Counts.Unverified > 0 {
+		fmt.Fprintf(out, ", %d unverified", response.Counts.Unverified)
+	}
 	if response.Counts.Unreached > 0 {
 		fmt.Fprintf(out, ", %d unreached", response.Counts.Unreached)
 	}
 	fmt.Fprintf(out, " (of %d files)\n", response.Counts.Total)
+	// How much of this report rests on inference, said before any of it is read.
+	// A reader deciding how far to trust a report does that first, not after.
+	if mix := pivotEvidenceMix(response.EvidenceCounts); mix != "" {
+		fmt.Fprintf(out, "Evidence: %s\n", mix)
+	}
 	if response.ExcludeTests {
 		// Said out loud rather than left as a silently shorter list: an excluded
 		// file was never classified, which is not the same as coming back Safe.
@@ -315,8 +323,15 @@ func writePivotText(out io.Writer, response pivotResponse) {
 		}
 	}
 
+	if len(response.Unverified) > 0 {
+		fmt.Fprintf(out, "\nUNVERIFIED (%d) — %s\n", len(response.Unverified), response.UnverifiedReason)
+		for _, file := range response.Unverified {
+			fmt.Fprintf(out, "- %-50s [%s] parser reported %s\n", file.Path, file.Role, file.AnalysisNote)
+		}
+	}
+
 	if len(response.Safe) > 0 {
-		fmt.Fprintf(out, "\nSAFE (%d) — no dependency path to invalidated code, leave alone.\n", len(response.Safe))
+		fmt.Fprintf(out, "\nSAFE (%d) — no dependency path to invalidated code, and the file parsed cleanly.\n", len(response.Safe))
 	}
 
 	// Static analysis reads source without running it, so a call made through an
@@ -325,6 +340,16 @@ func writePivotText(out io.Writer, response pivotResponse) {
 	// ship a break this tool could never have seen.
 	fmt.Fprintf(out, "\nVerify before acting: Safe means no path was found, not that none exists.\n")
 	fmt.Fprintf(out, "Calls through interfaces, reflection, or generated code leave no edge to follow.\n")
+}
+
+// pivotResolutionWord keeps the graph's own vocabulary readable when it is
+// absent. An edge with no resolution recorded is not "exact"; it is unstated,
+// and printing an empty string invites the reader to fill the gap themselves.
+func pivotResolutionWord(resolution string) string {
+	if resolution == "" {
+		return "unstated"
+	}
+	return resolution
 }
 
 // splitByTestRole divides a section into the work a person opens files to do and
@@ -393,6 +418,12 @@ func writePivotFileLine(out io.Writer, file pivotFile) {
 	}
 	fmt.Fprintf(out, "- %s [%s]%s%s\n", file.Path, file.Role, distance, marker)
 	fmt.Fprintf(out, "    %s\n", file.Why)
+	if file.VerificationRequired {
+		// The fallback the card asks for, stated against the file it applies to
+		// rather than once in a footer the reader has to remember.
+		fmt.Fprintf(out, "    VERIFY: %s evidence — confirm in source or by test before acting on this verdict.\n",
+			file.EvidenceQuality)
+	}
 	for _, edge := range file.Evidence {
 		// The line belongs to the file being reported, not to the target it reaches:
 		// it is where THIS file makes the import or the call. Printing it against the
@@ -405,7 +436,12 @@ func writePivotFileLine(out io.Writer, file pivotFile) {
 		if edge.Line > 0 {
 			origin = fmt.Sprintf("%s:%d", file.Path, edge.Line)
 		}
-		fmt.Fprintf(out, "    evidence: %s %s -> %s (confidence %.2f) %s\n",
-			edge.Relation, origin, edge.Target, edge.Confidence, edge.Reason)
+		// The tier leads the line because it is what decides whether the rest of
+		// it can be acted on. Confidence stays, but it is no longer the only
+		// thing distinguishing an import the parser read from a call it matched
+		// by name -- those were previously rendered identically.
+		fmt.Fprintf(out, "    [%s] evidence: %s %s -> %s (confidence %.2f, resolution %s) %s\n",
+			edge.Tier, edge.Relation, origin, edge.Target, edge.Confidence,
+			pivotResolutionWord(edge.Resolution), edge.Reason)
 	}
 }

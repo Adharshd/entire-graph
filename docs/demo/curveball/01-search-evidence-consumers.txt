@@ -1,0 +1,209 @@
+1. internal/sem/search_preselection.go:149-158 score=20.7997 symbol=searchPreselectionConfidence kind=function focus=149 signals=body,symbol-name,signature,graph:callers,complete-symbol
+func searchPreselectionConfidence(evidence []searchPreselectionEvidence, limit int) float64 {
+	if limit >= len(evidence) {
+		return 1
+	}
+	current, next := evidence[limit-1].rrfScore, evidence[limit].rrfScore
+	if current <= 0 {
+		return 0
+	}
+	return math.Max(0, 1-next/current)
+}
+
+2. internal/sem/search.go:3288-3422 score=20.4538 symbol=expandGraphCandidates kind=function focus=3372→3379 signals=body,symbol-name,graph:callers,complete-symbol
+func expandGraphCandidates(seeds []searchCandidate, q searchQuery, relations []RelationRecord, symbolsByID map[string]SymbolRecord, callerBoosts map[string]float64, read contentReader, languages map[string]string, options SearchOptions) []searchCandidate {
+	if len(seeds) == 0 || len(relations) == 0 {
+		return nil
+	}
+	// SearchRepository normalizes options before calling here, but direct
+	// callers (e.g. tests) may pass hand-built options. Mirror that
+	// normalization so a non-positive limit cannot shrink end below start
+	// and panic on the snippet slice below.
+	if options.MaxRegionLines <= 0 {
+		options.MaxRegionLines = defaultSearchMaxRegionLines
+	}
+	if options.MaxSnippetLines <= 0 {
+		options.MaxSnippetLines = defaultSearchMaxSnippetLines
+	}
+	seedScores := map[string]float64{}
+	for _, candidate := range seeds {
+		if len(seedScores) >= 10 {
+			break
+		}
+		if candidate.result.SymbolID != "" && candidate.score > seedScores[candidate.result.SymbolID] {
+			seedScores[candidate.result.SymbolID] = candidate.score
+		}
+	}
+	if len(seedScores) == 0 {
+		return nil
+	}
+	best := map[string]searchCandidate{}
+	contentCache := map[string][]string{}
+	for _, relation := range relations {
+		if relation.Confidence < 0.7 || !searchExpansionRelation(relation.Type) {
+			continue
+		}
+		pairs := [][3]string{{relation.FromID, relation.ToID, "outgoing"}, {relation.ToID, relation.FromID, "incoming"}}
+		for _, pair := range pairs {
+			seedScore, ok := seedScores[pair[0]]
+			if !ok {
+				continue
+			}
+			symbol, ok := symbolsByID[pair[1]]
+			if !ok || symbol.ID == pair[0] {
+				continue
+			}
+			lines, ok := contentCache[symbol.FilePath]
+			if !ok {
+				content, readable := read(symbol.FilePath)
+				if !readable {
+					continue
+				}
+				lines = strings.Split(content, "\n")
+				contentCache[symbol.FilePath] = lines
+			}
+			start, end := clampRegion(symbol.StartLine, symbol.EndLine, len(lines))
+			if start == 0 {
+				continue
+			}
+			if end-start+1 > options.MaxRegionLines {
+				end = minInt(len(lines), start+options.MaxRegionLines-1)
+			}
+			snippetStart, snippetEnd := focusedSnippetRegion(start, end, start, options.MaxSnippetLines)
+			candidate := searchCandidate{
+				result: SearchResult{
+					FilePath:         symbol.FilePath,
+					StartLine:        start,
+					EndLine:          end,
+					FocusLine:        start,
+					SnippetStartLine: snippetStart,
+					SnippetEndLine:   snippetEnd,
+					Language:         languages[symbol.FilePath],
+					Kind:             symbol.Kind,
+					SymbolID:         symbol.ID,
+					SymbolName:       symbol.Name,
+					QualifiedName:    symbol.QualifiedName,
+					Signature:        symbol.Signature,
+					SymbolStartLine:  symbol.StartLine,
+					SymbolEndLine:    symbol.EndLine,
+					Snippet:          strings.Join(lines[snippetStart-1:snippetEnd], "\n"),
+				},
+				aliases: append([]string(nil), symbol.Aliases...),
+			}
+			// A graph neighbor of a strong seed must be able to compete with
+			// mid-ranked lexical candidates: the previous 0.28*seed+confidence
+			// formula scored neighbors of a ~15-point seed near 5, below every
+			// direct match, so expansion never surfaced the implementation
+			// behind a well-matching type or doc heading. Inherit most of the
+			// seed's evidence, then add edge confidence and the target's own
+			// caller-degree signal; derivedSearchScore still caps the result
+			// below the seed itself. The generous inheritance is reserved for
+			// neighbors that carry at least one query term themselves —
+			// zero-evidence neighbors (a utility helper the seed happens to
+			// call) keep the old conservative score so they cannot displace
+			// direct matches.
+			inherit := 0.28 * seedScore
+			callerBoost := 0.0
+			regionText := strings.Join(lines[start-1:end], "\n")
+			counts, _ := searchTermCounts(regionText, q.termSet)
+			symbolMatch := searchSymbolNameMatchesQueryTerm(q, symbol)
+			if len(counts) > 0 || symbolMatch {
+				inherit = 0.55 * seedScore
+				callerBoost = callerBoosts[symbol.ID]
+				if !symbolMatch {
+					callerBoost *= 0.5
+				}
+			}
+			// Preserve main's vocabulary-gap bridge: a high-confidence call-like
+			// neighbor whose own symbol name shares a query term should sit just
+			// below its seed even when its body uses different vocabulary.
+			if relation.Confidence >= 0.8 &&
+				(relation.Type == "CALLS" || relation.Type == "ASYNC_CALLS" || relation.Type == "CONSTRUCTS") &&
+				symbolMatch {
+				inherit = 0.85 * seedScore
+			}
+			candidate.score = derivedSearchScore(
+				seedScore,
+				inherit+2.2*relation.Confidence+searchPathPrior(q, symbol.FilePath)+callerBoost,
+			)
+			candidate.baseScore = candidate.score
+			candidate.result.Signals = appendUnique(candidate.result.Signals, "graph:"+strings.ToLower(relation.Type), "graph:"+pair[2])
+			if callerBoost > 0 {
+				candidate.result.Signals = appendUnique(candidate.result.Signals, "graph:callers")
+			}
+			if previous, exists := best[symbol.ID]; !exists || candidate.score > previous.score {
+				best[symbol.ID] = candidate
+			}
+		}
+	}
+	out := make([]searchCandidate, 0, len(best))
+	for _, candidate := range best {
+		out = append(out, candidate)
+	}
+	sortSearchCandidates(out)
+	if len(out) > 20 {
+		out = out[:20]
+	}
+	return out
+}
+
+3. internal/sem/provider.go:4376-4407 score=20.2093 symbol=emitStructuralRelations kind=function focus=4376 signals=body,symbol-name,graph:callers,complete-symbol
+func emitStructuralRelations(repoKey string, files []FileRecord, recordsByFile map[string][]SymbolRecord, emit func(RelationRecord)) {
+	for _, file := range files {
+		for _, symbol := range recordsByFile[file.Path] {
+			emit(RelationRecord{
+				RecordType:    "relation",
+				FromID:        fileID(repoKey, symbol.FilePath),
+				ToID:          symbol.ID,
+				Type:          "DEFINES",
+				Confidence:    1,
+				Reason:        "symbol parsed from file",
+				RelationScope: "file",
+				Resolution:    "exact",
+				TargetKind:    "symbol",
+				WarningCodes:  []string{},
+			})
+			if symbol.ContainerID != "" {
+				emit(RelationRecord{
+					RecordType:    "relation",
+					FromID:        symbol.ContainerID,
+					ToID:          symbol.ID,
+					Type:          "CONTAINS",
+					Confidence:    1,
+					Reason:        "symbol qualified name is nested in container",
+					RelationScope: "file",
+					Resolution:    "exact",
+					TargetKind:    "symbol",
+					WarningCodes:  []string{},
+				})
+			}
+		}
+	}
+}
+
+4. internal/sem/search_confidence.go:213 LowConfidenceScoreCeiling  [body: def LowConfidenceScoreCeiling]
+5. internal/cli/stats.go:478 fileScanner.consume  [body: def fileScanner.consume]
+6. internal/cli/verify.go:302 renderVerifyVerdict  [body: def renderVerifyVerdict]
+7. internal/sem/search_cache.go:623 selectiveSearchSnapshotFromFull  [body: def selectiveSearchSnapshotFromFull]
+8. internal/cli/search.go:1666 searchLowConfidenceNotices  [body: def searchLowConfidenceNotices]
+9. internal/cli/search_forgery.go:159-160 focus=159
+var searchRecordLinePrefixes = []string{
+	"VERIFY:",
+
+10. internal/sem/search_reanchor.go:43-44 focus=44
+// "this line is prose" means one thing across the payload.
+var searchCommentLinePrefixes = []string{"//", "/*", "*/", "*", "#", "--", ";;", "%%", "<!--", `"""`, "'''"}
+
+COVERING TEST (what hit 1 is supposed to do; not a fix site):
+11. internal/sem/search_test.go:1716-1717 symbol=TestExpandGraphCandidatesSkipsOutOfRangeSymbolLines kind=function focus=1716 signals=related:covering-test
+			t.Fatalf("expected out-of-range target candidate to be skipped, got %+v", candidate.result)
+		}
+
+  ALSO COVERING expandGraphCandidates (5 tests cover it; all must still pass): TestExpandGraphCandidatesIncludesInRangeSymbol, TestExpandGraphCandidatesClampsNonPositiveRegionLines, TestExpandGraphCandidatesDoesNotBoostZeroEvidenceHub, TestExpandGraphCandidatesHalvesBodyOnlyCallerBoost in internal/sem/search_test.go
+VERIFY: go test ./internal/sem -run '^TestExpandGraphCandidatesSkipsOutOfRangeSymbolLines$'
+  targets internal/sem/search_test.go (from go.mod module root + covering test name) tier=narrow
+  run it ONCE after editing; if it fails, fix the code and re-run THIS command.
+  do not build an alternative test harness, hand-assemble a classpath, or re-verify by
+  reverting and reapplying the edit.
+SAME-CONCEPT LITERAL "searchPreselectionConfidence" — 2 in 1 file repo-wide:
+  internal/sem/search_preselection.go:118 selectProgressiveSearchFiles CONSUMER

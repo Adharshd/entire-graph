@@ -91,6 +91,7 @@ type pivotPlanCounts struct {
 	Invalidated   int `json:"invalidated"`
 	AtRisk        int `json:"at_risk"`
 	Safe          int `json:"safe"`
+	Unverified    int `json:"unverified"`
 	Unreached     int `json:"unreached"`
 	Total         int `json:"total"`
 	ExcludedTests int `json:"excluded_tests"`
@@ -118,6 +119,14 @@ type pivotWorkItem struct {
 	Package  string `json:"package"`
 	// Distance is hops from the root invalidated file; 0 for a direct violation and
 	// -1 for a file that no invalidated code reaches.
+	// EvidenceQuality and VerificationRequired are the agent-facing half of the
+	// evidence tiers. The text report tags each evidence line for a human; an
+	// agent consuming this plan needs the same distinction as a field it can
+	// branch on, because an agent is the reader most likely to act on a work
+	// item without opening the file.
+	EvidenceQuality      string `json:"evidence_quality,omitempty"`
+	VerificationRequired bool   `json:"verification_required"`
+
 	Distance        int         `json:"distance"`
 	RootInvalidated string      `json:"root_invalidated,omitempty"`
 	Evidence        []pivotEdge `json:"evidence"`
@@ -176,6 +185,9 @@ func buildPivotPlan(response pivotResponse, flags pivotFlags) pivotPlan {
 	for _, file := range response.Safe {
 		plan.WorkItems = append(plan.WorkItems, pivotWorkItemFor(file, actionNoAction, constraint))
 	}
+	for _, file := range response.Unverified {
+		plan.WorkItems = append(plan.WorkItems, pivotWorkItemFor(file, actionManualReview, constraint))
+	}
 	for _, filePath := range response.Unreached {
 		unreached := pivotFile{
 			Path:     filePath,
@@ -210,6 +222,7 @@ func buildPivotPlan(response pivotResponse, flags pivotFlags) pivotPlan {
 		Invalidated:   response.Counts.Invalidated,
 		AtRisk:        response.Counts.AtRisk,
 		Safe:          response.Counts.Safe,
+		Unverified:    response.Counts.Unverified,
 		Unreached:     response.Counts.Unreached,
 		Total:         response.Counts.Total,
 		ExcludedTests: response.Counts.ExcludedTests,
@@ -261,10 +274,16 @@ func pivotWorkItemFor(file pivotFile, action, constraint string) pivotWorkItem {
 		Role:            file.Role,
 		Path:            file.Path,
 		Package:         pivotPackageOf(file.Path),
-		Distance:        file.Distance,
-		RootInvalidated: file.RootInvalidated,
-		Evidence:        file.Evidence,
-		InCheckpoint:    file.InCheckpoint,
+		EvidenceQuality: file.EvidenceQuality,
+		// A NO_ACTION item on a clean parse needs no verification: the plan is
+		// telling the agent to do nothing, and doing nothing cannot be wrong in
+		// a way source inspection would catch. Everything else that rests on
+		// inference does.
+		VerificationRequired: file.VerificationRequired,
+		Distance:             file.Distance,
+		RootInvalidated:      file.RootInvalidated,
+		Evidence:             file.Evidence,
+		InCheckpoint:         file.InCheckpoint,
 	}
 	if item.Evidence == nil {
 		item.Evidence = []pivotEdge{}
@@ -377,6 +396,16 @@ func pivotAcceptanceCriteria(file pivotFile, action, constraint string) []string
 func pivotKnownBlindSpots(constraint string) []pivotBlindSpot {
 	return []pivotBlindSpot{
 		{
+			ID:          "heuristic-edges",
+			Statement:   "Not every edge in this plan was resolved to a declaration. Edges tagged HEURISTIC were inferred from a name, a package, or an inferred receiver type; the graph records that difference and each work item carries it as evidence_quality.",
+			Implication: "A work item whose evidence is HEURISTIC may point at the wrong symbol. Open the cited line and confirm the relation before editing, and never report the item as done on the strength of the edge alone.",
+		},
+		{
+			ID:          "unverified-parse",
+			Statement:   "Files the parser could not fully read are reported UNVERIFIED rather than SAFE. No dependency path was found in them, but no dependency path could have been found in them.",
+			Implication: "Treat an UNVERIFIED file as unexamined, not as cleared. It needs a source read or a test, and it must not be counted towards the constraint being satisfied.",
+		},
+		{
 			ID:          "interface-dispatch",
 			Statement:   "A call made through an interface is resolved to the interface, not to the implementation that runs.",
 			Implication: "A file whose only route to the prohibited dependency runs through an interface can be reported SAFE. Check implementations of any interface the invalidated files satisfy.",
@@ -458,6 +487,11 @@ func pivotMustNotClaim(constraint string, response pivotResponse) []string {
 		"Must not claim any test passes without having executed it and read the result.",
 		"Must not present a SAFE verdict as proof that no dependency path exists; it means none was found in this snapshot.",
 		"Must not count an UNREACHED file as resolved. It was never analysed for relations.",
+		// The clause this curveball exists for. An agent that reads an edge as a
+		// fact will act on a name match with the same confidence it acts on an
+		// import declaration, and report both the same way afterwards.
+		"Must not treat a HEURISTIC edge as an established fact. Any work item whose evidence_quality is not CONFIRMED requires the cited source line to be read, or a test to be run, before the item is acted on or reported done.",
+		"Must not count an UNVERIFIED file towards the constraint being satisfied. The parser failed on it, so the absence of a path in it is unknown rather than established.",
 		"Must not report the plan complete while any P0 item is open, regardless of how many P1 and P2 items were closed.",
 		"Must not silently widen the plan: a file that is not a work item here has not been assessed for this change.",
 	}
