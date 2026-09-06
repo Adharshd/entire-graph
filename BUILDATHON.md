@@ -636,15 +636,26 @@ agent-help and status but not the graph. Seven tools, split by audience:
 | `pivot_verify` | agents | did the change actually count — `PASS`/`FAIL`/`PARTIAL`/`CANNOT_VERIFY` |
 | `impact` | agents | blast radius of one symbol |
 | `capabilities` | agents | which languages are semantically parsed |
-| `assess_product_constraint_change` | **people** | "legal says we can't use Vendor X" → a decision brief |
-| `explain_product_impact` | **people** | why one area is on the list, and how solid that is |
-| `prepare_engineering_discovery_brief` | **people** | the handoff into a bounded engineering task |
+| `assess_product_constraint_change` | **PMs, designers, legal** | "legal says we can't use Vendor X" → a decision brief, not a file list |
+| `explain_product_impact` | **PMs, designers** | why one area is on the list, direct or indirect, and how solid that is |
+| `prepare_engineering_discovery_brief` | **PMs → engineering** | the handoff from "can we do this?" into a bounded engineering task |
 
-**Why the second audience exists.** Constraints arrive from people who cannot cost them — legal drops
-a vendor, compliance bans a library, a requirement changes — and each of them currently needs a
-developer to translate. Existing tooling runs the other way: Figma, Linear, Productboard and
-Atlassian all ship MCP servers pushing product artifacts *into* coding agents. Almost nothing returns
-code evidence *to* the person holding the constraint.
+**Why the second audience exists.** The people who receive a constraint are usually not the people
+who can cost it. A **product manager** is told a vendor is being dropped and has to decide whether it
+lands this quarter. A **designer** needs to know whether a flow they are working on is about to be
+rebuilt underneath them. Legal and compliance hand down the rule and cannot see what it touches. All
+of them currently have to find a developer, wait, and take the translation on trust — and none of
+them will open a terminal to avoid it.
+
+Existing tooling runs the other way. Figma, Linear, Productboard and Atlassian all ship MCP servers,
+and every one of them pushes product artifacts *into* coding agents. Almost nothing returns code
+evidence *to* the person holding the constraint. That direction is the gap.
+
+It also needs different output, not a different engine — which is why these three tools exist rather
+than a flag on `pivot`. A product manager handed `AT-RISK: internal/sem/provider_test.go, confidence
+0.80` has been given a fact they cannot act on. The same finding, said usefully, is: *"a shared test
+helper uses this directly; the production change may be small, but 64 tests rely on that helper and
+will need re-running."*
 
 Three rules govern that surface, and they are enforced in the output rather than recommended:
 
