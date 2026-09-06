@@ -90,15 +90,24 @@ output a shortlist a person can actually work through.
 
 ## Entire Graph findings and verification
 
-Run against this repository (631 files, 355 of them tests), at commit `abbf061`:
+Run against this repository at commit `934d180` — 634 files, of which the role classifier calls 277
+PRODUCTION, 266 TEST and 91 TEST_FIXTURE:
 
-| Run | INVALIDATED | AT-RISK | SAFE | UNREACHED |
-|---|---|---|---|---|
-| `--dependency net/http` | 3 | 78 | 465 | 85 |
-| `--dependency net/http --exclude-tests` | **0** | **0** | 203 | 73 |
-| `--dependency os/exec` | 32 | 284 | 230 | 85 |
-| `--dependency os/exec --exclude-tests` | 8 | 99 | 96 | 73 |
-| `--dependency os/exec --exclude-tests --depth 1` | 8 | 11 | 184 | 73 |
+| Run | INVALIDATED | AT-RISK | SAFE | UNREACHED | excluded |
+|---|---|---|---|---|---|
+| `--dependency net/http` | 3 | 78 | 468 | 85 | 0 |
+| `--dependency net/http --exclude-tests` | **0** | **0** | 204 | 73 | 357 |
+| `--dependency os/exec` | 32 | 287 | 230 | 85 | 0 |
+| `--dependency os/exec --exclude-tests` | 8 | 100 | 96 | 73 | 357 |
+| `--dependency os/exec --exclude-tests --depth 1` | 8 | 11 | 185 | 73 | 357 |
+
+These were re-measured from a clean detached build at `934d180`, in a scratch worktree, rather than
+carried forward from an earlier run.
+
+One internal consistency check falls out of the excluded column: `--exclude-tests` drops exactly 357
+files, and 266 TEST + 91 TEST_FIXTURE is exactly 357, leaving exactly the 277 PRODUCTION files. That
+is agreement by construction rather than independent confirmation — the role classifier and the
+exclusion predicate share the same path rules — but it does show the two are not drifting apart.
 
 Two findings, both of which the graph produced and neither of which grep would have:
 
@@ -110,11 +119,24 @@ forbidding `net/http` would not touch a single shipped line of this provider. Th
 report doing its job, not failing — and it is only legible because the excluded count is printed
 alongside it.
 
-**`os/exec` is the real one.** It is the no-egress boundary's neighbor: 8 production files reach it,
-seven of them the git-subprocess and verification layers (`internal/gitutil/*`, `internal/cli/verify.go`,
-`internal/sem/search_verify.go`). At `--depth 1` that plus its 11 direct dependents is a 19-file
-shortlist a person can read in one sitting — down from 316 files without the flag, a 94% reduction with
-no loss of anything that ships.
+**`os/exec` is the real one.** It is the no-egress boundary's neighbour, and the 8 production files
+that reach it are named, not summarised:
+
+```
+cmd/graph-bench/main.go                             internal/gitutil/process_descendants_notwindows.go
+internal/bench/worker.go                            internal/gitutil/process_job_notwindows.go
+internal/cli/verify.go                              internal/gitutil/worktree_paths.go
+internal/gitutil/git.go                             internal/sem/search_verify.go
+```
+
+Six of the eight are the git-subprocess and verification layers (`internal/gitutil/*`,
+`internal/cli/verify.go`, `internal/sem/search_verify.go`); the remaining two are benchmark tooling
+(`cmd/graph-bench`, `internal/bench`), which is a different kind of finding — a constraint author
+would treat those very differently from code on the request path.
+
+At `--depth 1` those 8 plus their 11 direct dependents are a 19-file shortlist a person can read in one
+sitting — down from 319 files (32 invalidated + 287 at-risk) without the flags, a 94% reduction with
+nothing that ships lost.
 
 Verification is in `internal/cli/pivot_test.go`. The load-bearing case is `fixtures.go` in the test
 fixture: production code whose only path to invalidated code runs through a test file. It is AT-RISK
@@ -127,7 +149,29 @@ rather than as a filter over the output.
 
 ## Checkpoint links and what each checkpoint proves
 
-*(filled in as milestones land)*
+Every commit below is on `pivot-work-order`. `main` is protected on the Entire mirror, so the branch
+lands via PR; the checkpoint ref (`entire/checkpoints/v1`) pushes independently of it.
+
+| Checkpoint | Commit | Milestone | What it proves |
+|---|---|---|---|
+| — | `abbf061` | — | Classifier, propagation, evidence output. **No checkpoint** — see below. |
+| — | `4a0a219` | — | `--exclude-tests` applied before classification. **No checkpoint** — see below. |
+| `bb0d72d79dbc` | `2ff8446` | Initial understanding and architecture | Checkpoints bind from this worktree. The header keeps depth and index provenance on uncommitted runs, so a reader can tell how far propagation walked and whether the verdict came off a warm cache. |
+| `4a14d2327199` | `934d180` | Last stable state before noon | File roles rank the report instead of listing it: 32 direct violations resolve to 8 production files to open by hand and 24 test files collapsed to 5 package commands. |
+
+### The two commits with no checkpoint are the honest part
+
+`abbf061` and `4a0a219` carry no checkpoint, and that is worth stating rather than hiding. Entire's
+hooks live in `.claude/settings.json` and load only when the agent session is launched from inside
+that directory. Two earlier sessions were launched from the parent folder, never loaded the hooks,
+and produced commits with no checkpoint attached — while `entire doctor` reported green throughout,
+because it inspects the repository's settings file and cannot see where the agent was started from.
+
+The failure is silent by construction, which is exactly the class of problem this project is about: a
+tool reporting healthy is not the same as a tool having checked the thing you care about. The fix was
+to verify the binding directly (`entire session current` naming a session, then `entire checkpoint
+list` showing a non-zero count against a real commit) rather than trusting the diagnostic. Every
+commit from `2ff8446` onward carries a checkpoint, verified that way.
 
 ## Setup, run and test instructions
 
