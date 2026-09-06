@@ -621,6 +621,61 @@ Finding 2 was fixed later in the same session, once the graded work was committe
 invalidated files, which is the answer to the card's question about which parts of this
 implementation consume relationship evidence.
 
+### The MCP server: the same analysis, for people who do not use a terminal
+
+`scripts/pivot-mcp.py` exposes PivotMap over the Model Context Protocol — stdio, JSON-RPC 2.0,
+read-only, no network, no model. It shells out to the locally built binary and adds no analysis of
+its own.
+
+It is shaped deliberately as the complement to `entire mcp`, which already exists and exposes
+agent-help and status but not the graph. Seven tools, split by audience:
+
+| Tool | For | Answers |
+|---|---|---|
+| `pivot` | agents | the classification and the work order |
+| `pivot_verify` | agents | did the change actually count — `PASS`/`FAIL`/`PARTIAL`/`CANNOT_VERIFY` |
+| `impact` | agents | blast radius of one symbol |
+| `capabilities` | agents | which languages are semantically parsed |
+| `assess_product_constraint_change` | **people** | "legal says we can't use Vendor X" → a decision brief |
+| `explain_product_impact` | **people** | why one area is on the list, and how solid that is |
+| `prepare_engineering_discovery_brief` | **people** | the handoff into a bounded engineering task |
+
+**Why the second audience exists.** Constraints arrive from people who cannot cost them — legal drops
+a vendor, compliance bans a library, a requirement changes — and each of them currently needs a
+developer to translate. Existing tooling runs the other way: Figma, Linear, Productboard and
+Atlassian all ship MCP servers pushing product artifacts *into* coding agents. Almost nothing returns
+code evidence *to* the person holding the constraint.
+
+Three rules govern that surface, and they are enforced in the output rather than recommended:
+
+- **Never `SAFE`.** A green word reads as proof to a reader without the instinct to distrust it. The
+  product output says "no impact found in analyzed code" and states the coverage gap in the same
+  breath. `SAFE`, `AT-RISK`, `INVALIDATED`, `UNREACHED`, `CALLS`, `IMPORTS` and bare confidence
+  numbers are all absent from it, asserted by test.
+- **Never an effort estimate.** It reports shape — concentrated or distributed — and a decision class
+  such as *discovery required*. `"effort_estimate": null` is in the schema.
+- **Refuse to guess.** Asked about "running external processes with exec", it found two genuine
+  matches in this repository and stopped rather than picking:
+
+```
+MULTIPLE POSSIBLE TARGETS -- no impact claim will be made until one is confirmed.
+  1. os/exec
+  2. run_shard
+Refusing to pick is deliberate. The alternative is a confident, specific, wrong
+answer, which is the failure mode this tool exists to prevent.
+```
+
+`run_shard` was not planted — the word "run" in the description matched a real declared import.
+
+The tool *descriptions* carry the uncertainty contract, which is the point: an agent calling `pivot`
+is told in the schema itself that anything not `CONFIRMED` must be checked against source. The rule
+reaches agents that never read this document. That same channel is the disclosed vector for
+tool-poisoning attacks, which is why the descriptions are static, reviewed, and free of anything
+derived from repository content.
+
+Transcript of a real run — initialize, `tools/list`, and two calls including the refusal — is in
+[`docs/demo/curveball/18-mcp-smoke.txt`](docs/demo/curveball/18-mcp-smoke.txt).
+
 ### The skill: `what-survives`
 
 `skills/what-survives/SKILL.md` teaches an agent the workflow rather than leaving it in a README
