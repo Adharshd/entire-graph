@@ -593,6 +593,31 @@ Finding 2 was fixed later in the same session, once the graded work was committe
 invalidated files, which is the answer to the card's question about which parts of this
 implementation consume relationship evidence.
 
+### The skill: `what-survives`
+
+`skills/what-survives/SKILL.md` teaches an agent the workflow rather than leaving it in a README
+nobody loads. It sits beside the repository's existing `skills/stats` skill and follows the same
+convention Entire's own skills repository uses — one `SKILL.md`, front matter, trigger phrases, then
+the commands and how to read what comes back.
+
+**The name pairs deliberately with Entire's `what-happened` skill.** That one looks backward: *why
+does this code look the way it does* — it traces a line through `git blame` into the checkpoint that
+produced it. This one looks forward: *what still stands now the rules have changed*. Same grammar,
+opposite arrow. Between them they cover the two questions a constraint raises — why was this built,
+and does it survive.
+
+Nothing in Entire's twelve skills currently uses the graph at all; every one is built on `entire
+search`, `entire checkpoint explain`, `git blame`, or `entire session`. This is the first that asks
+the graph a question, and the first about a constraint arriving from outside rather than history
+being read back.
+
+The content is the reading discipline, which is the part that does not fit in a `--help` string:
+open the cited line before acting on a `HEURISTIC` edge, treat `UNVERIFIED` as unread rather than
+cleared, never compare the confidence numbers because 0.80 covers both an import statement and a
+package-level guess, and never stop at the count because `invalidated == 0` is satisfied by deletion.
+It opens with the build step, because `pivot` is not in the released plugin and an agent that runs
+`entire graph pivot` gets `unknown command` and gives up.
+
 ### The evidence folder
 
 Everything above is reproducible from `docs/demo/curveball/`, committed rather than described:
