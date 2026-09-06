@@ -274,6 +274,18 @@ a verification path, must keep working unchanged for fully resolved code, and mu
 agents** tell apart confirmed structural evidence, heuristic or incomplete evidence, and claims
 needing source or test verification.
 
+### Every requirement, and where it is answered
+
+| # | Requirement | Where |
+|---|---|---|
+| 1 | Must not present incomplete relationships as certain | every evidence line leads with `[CONFIRMED]` / `[HEURISTIC]` / `[UNVERIFIED]` (`pivot_roles.go`) |
+| 2 | Must identify when analysis may be partial | `UNVERIFIED` verdict + `analysis_note` carrying the parser's own error code; evidence mix in the header |
+| 3 | Must provide a safe fallback or verification path | per-file `VERIFY:` line for users, `verification_required: true` for agents |
+| 4 | Existing behaviour for fully resolved code keeps working | `TestPivotFullyResolvedBehaviourUnchanged`; full suite green, no assertion modified; semantic diff purely additive |
+| 5 | Test or fixture representing incomplete analysis | `pivotPartialAnalysisSnapshot` in `pivot_evidence_test.go`, one file per unresolvable pattern |
+| 6 | Use Entire Graph to identify evidence consumers | `docs/demo/curveball/01-06`, all run **before** the first edit |
+| 7 | Users **and agents** can tell the three apart | text tags + `VERIFY:` for users; `evidence_quality` + `verification_required` + 2 blind spots + 2 contract clauses for agents |
+
 ### The tempting wrong answer
 
 PivotMap already looked compliant. It ships `UNREACHED` for inventory-only languages, it prints
