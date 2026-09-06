@@ -3,7 +3,7 @@
   "checkpoint_id": "55a616b19136",
   "strategy": "manual-commit",
   "branch": "pivot-work-order",
-  "checkpoints_count": 1,
+  "checkpoints_count": 2,
   "files_touched": [
     "BUILDATHON.md",
     "docs/demo/curveball/15-loop-findings-from-checkpoint.md"
@@ -15,13 +15,20 @@
       "compact_transcript": "/55/a616b19136/0/transcript.jsonl",
       "content_hash": "/55/a616b19136/0/content_hash.txt",
       "prompt": "/55/a616b19136/0/prompt.txt"
+    },
+    {
+      "metadata": "/55/a616b19136/1/metadata.json",
+      "transcript": "/55/a616b19136/1/full.jsonl",
+      "compact_transcript": "/55/a616b19136/1/transcript.jsonl",
+      "content_hash": "/55/a616b19136/1/content_hash.txt",
+      "prompt": "/55/a616b19136/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 16,
-    "cache_creation_tokens": 31929,
-    "cache_read_tokens": 387105,
-    "output_tokens": 3241,
-    "api_call_count": 8
+    "input_tokens": 326,
+    "cache_creation_tokens": 246575,
+    "cache_read_tokens": 25479546,
+    "output_tokens": 119522,
+    "api_call_count": 163
   }
 }
