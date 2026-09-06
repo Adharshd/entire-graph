@@ -850,3 +850,7 @@ ask the bg agent to stop
 <note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
 <result>All five behaviours correct — and note 6 messages in, 5 frames out: the notification correctly got no reply. Now the two paths that matter most: a real `pivot` call, and the missing-binary error.</result>
 </task-notification>
+
+---
+
+i wnat the submission to also say like - we enable devs to implement loop and harness engg for tough challenging pivots
