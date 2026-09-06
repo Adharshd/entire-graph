@@ -129,3 +129,57 @@ HOW I WANT YOU TO WORK
 
 
 So what else is remionuing in polan
+
+---
+
+Ltes not interfere with other terminal work man - letys do something else we can push something that pther terminal has 2oreked on - do u get me ?
+
+---
+
+WHta committed ? let the other terminal commit and opsuh - just choose the next task -do u have any ?????
+
+---
+
+make sure we have checkpoints wokring for all changes we do
+
+---
+
+<task-notification>
+<task-id>bf24kr8uk</task-id>
+<tool-use-id>toolu_01QmvgN1bHEdtcYHesreSgsV</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/35d4b996-6719-4222-bad6-d146f66c0cfa/tasks/bf24kr8uk.output</output-file>
+<status>completed</status>
+<summary>Background command "Build clean copy at 934d180 in scratch worktree" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b4k8f23n4</task-id>
+<tool-use-id>toolu_01XfeEC9pdp7bXQo7mZKLH7y</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/35d4b996-6719-4222-bad6-d146f66c0cfa/tasks/b4k8f23n4.output</output-file>
+<status>failed</status>
+<summary>Background command "Run five pivot verification cases" failed with exit code 1</summary>
+</task-notification>
+
+---
+
+we do in ur session alone - dont worry abt other session
+
+---
+
+<task-notification>
+<task-id>b3z6m8ulq</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/35d4b996-6719-4222-bad6-d146f66c0cfa/tasks/b3z6m8ulq.output</output-file>
+<status>completed</status>
+<summary>Background command "Run five verification cases correctly" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+what ru doing ? I need a running commentary ?
+
+---
+
+Once ur done - pls let me know
