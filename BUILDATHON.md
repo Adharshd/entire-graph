@@ -678,11 +678,28 @@ repair it, change the analyzer's scope, and modify the runner. **We test one** �
 caught by two independent invariants. The other five are unwritten. A verifier with one attack case
 is a verifier with one attack case, and saying so is cheaper than discovering it later.
 
-**Confine the MCP surface.** The server takes a repository path from its caller, which is an
-arbitrary-read primitive if it is ever reachable by anything but the user's own shell. An allowlisted
-root, canonicalised, with symlink escape refused, is the precondition for any use beyond a single
-local developer. Read-only is not the same as low risk: the answers describe where a codebase is
-weakest.
+**Confine the MCP surface.** The server takes a repository path from its caller. That is an
+arbitrary-read primitive the moment anything but the user's own shell can reach it, and it is the
+first thing to remove — not by prefix-checking the path, but by replacing it with a repository *id*
+resolved server-side against an allowlisted, canonicalised root, with the analyzer running against a
+read-only mount.
+
+The precedent is unambiguous and recent. The official MCP filesystem server, which does allowlist its
+roots, still shipped a symlink escape (`GHSA-q66q-fx2p-7w4m`). The Git MCP server's `git_init`
+accepted arbitrary paths and the tool was withdrawn (`CVE-2025-68143`). MCP Inspector — a local
+developer tool — allowed unauthenticated requests that could launch commands (`CVE-2025-49596`).
+Every one of those was "local, read-only, developer-only".
+
+Two things follow that are worth stating rather than discovering. **Read-only is not low risk**: this
+tool's answers are a map of where a codebase is weakest — which files touch a prohibited vendor, which
+areas the analyzer could not read, where the evidence is only heuristic. **Tool descriptions are model
+input, not documentation**: they are the disclosed vector for tool-poisoning and rug-pull attacks, so
+they must stay static, reviewed, and free of anything derived from repository content.
+
+Our own tool descriptions deliberately carry the uncertainty contract — an agent calling `pivot` is
+told in the schema that anything not CONFIRMED must be checked against source. That is the same
+channel an attacker would use, which is precisely why it has to be version-controlled and reviewed
+like code rather than edited casually.
 
 ### Then — the second audience
 
