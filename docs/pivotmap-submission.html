@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PivotMap — Buildathon submission summary</title>
+<style>
+  :root{--bg:#fafaf7;--fg:#1f2328;--muted:#6e7681;--border:#d0d7de;--accent:#0969da;
+        --ok:#1a7f37;--ok-tint:#dafbe1;--warn:#bf8700;--warn-tint:#fff5d6;
+        --bad:#cf222e;--bad-tint:#fff1f0;--code-bg:#eef1f4;--card:#fff;}
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--fg);margin:0;padding:34px 20px 90px;
+       font:15px/1.62 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  .wrap{max-width:960px;margin:0 auto}
+  h1{font-size:27px;margin:0 0 6px;letter-spacing:-.02em}
+  h2{font-size:19px;margin:36px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+  .sub{color:var(--muted);font-size:14.5px;margin-bottom:20px}
+  code{background:var(--code-bg);padding:1px 5px;border-radius:4px;font-size:.88em;
+       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  pre{background:var(--code-bg);padding:12px 14px;border-radius:8px;overflow-x:auto;
+      font-size:12.5px;line-height:1.5;margin:10px 0}
+  pre code{background:none;padding:0}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px;background:var(--card)}
+  th,td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:#f1f3f5;font-weight:600}
+  .num{font-variant-numeric:tabular-nums;text-align:right}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:15px 18px;margin:11px 0}
+  .card.ok{border-left:4px solid var(--ok)}
+  .card.warn{border-left:4px solid var(--warn)}
+  .card.bad{border-left:4px solid var(--bad)}
+  .pill{display:inline-block;padding:1px 9px;border-radius:20px;font-size:11.5px;font-weight:600}
+  .pill.ok{background:var(--ok-tint);color:var(--ok)}
+  .pill.warn{background:var(--warn-tint);color:var(--warn)}
+  .pill.bad{background:var(--bad-tint);color:var(--bad)}
+  .pill.grey{background:#eaeef2;color:var(--muted)}
+  .callout{border-left:4px solid var(--accent);background:#f2f7fd;padding:11px 15px;
+           border-radius:0 8px 8px 0;margin:13px 0;font-size:13.5px}
+  .callout.ok{border-left-color:var(--ok);background:var(--ok-tint)}
+  .callout.warn{border-left-color:var(--warn);background:var(--warn-tint)}
+  .win{color:var(--ok);font-weight:700}
+  .muted{color:var(--muted)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:11px;margin:14px 0}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 15px}
+  .stat .v{font-size:23px;font-weight:700;font-variant-numeric:tabular-nums}
+  .stat .l{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .flow{background:var(--code-bg);border-radius:8px;padding:15px;margin:13px 0;
+        font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.65;overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>PivotMap — what we built</h1>
+<div class="sub">BTW Buildathon 2026 · Track 2, Graph Intelligence · state at 11:46 IST, 6 September</div>
+
+<div class="grid">
+  <div class="stat"><div class="v">13</div><div class="l">commits on <code>pivot-work-order</code></div></div>
+  <div class="stat"><div class="v">15</div><div class="l">checkpoints across 3 sessions</div></div>
+  <div class="stat"><div class="v">3</div><div class="l">real defects found &amp; fixed</div></div>
+  <div class="stat"><div class="v">1 &rarr; 0</div><div class="l">violations, agent-fixed, machine-verified</div></div>
+</div>
+
+<h2>The idea</h2>
+<p>A constraint arrives <em>after</em> the code is written — a dependency is banned, a vendor is dropped.
+The developer needs three answers before touching anything: what actually violates this, what breaks
+if I rip it out, and what can I leave alone. Today that is manual archaeology: <code>git log</code> shows what
+changed but not why, and grep finds the banned import but not the three modules built on top of it.</p>
+
+<div class="callout">
+<strong>PivotMap is one new command</strong> — <code>entire graph pivot</code> — that splits the repository into
+four populations and prints the graph edge behind every single verdict, so a reader can check the
+claim instead of trusting it.
+</div>
+
+<table>
+  <tr><th>Verdict</th><th>Meaning</th><th>Action</th></tr>
+  <tr><td><strong>INVALIDATED</strong></td><td>Has an <code>IMPORTS</code>/<code>CALLS</code>/<code>CONSTRUCTS</code> edge reaching the prohibited dependency</td><td>Replace</td></tr>
+  <tr><td><strong>AT-RISK</strong></td><td>Reachable from an invalidated file, breadth-first, capped at depth</td><td>Rework + retest</td></tr>
+  <tr><td><strong>SAFE</strong></td><td>No path found to anything invalidated</td><td>Leave alone</td></tr>
+  <tr><td><strong>UNREACHED</strong></td><td>Inventory-only language — the parser never checked it</td><td>Manual review</td></tr>
+</table>
+
+<div class="card bad">
+<strong>No LLM produces a verdict.</strong> The interpretive step — a sentence like "we can't send customer
+data through Library X" becoming the package name — stays <em>outside</em> the binary. That is not a style
+preference: the plugin's own <code>doctor</code> asserts <code>no_egress=true</code>, and a model call inside would
+make its own diagnostic lie.
+</div>
+
+<h2>What we built today</h2>
+
+<div class="card ok">
+<span class="pill ok">Shipped</span> <strong>File roles</strong> — every file classified
+<code>PRODUCTION | TEST | TEST_FIXTURE | GENERATED | VENDOR | UNKNOWN</code> from signals that cannot be
+argued with: a <code>vendor/</code> segment, a <code>testdata|fixtures|mocks</code> segment, the <code>_test.go</code>
+suffix, or the <code>Code generated ... DO NOT EDIT.</code> header read from the file itself.
+<div class="callout warn" style="margin-top:10px">The role <strong>never changes a verdict</strong> — only how the
+report is grouped and ranked. 187 at-risk test files that all resolve to one <code>go test ./internal/sem</code>
+were burying the 8 production files somebody actually has to open. The fix is to rank, not to drop:
+a deleted result is one nobody can audit.</div>
+</div>
+
+<div class="card ok">
+<span class="pill ok">Shipped</span> <strong><code>--format plan</code></strong> — emits <code>pivot-plan/v1</code>, an agent
+work order rather than a graph dump. Every file becomes exactly one work item, sorted before ids are
+assigned so reading top to bottom is reading execution order.
+<pre><code>INVALIDATED -> REPLACE_OR_REMOVE      P0 = direct violation in shipped code
+AT-RISK     -> VERIFY_AFTER_ROOT_FIX  P1 = violation in a test, or shipped code on a bad foundation
+SAFE        -> NO_ACTION              P2 = covered by a package command, or not a change at all
+UNREACHED   -> MANUAL_REVIEW</code></pre>
+Two parts of the schema exist because of how an <em>agent</em> fails, not how the graph works:
+<code>known_blind_spots</code> (6) and <code>execution_contract.must_not_claim</code> (6).
+</div>
+
+<div class="card ok">
+<span class="pill ok">Shipped</span> <strong><code>--exclude-tests</code>, applied before classification</strong> — not an
+output filter. A production file whose only route to invalidated code runs through a test comes back
+SAFE, because a test is not a foundation anything ships on. The excluded count is printed, because a
+file that was never classified is not a file that came back Safe.
+</div>
+
+<h2>The verification loop — the centrepiece</h2>
+
+<div class="flow">Run 1  pivot --format plan   -->  bounded work order (1 P0, 4 P1)
+                                |
+                          fresh agent session, no prior context
+                          executes P0 only, commits
+                                |
+Run 2  pivot --format plan   -->  re-derived from source. count must drop.</div>
+
+<p>Run live against <strong>gorilla/mux</strong> with <code>--dependency bytes</code>. mux was the target because
+the constraint has to be <em>satisfiable</em> — banning <code>os/exec</code> in our own repo, or <code>net/http</code> in
+a router, asks an agent to delete the reason the code exists.</p>
+
+<table>
+  <tr><th>metric</th><th class="num">before <code>db9d1d0</code></th><th class="num">after <code>31bca9f</code></th></tr>
+  <tr><td>invalidated</td><td class="num">1</td><td class="num win">0</td></tr>
+  <tr><td>at-risk</td><td class="num">4</td><td class="num win">0</td></tr>
+  <tr><td>P0 / P1</td><td class="num">1 / 4</td><td class="num win">0 / 0</td></tr>
+</table>
+
+<div class="card warn">
+<strong>The count alone proves nothing</strong> — <code>invalidated == 0</code> is equally satisfied by deleting the
+code. So the diff is the other half of the evidence:
+<pre><code>regexp.go | 15 +++++++--------   1 file changed, 7 insertions(+), 8 deletions(-)
+M  regexp.go                     no test file touched
+go test ./...  ->  ok            green before AND after</code></pre>
+A cold agent replaced <code>bytes.IndexAny/IndexByte</code> with the <code>strings</code> equivalents and preserved
+behaviour. <strong>No LLM graded the result</strong> — most agent demos have agents grading each other.
+</div>
+
+<h2>Three defects found today</h2>
+
+<div class="card bad">
+<strong>1. Evidence cited against the wrong file</strong> <span class="pill grey">fixed &middot; 0fa4a48</span>
+<pre><code>before   evidence: CALLS -> regexp.go:676        # regexp.go is 413 lines. does not exist.
+after    evidence: CALLS route.go:676 -> regexp.go  # 676 is in route.go (828 lines). correct.</code></pre>
+The verdict was never wrong — <code>route.go:259</code> really does call <code>newRouteRegexp</code>. Only the
+citation was.
+<div class="callout" style="margin-top:10px"><strong>Found by the executing agent, not by a test.</strong> Its brief
+told it to read the cited source before editing, and it reported the line was not there. The plan
+instructed an agent to distrust the plan, and that is what surfaced the bug.</div>
+</div>
+
+<div class="card bad">
+<strong>2. A test read ambient <code>FORCE_COLOR</code></strong> <span class="pill grey">fixed &middot; 3170d58</span><br>
+It compared against an exact plain string, but the headline passes through <code>ShouldUseColor</code>, which
+honours <code>FORCE_COLOR</code> before checking for a terminal. CI sets no such variable and passes; a
+developer whose shell exports it sees a failure that looks real. Now pinned, verified both ways.
+</div>
+
+<div class="card bad">
+<strong>3. BUILDATHON.md printed an unreproducible plan id</strong> <span class="pill grey">fixed &middot; cf70f83</span><br>
+<code>plan_id</code> is a digest over head commit + constraint + depth + flags + counts, so it is
+<em>built</em> to change with every commit. Printing one in prose guarantees staleness.
+<div class="callout warn" style="margin-top:10px">The audit's replacement id was <strong>not</strong> substituted —
+this session did not independently reproduce it, and swapping an unverified number for an unverified
+number is not a fix. The claim was removed instead.</div>
+</div>
+
+<h2>Real numbers &mdash; this repository</h2>
+<p class="muted">Frozen snapshot at <code>934d180</code>, 634 files: 277 PRODUCTION, 266 TEST, 91 TEST_FIXTURE.</p>
+<table>
+  <tr><th>Run</th><th class="num">INVAL</th><th class="num">AT-RISK</th><th class="num">SAFE</th><th class="num">UNREACHED</th><th class="num">excluded</th></tr>
+  <tr><td><code>net/http</code></td><td class="num">3</td><td class="num">78</td><td class="num">468</td><td class="num">85</td><td class="num">0</td></tr>
+  <tr><td><code>net/http --exclude-tests</code></td><td class="num win">0</td><td class="num win">0</td><td class="num">204</td><td class="num">73</td><td class="num">357</td></tr>
+  <tr><td><code>os/exec</code></td><td class="num">32</td><td class="num">287</td><td class="num">230</td><td class="num">85</td><td class="num">0</td></tr>
+  <tr><td><code>os/exec --exclude-tests</code></td><td class="num">8</td><td class="num">100</td><td class="num">96</td><td class="num">73</td><td class="num">357</td></tr>
+  <tr><td><code>os/exec --exclude-tests --depth 1</code></td><td class="num">8</td><td class="num">11</td><td class="num">185</td><td class="num">73</td><td class="num">357</td></tr>
+</table>
+
+<div class="callout ok">
+<strong><code>net/http</code> is test-only here.</strong> All three importers are test files or a fixture — the
+constraint would not touch a shipped line. That clean zero is the report working, not failing, and it
+is only legible because the excluded count is printed beside it.
+</div>
+<div class="callout ok">
+<strong><code>os/exec</code> is the real one.</strong> 8 production files — six are the git-subprocess and
+verification layers, two are benchmark tooling. At <code>--depth 1</code> that plus 11 direct dependents is a
+19-file shortlist, down from 319: a <span class="win">94% reduction</span> with nothing that ships lost.
+</div>
+
+<h2>The honest limit &mdash; stated, not hidden</h2>
+<div class="card warn">
+<strong>SAFE means "no path was found in this local snapshot". It is not proof of non-use.</strong>
+Calls through interfaces, reflection, or generated code leave no edge to follow. Observed concretely:
+<code>impact --symbol Route.Match</code> on gorilla/mux reports <strong>0 callers</strong> even though
+<code>Router.Match</code> calls it through an interface. The <code>impact</code> command also self-reports
+<code>Completeness: degraded for Go</code> next to its own answer — a tool naming its own incompleteness.
+UNREACHED exists as a separate verdict for exactly this reason.
+</div>
+
+<h2>Where it lives</h2>
+<table>
+  <tr><th>Thing</th><th>Where</th></tr>
+  <tr><td>Branch (all work)</td><td><code>pivot-work-order</code> &mdash; 13 commits, pushed, in sync</td></tr>
+  <tr><td><code>main</code></td><td><span class="pill bad">protected</span> stale at <code>3a2a715</code>; push rejected by the mirror. <strong>Judges must be pointed at the branch.</strong></td></tr>
+  <tr><td>Source</td><td><code>internal/cli/pivot.go</code>, <code>pivot_roles.go</code>, <code>pivot_plan.go</code></td></tr>
+  <tr><td>Graph evidence</td><td><code>docs/demo/graph-evidence.txt</code> &mdash; search, impact, semantic diff</td></tr>
+  <tr><td>Loop evidence</td><td><code>docs/demo/mux-before.json</code>, <code>mux-after.json</code></td></tr>
+  <tr><td>Demo run sheet</td><td><code>docs/demo/DEMO.md</code></td></tr>
+  <tr><td>Agent brief</td><td><code>.entire/pivot-agent-brief.md</code></td></tr>
+</table>
+
+</div>
+</body>
+</html>
