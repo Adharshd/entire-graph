@@ -1628,3 +1628,7 @@ what is explain_product_impact ?
 ---
 
 So now we have externalaied the tool and tis introduces - major security concerns - how do we make sure this mcop server is only for authorized stuff - we need plan for productionizing it - /research-prompt
+
+---
+
+they have aksed - how we cna takenthis forward in the guidelines
