@@ -1,0 +1,92 @@
+fine -
+
+---
+
+any repos use mcp servers ?
+
+---
+
+Build an MCP (Model Context Protocol) stdio server that exposes PivotMap to any
+coding agent. Work in /Users/adharsh/git/BTW-buildathon/entire-graph on branch
+pivot-work-order. Write it as scripts/pivot-mcp.py (Python 3, stdlib only).
+
+WHY: `entire mcp` already exists and exposes agent-help + status, read-only, over
+newline-delimited JSON-RPC 2.0 on stdio. It deliberately does NOT expose the graph.
+This server is the complementary surface: analysis and verification. Match its shape
+(stdio, JSON-RPC 2.0, read-only, no network) so the two read as one family.
+
+SERVER
+  name:     entire-graph-pivot
+  version:  0.1.0
+  transport: stdio, newline-delimited JSON-RPC 2.0
+  no network, no model, no writes outside a caller-supplied out_dir
+
+It shells out to a locally built binary (go build -o ./entire-graph
+./cmd/entire-graph). Take the binary path from env ENTIRE_GRAPH_BIN, defaulting to
+./entire-graph, and return a clear error if it is missing rather than guessing.
+
+TOOLS — four, no more.
+
+1. pivot
+   "Given a dependency that is now prohibited, classify every file as INVALIDATED,
+    AT-RISK, SAFE, UNVERIFIED or UNREACHED, with the graph edge that produced each
+    verdict and how well that edge is known."
+   params: repo (string, required), dependency (string[], required),
+           depth (int, default 2), exclude_tests (bool, default false),
+           format (enum text|json|plan, default plan)
+   returns: the pivot output. For format=plan, return the JSON.
+   IMPORTANT: the description must tell the calling agent that every work item
+   carries evidence_quality (CONFIRMED | HEURISTIC | UNVERIFIED) and
+   verification_required, and that anything not CONFIRMED must be checked against
+   source before it is acted on or reported done.
+
+2. pivot_verify
+   "Grade a candidate commit against a plan produced earlier. Deterministic: no
+    model, no judgement. Returns PASS, FAIL, PARTIAL or CANNOT_VERIFY."
+   params: repo (string, required), before_plan (string path, required),
+           range (string, e.g. HEAD~1..HEAD, required),
+           after_plan (string path, optional — re-runs pivot if absent)
+   returns: the verdict, the per-invariant results, and the exit code.
+   The description must say plainly that PARTIAL is the normal good outcome,
+   because behaviour preservation is not decidable from a diff, and that
+   CANNOT_VERIFY means a check could not run — never treat it as a pass.
+
+3. impact
+   "Blast radius for one symbol: callers, callees, type consumers, data flows,
+    co-change files."
+   params: repo (string, required), symbol (string, required),
+           file (string, optional — required when the name is ambiguous),
+           depth (int 1|2, default 2)
+   returns: the impact text, including its Completeness line.
+
+4. capabilities
+   "Which languages this graph parses semantically and which are inventory-only.
+    Inventory-only files have no relations, so a SAFE verdict on one means nothing."
+   params: none
+   returns: the capabilities JSON.
+
+PROTOCOL REQUIREMENTS
+- Implement initialize, tools/list, tools/call. Reply to unknown methods with a
+  proper JSON-RPC error, never a crash.
+- Every tool result must carry the tool's own uncertainty forward. If pivot reports
+  unverified files or heuristic evidence, that must be visible in the response text,
+  not only in a nested field the caller may not read.
+- On subprocess failure, return an error result naming the command and its stderr.
+  Never return an empty success.
+- Log nothing to stdout except JSON-RPC frames. Diagnostics go to stderr.
+
+DELIVERABLES
+- scripts/pivot-mcp.py
+- A README section or docstring with the exact MCP host config block to register it
+  (command, args, env), in the shape Claude Code and Cursor accept.
+- A smoke test: pipe initialize + tools/list + one tools/call into the server and
+  save the transcript to docs/demo/curveball/18-mcp-smoke.txt. A server never run is
+  not a server.
+
+RULES
+- Do not modify any Go file. This is additive and must not touch the build.
+- Do not touch BUILDATHON.md or docs/ENTIRE-TIPS.md.
+- Commit with explicit paths, verify the Entire-Checkpoint trailer with
+  git log --format="%(trailers:key=Entire-Checkpoint,valueonly)" -1, then
+  git push origin pivot-work-order.
+- If something is blocked, stop and say so rather than inventing a workaround.
