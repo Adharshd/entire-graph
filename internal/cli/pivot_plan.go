@@ -145,7 +145,12 @@ type pivotPlanValidation struct {
 
 type pivotExecutionContract struct {
 	MustNotClaim []string `json:"must_not_claim"`
-	MustDo       []string `json:"must_do,omitempty"`
+	// MustNotDo are anti-trivialisation invariants: the ways an agent can drive
+	// the invalidated count to zero without satisfying the constraint. They are
+	// separate from MustNotClaim because they bind the WORK, not the report --
+	// deleting the file is not a false claim, it is a false fix.
+	MustNotDo []string `json:"must_not_do,omitempty"`
+	MustDo    []string `json:"must_do,omitempty"`
 }
 
 // buildPivotPlan turns a finished classification into the work order. It adds no
@@ -244,10 +249,14 @@ func buildPivotPlan(response pivotResponse, flags pivotFlags) pivotPlan {
 		Notes: []string{
 			"Run every required command. A plan is complete when the commands pass, not when the edits look right.",
 			"Re-running the pivot command is what proves the constraint is satisfied: the invalidated count must reach zero.",
+			"The count alone is not sufficient. Attach the diff: invalidated == 0 is satisfied by deleting the code as well as by fixing it.",
+			"Re-run from a clean checkout of the resulting commit, not from the working tree the edits were made in. A verifier that shares the agent's uncommitted state is not verifying the commit.",
+			"A required command that could not be executed -- missing tool, timeout, network failure -- is CANNOT_VERIFY, not a pass. Report it as unverified and say which command it was.",
 		},
 	}
 	plan.ExecutionContract = pivotExecutionContract{
 		MustNotClaim: pivotMustNotClaim(constraint, response),
+		MustNotDo:    pivotMustNotDo(constraint, response),
 		MustDo: []string{
 			"Work P0 items before P1: an at-risk file cannot be verified until the root it depends on is fixed.",
 			"Cite the work item id in each commit so the plan and the history stay linked.",
@@ -481,6 +490,37 @@ func pivotRerunCommand(response pivotResponse, flags pivotFlags) string {
 // pivotMustNotClaim names the failures that are likely enough to be worth forbidding
 // by name. The dangerous outcome of handing an agent a plan is not a bad edit — a
 // bad edit fails a test. It is a confident report of success that nobody checked.
+// pivotMustNotDo names the ways this specific plan can be satisfied without being
+// done. Each one is an invariant an agent could otherwise break while every number
+// in the report improves.
+//
+// The distinction from must_not_claim is worth keeping: deleting a file is not a
+// false claim about the work, it is false work. A contract that only constrains
+// the report leaves the cheapest wrong answer available.
+//
+// This is deliberately not a full verification contract. The research this comes
+// from proposes a declarative schema of named checks; most of what it asks a
+// developer to configure is something the tool already knows, so the checks stay
+// tool-owned and only the invariants are stated here.
+func pivotMustNotDo(constraint string, response pivotResponse) []string {
+	rules := []string{
+		fmt.Sprintf("Must not delete production code to remove %s. A violation count that falls because the code is gone is not the constraint being satisfied; it is the measurement being satisfied. Replace the dependency, keep the behaviour.", constraint),
+		"Must not delete, skip, or weaken a test to make a required command pass. If a test now fails for a reason the plan did not anticipate, report it as a finding rather than removing the check that found it.",
+		"Must not change the constraint to fit the result: re-run with the same --dependency, --depth and --exclude-tests recorded above, or the before and after counts are not comparable.",
+		"Must not narrow the analysed set. Adding an ignore rule, excluding a path, or reducing the profile lowers the count without changing the code.",
+	}
+	if response.Counts.Unverified > 0 {
+		rules = append(rules,
+			fmt.Sprintf("Must not resolve any of the %d UNVERIFIED file(s) by suppressing the parser diagnostic. The file is unverified because it could not be read, and silencing the reader does not make it readable.", response.Counts.Unverified))
+	}
+	// The invariant the mux run checked by hand: one file, +7/-8, no test touched.
+	// Naming the shape of an acceptable diff is what makes it checkable by someone
+	// other than the agent that produced it.
+	rules = append(rules,
+		"Must attach `git diff --stat` for the change alongside the re-run counts. A reviewer needs to see that lines were replaced rather than removed, and that no test file was touched to get there.")
+	return rules
+}
+
 func pivotMustNotClaim(constraint string, response pivotResponse) []string {
 	claims := []string{
 		fmt.Sprintf("Must not claim %s has been removed without re-running the pivot command and showing the invalidated count at zero.", constraint),

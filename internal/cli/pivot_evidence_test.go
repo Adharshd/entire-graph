@@ -379,3 +379,44 @@ func TestProhibitedMatchResolvesInternalPackagePaths(t *testing.T) {
 		})
 	}
 }
+
+// TestPlanForbidsTrivialSatisfaction covers the failure mode the verification loop
+// hit before the curveball: `invalidated == 0` is satisfied by deleting the code
+// as well as by fixing it. The loop caught it by hand on gorilla/mux -- one file,
+// +7/-8, no test touched -- and nothing in the plan said it had to.
+//
+// must_not_claim binds the report. These bind the work, which is a different
+// thing: deleting a file is not a false claim, it is a false fix.
+func TestPlanForbidsTrivialSatisfaction(t *testing.T) {
+	response := buildPivotResponse(pivotPartialAnalysisSnapshot(), pivotFlags{Dependency: []string{"os/exec"}, Depth: pivotMaxDepth})
+	plan := buildPivotPlan(response, pivotFlags{Dependency: []string{"os/exec"}, Depth: pivotMaxDepth})
+
+	rules := strings.Join(plan.ExecutionContract.MustNotDo, "\n")
+	for _, want := range []struct{ name, fragment string }{
+		{"deletion", "Must not delete production code"},
+		{"test removal", "delete, skip, or weaken a test"},
+		{"moving the goalposts", "Must not change the constraint to fit the result"},
+		{"narrowing the analysed set", "Must not narrow the analysed set"},
+		{"unverified suppression", "suppressing the parser diagnostic"},
+		{"diff is the other half of the evidence", "git diff --stat"},
+	} {
+		if !strings.Contains(rules, want.fragment) {
+			t.Errorf("must_not_do is missing the %s invariant (%q)\n---\n%s", want.name, want.fragment, rules)
+		}
+	}
+
+	// A clean snapshot has no unverified files, so that clause must not appear --
+	// a contract padded with clauses that do not apply teaches an agent to skim it.
+	clean := buildPivotResponse(pivotTestSnapshot(), pivotFlags{Dependency: []string{"net/http"}, Depth: pivotMaxDepth})
+	cleanPlan := buildPivotPlan(clean, pivotFlags{Dependency: []string{"net/http"}, Depth: pivotMaxDepth})
+	if strings.Contains(strings.Join(cleanPlan.ExecutionContract.MustNotDo, "\n"), "suppressing the parser diagnostic") {
+		t.Error("the unverified clause appears on a snapshot with no unverified files")
+	}
+
+	notes := strings.Join(cleanPlan.Validation.Notes, "\n")
+	for _, want := range []string{"clean checkout", "CANNOT_VERIFY", "satisfied by deleting the code"} {
+		if !strings.Contains(notes, want) {
+			t.Errorf("validation notes are missing %q\n---\n%s", want, notes)
+		}
+	}
+}
