@@ -487,6 +487,46 @@ both. Full working in `docs/demo/curveball/11-kubernetes-finding.md`.
 The other half is the **48 files previously folded into the safe count**: shell scripts and YAML the
 parser could not read, reported as "no dependency path to invalidated code, leave alone".
 
+### Closing the loop: a verifier with no model in it
+
+The verification loop had two defects, both found by the loop itself and recorded in checkpoint
+`96c865a5662c`: `invalidated == 0` is satisfied by **deleting** the code as well as fixing it, and the
+loop returned a boolean where a missing tool needs to be distinguishable from a real failure.
+
+The plan now carries `validation.invariants` — the same rules as **data** rather than prose, because
+a clause an agent may ignore is a guardrail, not a check:
+
+```json
+"files_must_still_exist":   ["regexp.go"],
+"max_net_lines_deleted":    10,
+"flags_must_match":         {"dependency": ["bytes"], "depth": 2},
+"expected_after":           {"invalidated": 0},
+"not_mechanically_checkable": ["whether behaviour was preserved", ...]
+```
+
+`scripts/pivot-verify.py` evaluates them. **No model, no network** — files on disk, `git diff
+--numstat`, and the re-run counts. Run against the real gorilla/mux loop
+(`docs/demo/curveball/17-verify-demo.txt`):
+
+| Case | Verdict | Exit |
+|---|---|---|
+| the cold agent's actual fix | `PARTIAL` | 2 |
+| `rm regexp.go` instead of fixing it | `FAIL` | 1 |
+| no re-measurement available | `CANNOT_VERIFY` | 3 |
+
+**Case 2 is the one that matters.** After the deletion, pivot reports `invalidated = 0` — the loop's
+original check *certifies the attack*. `files_must_still_exist` fails it, and the deletion budget
+fails it again at `+0/-414`.
+
+Case 1 reproduced `+7/-8, net 1 removed` mechanically — the exact figure a human checked by hand in
+the original loop. And it returns `PARTIAL`, not `PASS`, because five questions in the plan cannot be
+settled by any check over a diff. **A verifier that cannot say "I could not check this" is not a
+verifier**, which is the same claim this release makes about a file that did not parse.
+
+This is also where the multi-agent story becomes real rather than narrated: `pivot-plan/v1` is the
+contract, a cold agent is the executor, and the checker is the referee. No agent grades another
+agent — the referee is deterministic code, because an LLM judge would only move the trust problem.
+
 ### Graph evidence, captured before the first edit
 
 Every graph command was run **before** any code changed, and piped to a file rather than described:
@@ -596,16 +636,11 @@ package this feature touches, passes in full.
   test paths (`_test.go`, `*.test.*`, a `test/`/`testdata/` directory segment, and the equivalents in
   the other supported languages). A test helper that lives in a normally-named file is still
   classified, and a production file that happens to sit under `testdata/` is still excluded.
-- **The verification loop is gameable by deletion, and nothing enforces otherwise.** `invalidated == 0`
-  is satisfied by deleting the code as well as by fixing it — the failure mode the loop research names
-  as "remove code rather than repair it". It was checked by hand on the mux run (`1 file, +7/-8, no
-  test touched, suite green before and after`) and that check lives in a human's head, not in code.
-  The defence is a deletion budget plus retained-behaviour assertions, roughly 30 lines.
-- **The loop reports a boolean where it needs four statuses.** `PASS / FAIL / PARTIAL /
-  CANNOT_VERIFY`. A missing tool or a timeout is not a pass, in the same way a file that did not parse
-  is not a file that came back Safe — `CANNOT_VERIFY` is this project's own `UNREACHED`, applied to
-  the verifier instead of the classifier. Both findings are recorded in
-  `docs/demo/curveball/15-loop-findings-from-checkpoint.md` with their checkpoint source.
+- **What deterministic checking still cannot decide.** The verifier below closes the two loop findings,
+  but it is explicit about its own ceiling: whether behaviour was preserved, whether a replacement is
+  semantically equivalent, whether a HEURISTIC edge holds, and whether SAFE reflects the absence of a
+  path or only the absence of an edge. Those ship in the plan as `not_mechanically_checkable`, which
+  is why a correct run returns `PARTIAL` rather than `PASS`.
 - **Next step:** severity beyond the three buckets — an At-Risk file whose only link is a type
   reference is a much smaller job than one that calls an invalidated function on every request path,
   and the graph already carries enough to tell those apart.
