@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.10.5",
+  "checkpoint_id": "6e867071c6b6",
+  "strategy": "manual-commit",
+  "branch": "pivot-work-order",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "BUILDATHON.md",
+    "internal/cli/pivot_evidence.go"
+  ],
+  "sessions": [
+    {
+      "metadata": "/6e/867071c6b6/0/metadata.json",
+      "transcript": "/6e/867071c6b6/0/full.jsonl",
+      "compact_transcript": "/6e/867071c6b6/0/transcript.jsonl",
+      "content_hash": "/6e/867071c6b6/0/content_hash.txt",
+      "prompt": "/6e/867071c6b6/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 200,
+    "cache_creation_tokens": 160444,
+    "cache_read_tokens": 13030826,
+    "output_tokens": 74284,
+    "api_call_count": 100
+  }
+}
