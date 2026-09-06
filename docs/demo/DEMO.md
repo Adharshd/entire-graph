@@ -21,7 +21,7 @@ that from the code graph, not from an LLM guessing."
 |---|---|---|---|
 | 0:00–0:30 | *(no command — spoken intro)* | Problem statement above. One sentence, then move. | — |
 | 0:30–1:15 | `entire graph search --repo . --query "prohibited dependency check in pivot" --format text --top-k 5` | "This is artifact one: a graph search, not a grep. It ranks by body, identifiers, and graph neighbors — it lands on `prohibitedMatch` in `pivot.go` directly." | Show the captured `### 1. SEARCH ###` block in `docs/demo/graph-evidence.txt` — same query, same result, already on disk. |
-| 1:15–2:15 | `entire graph impact --repo . --symbol buildPivotResponse --file internal/cli/pivot.go` | "Artifact two: before I touch this function, impact shows every caller, callee, type consumer, and data flow in one shot — 4 callers, 14 callees, 6 type consumers. This is the check you'd otherwise do by hand with grep and hope." | Show `### 2. IMPACT ###` in `graph-evidence.txt`. Point out it also prints `Completeness: degraded for Go` with a `W_DATA_FLOW_EVIDENCE_UNMERGED` warning right next to the answer — the tool flags its own gaps unprompted. |
+| 1:15–2:15 | `entire graph impact --repo . --symbol buildPivotResponse --file internal/cli/pivot.go` | "Artifact two: before I touch this function, impact shows every caller, callee, type consumer, and data flow in one shot — 4 callers, 14 callees, 6 type consumers. This is the check you'd otherwise do by hand with grep and hope." | Show `### 2. IMPACT ###` in `graph-evidence.txt`. Point out the `Completeness:` line printed right next to the answer — the tool states its own parse coverage unprompted. **Read the line off the screen, do not quote it from here:** it reports the state of the tree you are standing in. On this branch it currently says `no parse failures in Go (423 files parsed); 1 elsewhere (JSON 1)`. An earlier version of this script promised `degraded for Go` with `W_DATA_FLOW_EVIDENCE_UNMERGED`, which no longer reproduces — saying a number the terminal then contradicts is worse than saying nothing. |
 | 2:15–3:15 | `entire graph pivot --repo . --dependency os/exec --exclude-tests --depth 1 --format text` | "Now the actual product. Prohibited dependency `os/exec` in this 636-file repo. With test files excluded and depth capped at 1: 8 invalidated, 11 at-risk. That's a 19-file shortlist, down from 319 unfiltered — nothing that ships is lost." | Read the numbers straight from the REAL VERIFIED NUMBERS table below; state them from memory if the command is slow. |
 | 3:15–4:00 | `entire graph pivot --repo . --dependency os/exec --format plan` | "This emits an agent work order — P0/P1/P2, one action per verdict, evidence attached, and a line that says what the agent must NOT claim when it's done. A fresh agent with zero context executes only the P0 items, then pivot re-runs the same deterministic rules against the result. No LLM grades the output — that's the part most agent demos skip." | If the live agent loop isn't wired up for the demo, describe it as the mux/`bytes` example: 1 P0 (`regexp.go` imports `bytes`, 2 call sites), 4 P1 at-risk, mux's own test suite passes before and after. |
 | 4:00–4:45 | `entire graph diff --base 4a0a219 --head HEAD --json` (or the captured file) | "Artifact three: semantic diff — not a text diff, an entity diff. It's asking 'which functions/types actually changed shape' and how many things depend on them, so a signature change with a lot of dependents stands out before you run anything." | Show `### 3. SEMANTIC DIFF ###` in `graph-evidence.txt` — the `pivotFlags`/`pivotFile`/`pivotResponse` signature changes with `dependents_count`. |
@@ -80,9 +80,39 @@ Fall back to reading `docs/demo/graph-evidence.txt` top to bottom — it has the
 diff sections pre-captured from a real run — plus the numbers table above from memory. The story
 survives without a live terminal; the live terminal is just better.
 
-## TODO
+## The Noon Curveball step (add after the impact step)
 
-- TODO: confirm exact CLI invocation for the multi-agent loop step (fresh-agent execution +
-  pivot re-run) as it will actually be driven live — the write-up above describes the intended
-  behavior and the mux/`bytes` reference numbers, not a copy-pasted transcript, because no
-  captured transcript for that specific loop was provided.
+Track 2 asks that the graph is treated as evidence rather than an oracle. The single strongest
+thing to show is a verdict that changed:
+
+```sh
+./entire-graph pivot --repo . --dependency os/exec --exclude-tests --depth 1
+```
+
+Read out the fourth line — `Evidence: 14 CONFIRMED, 5 HEURISTIC, 5 UNVERIFIED` — then scroll to the
+UNVERIFIED section:
+
+```
+- internal/sem/grammars/csharp/tree_sitter/array.h   [PRODUCTION] parser reported E_PARSE_ERROR
+```
+
+"Those five files were reported SAFE this morning — 'no dependency path, leave alone'. The parser
+had failed on them. The tool was presenting a gap in its own analysis as a finding about the code."
+
+If there is time for a second one, the Kubernetes false edge in
+`curveball/11-kubernetes-finding.md` is the sharper story: a `USES_TYPE` edge matching a **parameter
+named `owners`** to an unrelated **type named `owners`** in a different binary, which the old output
+rendered identically to a real import.
+
+**Counts move as the tree moves.** Every number in this document belongs to the commit it was
+measured at. Re-run before demoing and read what comes back.
+
+## Known gaps in this script
+
+- The multi-agent loop step (fresh-agent execution, then a pivot re-run) is described from its
+  intended behaviour and the mux/`bytes` reference numbers. **There is no captured transcript of
+  that specific loop.** The before/after JSON in `mux-before.json` and `mux-after.json` is real; the
+  narration around the fresh agent's execution is not quoted from a session. Present it as what the
+  loop does, not as a transcript, and say so if asked.
+- `cmd/graph-bench` tests fail on this machine — the local git rejects `checkout --end-of-options`.
+  Pre-existing and unrelated. Never claim a fully green suite; name the condition.
