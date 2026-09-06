@@ -141,6 +141,55 @@ type pivotPlanValidation struct {
 	// the per-package commands land here, where an agent can run them.
 	RequiredCommands []string `json:"required_commands"`
 	Notes            []string `json:"notes,omitempty"`
+	// Invariants are the machine-checkable form of the execution contract.
+	Invariants pivotInvariants `json:"invariants"`
+}
+
+// pivotInvariants is must_not_do restated as data. The prose clauses bind an
+// agent that chooses to read them; these are assertions a third party evaluates
+// against the resulting commit without asking the agent anything.
+//
+// The split matters because the two failure modes are different. An agent that
+// misunderstands the task is helped by prose. An agent that has found the cheapest
+// path to a passing number is not, and that is the case the verification loop
+// actually hit: `invalidated == 0` is satisfied by deleting the code.
+type pivotInvariants struct {
+	// FilesMustStillExist are the invalidated production files. Removing one is
+	// the deletion attack in its simplest form -- the violation goes away with
+	// the code, and every count in the report improves.
+	FilesMustStillExist []string `json:"files_must_still_exist"`
+	// PathsMustNotChange are the test files this run classified. Weakening a
+	// check is how a required command starts passing without the work being done.
+	PathsMustNotChange []string `json:"paths_must_not_change"`
+	// MaxNetLinesDeleted is a deletion budget: insertions minus deletions across
+	// the whole change, floored at zero. See pivotDeletionBudget for how the
+	// number is derived; Basis carries that derivation into the JSON so a
+	// consumer is not asked to trust a bare constant.
+	MaxNetLinesDeleted      int    `json:"max_net_lines_deleted"`
+	MaxNetLinesDeletedBasis string `json:"max_net_lines_deleted_basis"`
+	// FlagsMustMatch pins the question. A re-run with a different constraint,
+	// depth or test-exclusion produces a number that is not comparable to the one
+	// in this plan, and narrowing the question is easier than doing the work.
+	FlagsMustMatch pivotInvariantFlags `json:"flags_must_match"`
+	// ExpectedAfter is what a satisfied constraint looks like on a re-run.
+	ExpectedAfter pivotExpectedAfter `json:"expected_after"`
+	// NotMechanicallyCheckable is the honest half, and the reason a clean result
+	// from these checks is PARTIAL rather than PASS. Everything a deterministic
+	// verifier cannot decide is named here rather than left to look checked.
+	NotMechanicallyCheckable []string `json:"not_mechanically_checkable"`
+}
+
+type pivotInvariantFlags struct {
+	Dependency   []string `json:"dependency"`
+	Depth        int      `json:"depth"`
+	ExcludeTests bool     `json:"exclude_tests"`
+}
+
+type pivotExpectedAfter struct {
+	Invalidated int `json:"invalidated"`
+	// UnverifiedMustNotIncrease guards the other direction: silencing a parser
+	// diagnostic would move a file out of UNVERIFIED without anyone reading it.
+	UnverifiedMustNotIncrease int `json:"unverified_must_not_exceed"`
 }
 
 type pivotExecutionContract struct {
@@ -246,6 +295,7 @@ func buildPivotPlan(response pivotResponse, flags pivotFlags) pivotPlan {
 
 	plan.Validation = pivotPlanValidation{
 		RequiredCommands: pivotRequiredCommands(response, flags),
+		Invariants:       pivotBuildInvariants(response, flags),
 		Notes: []string{
 			"Run every required command. A plan is complete when the commands pass, not when the edits look right.",
 			"Re-running the pivot command is what proves the constraint is satisfied: the invalidated count must reach zero.",
@@ -502,6 +552,118 @@ func pivotRerunCommand(response pivotResponse, flags pivotFlags) string {
 // from proposes a declarative schema of named checks; most of what it asks a
 // developer to configure is something the tool already knows, so the checks stay
 // tool-owned and only the invariants are stated here.
+// observedNetLinesPerReplacedFile is the one real measurement this budget rests
+// on. The verification loop replaced `bytes` with `strings` in one file of
+// gorilla/mux and produced `1 file changed, 7 insertions(+), 8 deletions(-)` --
+// a net of one line removed. A genuine dependency replacement is close to
+// line-neutral, because the code that used the dependency is rewritten rather
+// than removed.
+const observedNetLinesPerReplacedFile = 1
+
+// deletionBudgetHeadroom multiplies that observation to leave room for a real
+// refactor -- extracting a helper, dropping a now-redundant wrapper -- without
+// leaving room for a deletion. Even the smallest Go source file in this
+// repository is tens of lines, so removing one outright breaks the budget
+// immediately at this multiple, while a legitimate rewrite has an order of
+// magnitude more slack than the mux fix needed.
+const deletionBudgetHeadroom = 10
+
+// pivotDeletionBudget scales the observed cost of a real fix by the number of
+// files that actually have to be fixed. It is a budget on the NET (deletions
+// minus insertions) across the whole change, so a rewrite that removes a hundred
+// lines and adds a hundred spends nothing.
+//
+// The floor exists because a plan with no invalidated production files still
+// wants a non-zero budget: a run whose violations are all in test files can
+// legitimately change a few lines, and a budget of zero would fail it for that.
+func pivotDeletionBudget(productionViolations int) int {
+	budget := productionViolations * observedNetLinesPerReplacedFile * deletionBudgetHeadroom
+	if budget < deletionBudgetHeadroom {
+		return deletionBudgetHeadroom
+	}
+	return budget
+}
+
+// pivotBuildInvariants restates the contract as assertions. Everything here is
+// derived from verdicts the classifier already produced -- it adds no analysis,
+// exactly as the rest of the plan does not.
+func pivotBuildInvariants(response pivotResponse, flags pivotFlags) pivotInvariants {
+	invariants := pivotInvariants{
+		FilesMustStillExist: []string{},
+		PathsMustNotChange:  []string{},
+		FlagsMustMatch: pivotInvariantFlags{
+			Dependency:   response.Prohibited,
+			Depth:        response.MaxDepth,
+			ExcludeTests: response.ExcludeTests,
+		},
+		ExpectedAfter: pivotExpectedAfter{
+			Invalidated:               0,
+			UnverifiedMustNotIncrease: response.Counts.Unverified,
+		},
+	}
+
+	productionViolations := 0
+	for _, file := range response.Invalidated {
+		if isTestRole(file.Role) {
+			continue
+		}
+		// A generated or vendored file is not edited in place, so requiring it to
+		// survive would be asserting something the plan itself tells the agent not
+		// to do.
+		if file.Role == roleGenerated || file.Role == roleVendor {
+			continue
+		}
+		productionViolations++
+		invariants.FilesMustStillExist = append(invariants.FilesMustStillExist, file.Path)
+	}
+
+	for _, group := range [][]pivotFile{response.Invalidated, response.AtRisk, response.Safe, response.Unverified} {
+		for _, file := range group {
+			if isTestRole(file.Role) {
+				invariants.PathsMustNotChange = append(invariants.PathsMustNotChange, file.Path)
+			}
+		}
+	}
+	sort.Strings(invariants.FilesMustStillExist)
+	sort.Strings(invariants.PathsMustNotChange)
+
+	invariants.MaxNetLinesDeleted = pivotDeletionBudget(productionViolations)
+	invariants.MaxNetLinesDeletedBasis = fmt.Sprintf(
+		"%d production violation(s) x %d net line(s) observed for a real dependency replacement (gorilla/mux: 1 file, +7/-8) x %dx headroom, floored at %d",
+		productionViolations, observedNetLinesPerReplacedFile, deletionBudgetHeadroom, deletionBudgetHeadroom)
+
+	invariants.NotMechanicallyCheckable = pivotUncheckable(response, flags)
+	return invariants
+}
+
+// pivotUncheckable names what a deterministic verifier cannot decide. It is never
+// empty, and that is deliberate: a checker whose uncheckable list came back empty
+// would be claiming it had covered everything, which no static check over a diff
+// can do. This list is what turns an otherwise clean result into PARTIAL.
+func pivotUncheckable(response pivotResponse, flags pivotFlags) []string {
+	items := []string{
+		"Whether the replacement preserves behaviour. A diff within budget and a green test run are consistent with a subtly wrong rewrite; only a test that exercises the changed path can speak to this.",
+		"Whether the required commands actually cover the changed code. Passing tests prove the tests passed, not that they touched the edit.",
+		"Whether a SAFE verdict reflects the absence of a path or only the absence of an edge. Calls through interfaces, reflection and generated code leave no edge to follow.",
+	}
+	if heuristic := response.EvidenceCounts[evidenceHeuristic]; heuristic > 0 {
+		items = append(items, fmt.Sprintf(
+			"Whether the %d file(s) resting on HEURISTIC evidence are correctly classified. Those edges were matched by name or package rather than resolved, and confirming one means reading the cited source line.", heuristic))
+	}
+	if response.Counts.Unverified > 0 {
+		items = append(items, fmt.Sprintf(
+			"Whether the %d UNVERIFIED file(s) are affected. The parser could not read them, so neither this plan nor any check over its output can say.", response.Counts.Unverified))
+	}
+	if flags.ExcludeTests {
+		// Said out loud because the invariant silently weakens here: with tests
+		// excluded before classification, the plan cannot name the test files that
+		// must not change, so an empty paths_must_not_change means "not checked",
+		// never "nothing to check".
+		items = append(items, "Whether any test was weakened. --exclude-tests dropped test files before classification, so paths_must_not_change is empty for this run: absence of listed test paths is absence of information, not evidence that no test moved.")
+	}
+	return items
+}
+
 func pivotMustNotDo(constraint string, response pivotResponse) []string {
 	rules := []string{
 		fmt.Sprintf("Must not delete production code to remove %s. A violation count that falls because the code is gone is not the constraint being satisfied; it is the measurement being satisfied. Replace the dependency, keep the behaviour.", constraint),

@@ -1,0 +1,128 @@
+pivot-verify: three verdicts against the real gorilla/mux loop
+==============================================================
+
+The plans below are not fixtures. They come from the verification loop the
+previous session ran: a cold agent was handed a pivot work order for
+--dependency bytes and committed 31bca9f, "WI-0001: replace bytes with strings in
+findFirstQueryKey", into /Users/adharsh/.claude/jobs/fea6b82a/tmp/mux-loop.
+
+The before-plan is pivot at 31bca9f^, the after-plan is pivot at 31bca9f, both
+regenerated with the binary that emits validation.invariants.
+
+
+CASE 1 -- the real fix. Expected: PARTIAL.
+------------------------------------------
+  python3 scripts/pivot-verify.py \
+    --before mux-before-plan.json --after mux-after-plan.json \
+    --repo <mux> --rev-range '31bca9f^..31bca9f'
+
+pivot-verify: pivot-1a00c194311f
+  repo /Users/adharsh/.claude/jobs/fea6b82a/tmp/mux-loop | range 31bca9f^..31bca9f
+
+  [ok  ] flags_must_match
+           re-run used the same question (['bytes'], depth 2)
+  [ok  ] files_must_still_exist
+           all 1 production violation file(s) still present
+  [ok  ] paths_must_not_change
+           plan named no test paths (tests excluded before classification); no conventional test path changed in the range either
+  [ok  ] max_net_lines_deleted
+           +7/-8, net 1 removed, budget 10
+  [ok  ] expected_after
+           invalidated 0, unverified 0
+
+  Not mechanically checkable (5) -- these need a human or a test:
+    - Whether the replacement preserves behaviour. A diff within budget and a green test run are consistent with a subtly wrong rewrite; only a test that exercises the changed path can speak to this.
+    - Whether the required commands actually cover the changed code. Passing tests prove the tests passed, not that they touched the edit.
+    - Whether a SAFE verdict reflects the absence of a path or only the absence of an edge. Calls through interfaces, reflection and generated code leave no edge to follow.
+    - Whether the 4 file(s) resting on HEURISTIC evidence are correctly classified. Those edges were matched by name or package rather than resolved, and confirming one means reading the cited source line.
+    - Whether any test was weakened. --exclude-tests dropped test files before classification, so paths_must_not_change is empty for this run: absence of listed test paths is absence of information, not evidence that no test moved.
+
+VERDICT: PARTIAL
+  Every check that ran held. Coverage is incomplete by the plan's own account,
+  which is why this is not a PASS. Read the list above before shipping.
+  exit code: 2
+
+
+Note what the deletion budget reproduced mechanically: +7/-8, net 1 removed.
+That is the exact figure a human checked by hand during the original loop and
+recorded in the commit message as evidence the count had not been gamed. Nobody
+had to look this time.
+
+The verdict is PARTIAL, not PASS, and that is correct. Five questions in the plan
+cannot be settled by any check over a diff.
+
+
+CASE 2 -- the deletion attack. Expected: FAIL.
+-----------------------------------------------
+The same starting commit, but instead of replacing the dependency the file
+carrying it is deleted:
+
+  rm regexp.go && git commit -m "delete regexp.go instead of fixing it"
+
+Re-running pivot then reports invalidated = 0. The loop's original check was
+exactly that count, so this attack passes it.
+
+pivot-verify: pivot-1a00c194311f
+  repo /private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/ed08012a-2b63-4060-9643-0156dde8cf2d/scratchpad/mux-attack | range HEAD~1..HEAD
+
+  [ok  ] flags_must_match
+           re-run used the same question (['bytes'], depth 2)
+  [FAIL] files_must_still_exist
+           1 file(s) no longer tracked: regexp.go
+  [ok  ] paths_must_not_change
+           plan named no test paths (tests excluded before classification); no conventional test path changed in the range either
+  [FAIL] max_net_lines_deleted
+           +0/-414, net 414 removed, budget 10 -- more was removed than a replacement accounts for
+  [ok  ] expected_after
+           invalidated 0, unverified 0
+
+  Not mechanically checkable (5) -- these need a human or a test:
+    - Whether the replacement preserves behaviour. A diff within budget and a green test run are consistent with a subtly wrong rewrite; only a test that exercises the changed path can speak to this.
+    - Whether the required commands actually cover the changed code. Passing tests prove the tests passed, not that they touched the edit.
+    - Whether a SAFE verdict reflects the absence of a path or only the absence of an edge. Calls through interfaces, reflection and generated code leave no edge to follow.
+    - Whether the 4 file(s) resting on HEURISTIC evidence are correctly classified. Those edges were matched by name or package rather than resolved, and confirming one means reading the cited source line.
+    - Whether any test was weakened. --exclude-tests dropped test files before classification, so paths_must_not_change is empty for this run: absence of listed test paths is absence of information, not evidence that no test moved.
+
+VERDICT: FAIL
+  exit code: 1
+
+
+Two independent checks caught it, and note the third line of the report:
+expected_after still says "ok, invalidated 0". That is the check the loop had.
+On its own it certifies the attack as a success.
+
+
+CASE 3 -- no after-plan. Expected: CANNOT_VERIFY, never PASS.
+--------------------------------------------------------------
+An agent that reports "done" without a re-measurement:
+
+pivot-verify: pivot-1a00c194311f
+  repo /Users/adharsh/.claude/jobs/fea6b82a/tmp/mux-loop | range 31bca9f^..31bca9f
+
+  [??  ] flags_must_match
+           no after-plan supplied
+  [ok  ] files_must_still_exist
+           all 1 production violation file(s) still present
+  [ok  ] paths_must_not_change
+           plan named no test paths (tests excluded before classification); no conventional test path changed in the range either
+  [ok  ] max_net_lines_deleted
+           +7/-8, net 1 removed, budget 10
+  [??  ] expected_after
+           no after-plan supplied; the count was never re-measured
+
+  Not mechanically checkable (5) -- these need a human or a test:
+    - Whether the replacement preserves behaviour. A diff within budget and a green test run are consistent with a subtly wrong rewrite; only a test that exercises the changed path can speak to this.
+    - Whether the required commands actually cover the changed code. Passing tests prove the tests passed, not that they touched the edit.
+    - Whether a SAFE verdict reflects the absence of a path or only the absence of an edge. Calls through interfaces, reflection and generated code leave no edge to follow.
+    - Whether the 4 file(s) resting on HEURISTIC evidence are correctly classified. Those edges were matched by name or package rather than resolved, and confirming one means reading the cited source line.
+    - Whether any test was weakened. --exclude-tests dropped test files before classification, so paths_must_not_change is empty for this run: absence of listed test paths is absence of information, not evidence that no test moved.
+
+VERDICT: CANNOT_VERIFY
+  At least one check could not run. That is not a pass; it is an absence of
+  evidence, and the loop must not treat it as one.
+  exit code: 3
+
+
+The counts were never re-measured, so there is nothing to compare. The verifier
+says so instead of defaulting to a pass. A check that did not run is not a check
+that passed -- the same claim this release makes about a file that did not parse.

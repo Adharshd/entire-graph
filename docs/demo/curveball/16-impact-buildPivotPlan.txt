@@ -1,0 +1,48 @@
+Index: cache-miss (30363ms) | Query: 11ms | Total: 30374ms
+Completeness: no parse failures in Go (423 files parsed); 1 elsewhere (JSON 1) cannot affect this answer — see --format json.
+Impact: buildPivotPlan (internal/cli/pivot_plan.go:159) def=159 span=159-267 [function]
+Blast radius: 10 callers (9 direct, 1 transitive), 12 callees, 6 type consumers, 7 data flows, 2 co-change files, 0 siblings.
+Callers (9 direct, 1 transitive; who breaks if behavior changes):
+- runPivot (internal/cli/pivot.go:368, def :311)
+- TestPivotPlanCarriesEvidenceForAgents (internal/cli/pivot_evidence_test.go:242, def :240)
+- TestPlanForbidsTrivialSatisfaction (internal/cli/pivot_evidence_test.go:392, def :390) [+1 more call site]
+- TestBuildPivotPlanMapsEveryVerdictToAnAction (internal/cli/pivot_plan_test.go:44, def :43)
+- TestBuildPivotPlanOrdersWorkByWhatBlocksWhat (internal/cli/pivot_plan_test.go:94, def :93)
+- TestBuildPivotPlanStatesItsOwnBlindSpots (internal/cli/pivot_plan_test.go:118, def :117)
+- TestPivotRequiredCommandsAreRunnable (internal/cli/pivot_plan_test.go:144, def :143)
+- TestPivotPlanIDIsDeterministic (internal/cli/pivot_plan_test.go:179, def :177) [+2 more call sites]
+- TestPivotRoleAwareContractClauses (internal/cli/pivot_plan_test.go:198, def :197) [+1 more call site]
+- Run (internal/cli/root.go:105, def :43) [via runPivot]
+Callees (12; what it depends on):
+- fmt.Sprintf
+- sort.SliceStable
+- strings.Join
+- pivotDistanceRank (internal/cli/pivot_plan.go:271)
+- pivotWorkItemFor (internal/cli/pivot_plan.go:278)
+- pivotKnownBlindSpots (internal/cli/pivot_plan.go:405)
+- pivotRequiredCommands (internal/cli/pivot_plan.go:454)
+- pivotMustNotDo (internal/cli/pivot_plan.go:505)
+- pivotMustNotClaim (internal/cli/pivot_plan.go:524)
+- pivotPlanID (internal/cli/pivot_plan.go:552)
+- classifyPivotRole (internal/cli/pivot_roles.go:62)
+- roleRank (internal/cli/pivot_roles.go:129)
+Type consumers (0 in, 6 out; USES_TYPE/PARAM_TYPE/RETURNS_TYPE):
+- -> pivotFlags (internal/cli/pivot.go:62) [PARAM_TYPE]
+- -> pivotFlags (internal/cli/pivot.go:62) [USES_TYPE]
+- -> pivotResponse (internal/cli/pivot.go:151) [PARAM_TYPE]
+- -> pivotResponse (internal/cli/pivot.go:151) [USES_TYPE]
+- -> pivotPlan (internal/cli/pivot_plan.go:48) [RETURNS_TYPE]
+- -> pivotPlan (internal/cli/pivot_plan.go:48) [USES_TYPE]
+Data flows (2 in, 5 out):
+- <- pivotDistanceRank (internal/cli/pivot_plan.go:271)
+- -> pivotRequiredCommands (internal/cli/pivot_plan.go:454)
+- -> pivotMustNotDo (internal/cli/pivot_plan.go:505)
+- -> pivotMustNotClaim (internal/cli/pivot_plan.go:524)
+- -> pivotPlanID (internal/cli/pivot_plan.go:552)
+- -> classifyPivotRole (internal/cli/pivot_roles.go:62)
+- <- roleRank (internal/cli/pivot_roles.go:129)
+Co-change coupling (2; files that historically change with internal/cli/pivot_plan.go):
+- internal/cli/pivot.go [files changed together in 2 recent commits]
+- internal/cli/pivot_evidence_test.go [files changed together in 2 recent commits]
+Same-container siblings (0):
+- none
