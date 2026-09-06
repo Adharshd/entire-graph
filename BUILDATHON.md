@@ -327,6 +327,38 @@ needing source or test verification.
 | 6 | Use Entire Graph to identify evidence consumers | `docs/demo/curveball/01-06`, all run **before** the first edit |
 | 7 | Users **and agents** can tell the three apart | text tags + `VERIFY:` for users; `evidence_quality` + `verification_required` + 2 blind spots + 2 contract clauses for agents |
 
+### Our own loop found this before the card named it
+
+Reconstructed from `entire checkpoint explain 96c865a5662c`, not from memory. Full working and the
+raw transcript excerpt in [`docs/demo/curveball/15-loop-findings-from-checkpoint.md`](docs/demo/curveball/15-loop-findings-from-checkpoint.md).
+
+At 05:42Z the verification loop ran against gorilla/mux. The cold executor agent — no prior context,
+handed only the work order — reported this back:
+
+> WI-0003's evidence cites `source_file: regexp.go, line: 676` [...] but `regexp.go` is only 413
+> lines [...] This specific evidence entry (**confidence 0.68, "method call matched globally unique
+> method name" — a heuristic match**) does not hold up as cited.
+
+A `name_only` edge at 0.68 produced a citation to a line that does not exist. The AT-RISK verdict
+built on it was still correct, for unrelated reasons — `route.go:259` really does call
+`newRouteRegexp` — which is what makes this the dangerous shape: **the wrong evidence and the right
+answer arrived together.**
+
+The agent caught it by opening the file and counting lines. Nothing in the output distinguished that
+edge from an import declaration the parser had read directly. The graph had recorded
+`resolution: name_only` and `confidence: 0.68` at the moment it created the edge. PivotMap printed
+the number and acted on neither.
+
+We fixed the symptom that morning (`0fa4a48`, evidence cited against the wrong file) and the class
+after noon (`d09e6af`). The curveball did not introduce this problem to us; it named a problem our
+own loop had already surfaced, and pushed us from patching one citation to grading every edge.
+
+The same checkpoint carries two loop findings that remain **unbuilt**, stated in
+[Known limitations](#known-limitations-and-next-steps) rather than quietly dropped: the loop is
+gameable by deletion (`invalidated == 0` is satisfied by deleting the code — checked by hand on mux
+at +7/-8, enforced nowhere), and it returns a boolean where it needs
+`PASS / FAIL / PARTIAL / CANNOT_VERIFY`.
+
 ### The tempting wrong answer
 
 PivotMap already looked compliant. It ships `UNREACHED` for inventory-only languages, it prints
@@ -564,6 +596,16 @@ package this feature touches, passes in full.
   test paths (`_test.go`, `*.test.*`, a `test/`/`testdata/` directory segment, and the equivalents in
   the other supported languages). A test helper that lives in a normally-named file is still
   classified, and a production file that happens to sit under `testdata/` is still excluded.
+- **The verification loop is gameable by deletion, and nothing enforces otherwise.** `invalidated == 0`
+  is satisfied by deleting the code as well as by fixing it — the failure mode the loop research names
+  as "remove code rather than repair it". It was checked by hand on the mux run (`1 file, +7/-8, no
+  test touched, suite green before and after`) and that check lives in a human's head, not in code.
+  The defence is a deletion budget plus retained-behaviour assertions, roughly 30 lines.
+- **The loop reports a boolean where it needs four statuses.** `PASS / FAIL / PARTIAL /
+  CANNOT_VERIFY`. A missing tool or a timeout is not a pass, in the same way a file that did not parse
+  is not a file that came back Safe — `CANNOT_VERIFY` is this project's own `UNREACHED`, applied to
+  the verifier instead of the classifier. Both findings are recorded in
+  `docs/demo/curveball/15-loop-findings-from-checkpoint.md` with their checkpoint source.
 - **Next step:** severity beyond the three buckets — an At-Risk file whose only link is a type
   reference is a much smaller job than one that calls an invalidated function on every request path,
   and the graph already carries enough to tell those apart.
