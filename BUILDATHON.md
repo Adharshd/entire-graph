@@ -10,6 +10,47 @@
 > Tree        https://entire.io/gh/Adharshd/entire-graph/tree/pivot-work-order
 > ```
 
+## Start here
+
+Three layers, shallowest first. Stop at whichever answers your question.
+
+**1 — What it is, in one screen**
+[One-sentence summary](#one-sentence-summary) · [Problem](#problem-intended-user-and-why-it-matters) ·
+[Why Entire is essential](#selected-entire-track-and-why-entire-is-essential)
+
+**2 — The Noon Curveball response** (the graded work)
+[Every requirement, and where it is answered](#every-requirement-and-where-it-is-answered) — start
+here if you are scoring it; each row names the file or test that answers it.
+Then [what assumption was invalidated](#the-assumption-that-was-invalidated),
+[what changed](#what-changed), [why it is safe](#why-the-new-result-is-safe), and the
+[run against Kubernetes](#run-against-kubernetes).
+
+**3 — The evidence, reproducible**
+[`docs/demo/curveball/`](docs/demo/curveball/) — every graph command, its output, and the plan that
+was followed. Items 01-06 ran before the first line of code changed.
+[Checkpoint → commit table](#checkpoint-links-and-what-each-checkpoint-proves) maps each milestone to
+the commit that carries it.
+
+### If you are an agent reading this
+
+The machine-readable form of this project is the work order, not this document:
+
+```sh
+go build -o ./entire-graph ./cmd/entire-graph        # the installed plugin has no pivot subcommand
+./entire-graph pivot --repo . --dependency internal/sem --exclude-tests --depth 1 --format plan
+```
+
+`pivot-plan/v1` states the work rather than the classification. Read
+`known_blind_spots` and `execution_contract.must_not_claim` **before** the work items — they are
+placed first because the decision about how far to trust a plan is made before it is read, not after.
+Each work item carries `evidence_quality` (`CONFIRMED` / `HEURISTIC` / `UNVERIFIED`) and
+`verification_required`. Anything not `CONFIRMED` requires the cited source line to be read, or a
+test run, before the item is acted on or reported done.
+
+A captured example is `docs/demo/curveball/14-pivot-on-itself-plan.json`.
+
+---
+
 ## One-sentence summary
 
 `entire graph pivot` answers what survives a requirement that changed after the code was already
