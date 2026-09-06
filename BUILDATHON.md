@@ -42,11 +42,16 @@ the "why was this built this way" that makes a rework plan trustworthy.
 
 ## Architecture and main workflow
 
-One new command in this fork: `internal/cli/pivot.go`, registered in the existing dispatcher in
-`internal/cli/root.go`.
+One new command in this fork, in three files, registered in the existing dispatcher in
+`internal/cli/root.go`:
+
+- `internal/cli/pivot.go` — flags, graph load, the three classification rules, propagation, JSON.
+- `internal/cli/pivot_roles.go` — file-role classification and the grouped text report.
+- `internal/cli/pivot_plan.go` — the `pivot-plan/v1` work order.
 
 ```
-entire graph pivot --dependency <prohibited package> [--checkpoint <id>] [--depth N] [--exclude-tests]
+entire graph pivot --dependency <prohibited package> [--checkpoint <id>] [--depth N]
+                   [--exclude-tests] [--format text|json|plan]
 ```
 
 Pipeline:
@@ -65,6 +70,12 @@ Pipeline:
    nobody verified.
 5. **Checkpoint overlay (optional).** `sem.AnalyzeCheckpoint` folds in what a session changed and how
    many dependents each change has, and marks affected files that session wrote with `*`.
+6. **Role pass.** Every file is classified **PRODUCTION | TEST | TEST_FIXTURE | GENERATED | VENDOR |
+   UNKNOWN** from signals that cannot be argued with: a `vendor/` path segment, a
+   `testdata|fixtures|mocks` segment, the `_test.go` suffix, or the `Code generated ... DO NOT EDIT.`
+   header the generator itself wrote. The role never changes a verdict — it decides how the finished
+   report is grouped and ranked.
+7. **Render.** `text` for a person, `json` for the full classification, `plan` for an agent.
 
 `--exclude-tests` (the same path predicate `impact` and `neighbors` use) drops test files *before*
 classification rather than filtering them out of the finished report. The difference matters for
@@ -76,7 +87,7 @@ a file that came back Safe.
 Every verdict prints the edge that produced it — relation type, target, confidence, source line — so a
 reader can check the claim rather than trust it.
 
-### Two design decisions worth defending
+### Three design decisions worth defending
 
 **The classifier is rules, not a model.** No LLM produces a verdict. The interpretive step — turning a
 sentence like "we can't send customer data through Library X" into the package name `libraryx` — stays
@@ -87,6 +98,15 @@ make the plugin's own diagnostic lie.
 **Propagation is capped.** Unbounded transitive closure marks an entire repository At-Risk, which is
 technically true and completely useless. Two hops, with the distance reported per file, keeps the
 output a shortlist a person can actually work through.
+
+**Roles rank the report; they never filter it.** The first version of this tool had a real usability
+bug, and it was not in the classifier. One shared test helper reaching invalidated code dragged its
+whole package along, and the report printed all of it — every file, with its own evidence block. The
+verdicts were correct and the output was unusable, because 187 file names that all resolve to one
+`go test ./internal/sem` bury the eight production files somebody actually has to open. The fix is not
+to drop those files: a deleted result is a result nobody can audit. The fix is to rank them. Test
+fallout collapses to one line per package carrying the command that checks it, production work stays
+listed file by file with its evidence, and the JSON still carries all 636 files with their roles.
 
 ## Entire Graph findings and verification
 
@@ -143,6 +163,82 @@ fixture: production code whose only path to invalidated code runs through a test
 without the flag and SAFE with it, which is what proves the exclusion happens before classification
 rather than as a filter over the output.
 
+## What the grouped report looks like
+
+Roles turn the same classification into a ranked worklist. Run against this repository at commit
+`53ff6bd`, `--dependency os/exec` with no other flags — 636 files, 32 invalidated, 287 at-risk:
+
+```
+Required remediation:  32 direct violation(s) (8 production, 24 test across 5 package(s))
+Production follow-up:  100 at-risk production file(s)
+Test fallout:          187 file(s) across 4 package(s)
+Coverage gaps:         85 unreached
+```
+
+The four lines are the whole point. Nothing is hidden — the 32 violations are all still violations —
+but the reader now knows that eight of them are files to open and 24 are five commands to run. The
+187 at-risk test files, which the previous version printed in full, are four lines:
+
+```
+TEST FALLOUT (187 file(s) across 4 package(s)) — collapsed on purpose.
+These are covered by running the package, not by reading the list:
+- internal/sem                        126 file(s)   go test ./internal/sem
+- internal/cli                         58 file(s)   go test ./internal/cli
+- internal/bench                        2 file(s)   go test ./internal/bench
+- internal/sem/testdata/fixtures/typescript-http    1 file(s)   review internal/sem/testdata/fixtures/typescript-http/ (no Go test target derivable)
+```
+
+The last line is the honest case: a package with no Go in it is told so rather than handed a command
+that would fail.
+
+## The work order: `--format plan`
+
+The JSON report says what every file **is**. That is the right thing to archive and the wrong thing to
+hand an agent, because an agent given a classification invents the plan itself — differently each
+time, with no way afterwards to tell what it was supposed to have done. `--format plan` states the
+work instead, as `pivot-plan/v1`.
+
+Run at `--dependency os/exec --exclude-tests --depth 1` against `53ff6bd`: **278 work items — 8 P0,
+11 P1, 259 P2**, plan id `pivot-09dbca466cc4`, with 7 required commands, 6 declared blind spots and 6
+must-not-claim clauses.
+
+**Every classified file becomes exactly one work item**, so nothing falls between the report and the
+plan: `INVALIDATED → REPLACE_OR_REMOVE`, `AT-RISK → VERIFY_AFTER_ROOT_FIX`, `SAFE → NO_ACTION`,
+`UNREACHED → MANUAL_REVIEW`. Safe files are included deliberately: a file that was analysed and
+cleared is a different thing from a file nobody looked at, and only the plan can tell an agent which
+one it is holding.
+
+**Priority encodes what blocks what.** P0 is a direct violation in code that ships — nothing
+downstream can be verified until it is gone. P1 is a violation in a test, or shipped code standing on
+an invalidated foundation. P2 is covered by running a package, or is not a change at all. Items are
+sorted before ids are assigned, so reading the plan top to bottom is reading it in execution order.
+
+**The plan id is deterministic** — a digest of head commit, constraint, depth, flags and counts — so
+the same question asked twice is recognisably one plan rather than two.
+
+Two parts of the schema exist because of how an *agent* fails rather than how the graph works:
+
+- **`known_blind_spots`** pairs each limitation with its consequence, and is stated *before* the work
+  items, because an agent decides how far to trust a plan before it reads it, not after. Six entries:
+  interface dispatch, reflection, generated code, inventory-only languages, name matching, and that
+  SAFE means no path was found in this snapshot rather than proof of absence.
+- **`execution_contract.must_not_claim`** names the likely failure directly. It is not a bad edit — a
+  test catches that. It is a confident report of success nobody ran a command to check. The clauses
+  forbid claiming the dependency is gone without re-running pivot, claiming tests pass without
+  executing them, treating SAFE as proof of absence, and counting an UNREACHED file as resolved. The
+  GENERATED and VENDOR clauses appear only when those roles are actually present, so the contract
+  stays signal rather than boilerplate.
+
+`validation.required_commands` is where the package collapse becomes executable: `go build ./...`,
+one `go test ./pkg` per affected package, and last the exact pivot re-run that proves the invalidated
+count reached zero.
+
+One correctness fix came out of building this. Propagation now carries the originating invalidated
+file along the walk. At two hops an at-risk item used to report the intermediate neighbour it was
+reached through; `root_invalidated` now names the file that actually has to be fixed first, which is
+what the plan orders work by — `internal/cli/callsite.go` points at `internal/gitutil/git.go`, not at
+whatever it happened to be reached through.
+
 ## Noon Curveball: what changed and how we adapted
 
 *(filled in after 12:00)*
@@ -182,7 +278,15 @@ mise run test           # go test ./...
 entire graph pivot --repo . --dependency net/http
 entire graph pivot --repo . --dependency os/exec --exclude-tests --depth 1
 entire graph pivot --repo . --dependency net/http --checkpoint <id> --format json
+
+# the agent work order
+entire graph pivot --repo . --dependency os/exec --exclude-tests --depth 1 --format plan
 ```
+
+`mise run test` does not come back fully green on every machine: `cmd/graph-bench`'s clone helper
+tests fail wherever the local git rejects `checkout --end-of-options`. Those failures reproduce at
+`4a0a219`, before any of this work, and are unrelated to pivot — `internal/cli`, which is the only
+package this feature touches, passes in full.
 
 ## Known limitations and next steps
 
