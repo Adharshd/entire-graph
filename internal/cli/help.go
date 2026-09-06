@@ -204,6 +204,28 @@ var commandDocs = []commandDoc{
 		examples: []string{"entire graph impact --repo . --symbol WriteText"},
 	},
 	{
+		name:    "pivot",
+		group:   groupAnalyze,
+		summary: "What survives a changed requirement: keep, rework, or drop",
+		usage:   []string{"entire graph pivot --dependency PKG --repo . [--checkpoint ID] [--depth 1..5] [--format text|json]"},
+		long: "A constraint that arrives after the code is written — a dependency that may no longer touch certain data, a pattern that is no longer allowed — splits the tree into three populations. INVALIDATED files reach the prohibited dependency themselves and cannot stay as written. AT-RISK files break no rule but are built on something invalidated, so they survive only after that foundation is replaced. SAFE files have no dependency path to any of it.\n\n" +
+			"Every verdict is a rule over graph evidence, never a model's opinion: a file is invalidated because a specific IMPORTS or CALLS edge was found, and that edge is printed with the verdict so you can check it. Pass --checkpoint to fold in what an agent session actually built and how much depends on it.\n\n" +
+			"Propagation is capped (default 2 hops) because unbounded closure turns a whole repository At-Risk and stops being an answer. Files in inventory-only languages are reported as UNREACHED rather than Safe: the parser never checked them for relations, so their verdict is unknown.",
+		flags: []flagDoc{
+			{name: "--dependency", arg: "PKG", desc: "Prohibited import/package (required; repeatable or comma-separated)"},
+			{name: "--repo", arg: "path", desc: "Repository (default: current repo)"},
+			{name: "--checkpoint", arg: "id", desc: "Fold in intent from an Entire Checkpoint"},
+			{name: "--depth", arg: "1..5", def: "2", desc: "How far At-Risk propagates"},
+			{name: "--format", arg: "text|json", desc: "Output format"},
+			{name: "--worktree", desc: "Analyze the working tree instead of HEAD"},
+			{name: "--profile", arg: "syntax-only|fast|full", def: "full", desc: "Parsing depth"},
+		},
+		examples: []string{
+			"entire graph pivot --repo . --dependency net/http",
+			"entire graph pivot --repo . --dependency net/http --checkpoint 0d9e08fe2689",
+		},
+	},
+	{
 		name:    "def",
 		group:   groupInspect,
 		summary: "What a name IS: declaration, fields, and method surface",
