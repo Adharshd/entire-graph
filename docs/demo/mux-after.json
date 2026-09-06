@@ -1,0 +1,355 @@
+{
+  "schema_version": "pivot-plan/v1",
+  "plan_id": "pivot-57f44b44af34",
+  "graph_tool": {
+    "name": "entire-graph pivot",
+    "version": "dev",
+    "provider": "entire-graph",
+    "graph_schema_version": "1.1",
+    "depth": 2,
+    "exclude_tests": true,
+    "index_cache_hit": false
+  },
+  "repo": "/Users/adharsh/.claude/jobs/fea6b82a/tmp/mux-loop",
+  "head_commit": "31bca9f01579b09a717b2d1424c8e9438a007262",
+  "constraint": {
+    "prohibited": [
+      "bytes"
+    ],
+    "rule": "no file may depend on bytes",
+    "interpreted_by": "caller: --dependency takes a package name, this tool does not read prose"
+  },
+  "counts": {
+    "invalidated": 0,
+    "at_risk": 0,
+    "safe": 10,
+    "unreached": 4,
+    "total": 14,
+    "excluded_tests": 11,
+    "p0": 0,
+    "p1": 0,
+    "p2": 14,
+    "by_role": {
+      "PRODUCTION": 14
+    }
+  },
+  "known_blind_spots": [
+    {
+      "id": "interface-dispatch",
+      "statement": "A call made through an interface is resolved to the interface, not to the implementation that runs.",
+      "implication": "A file whose only route to the prohibited dependency runs through an interface can be reported SAFE. Check implementations of any interface the invalidated files satisfy."
+    },
+    {
+      "id": "reflection",
+      "statement": "Reflective and dynamically constructed calls leave no edge in a static parse.",
+      "implication": "Code that reaches bytes by name at runtime is invisible here. Grep for the string form of the dependency as well."
+    },
+    {
+      "id": "generated-code",
+      "statement": "Generated files are classified from their committed content, and the generator that produced them is not analysed.",
+      "implication": "A generator that emits the prohibited dependency will reintroduce it after any hand fix. Fix the generator, then regenerate."
+    },
+    {
+      "id": "safe-is-not-proof",
+      "statement": "SAFE means no path was found in this snapshot. It is not proof of absence.",
+      "implication": "Do not report the constraint satisfied on the strength of a SAFE verdict alone. Satisfaction is demonstrated by the validation commands, not by this classification."
+    },
+    {
+      "id": "unreached-languages",
+      "statement": "Files in inventory-only languages are parsed for structure but not for relations, so they carry no verdict at all.",
+      "implication": "Every UNREACHED item is an open question. Treating the SAFE count as the whole remainder undercounts the work."
+    },
+    {
+      "id": "name-matching",
+      "statement": "The prohibited dependency is matched on the import path as written, exactly or as a path prefix.",
+      "implication": "A dependency reached under an alias, a re-export, or a differently spelled module path is not matched. Confirm the name is the one this repository actually writes."
+    }
+  ],
+  "work_items": [
+    {
+      "id": "WI-0001",
+      "priority": "P2",
+      "action": "MANUAL_REVIEW",
+      "verdict": "UNREACHED",
+      "role": "PRODUCTION",
+      "path": ".editorconfig",
+      "package": ".",
+      "distance": -1,
+      "evidence": [],
+      "agent_instructions": [
+        "The graph parsed .editorconfig for structure but not for call or import relations, so it holds no verdict.",
+        "Read it by hand and decide whether it depends on bytes.",
+        "Record the outcome; an unreviewed file in this list is an open question, not a pass."
+      ],
+      "acceptance_criteria": [
+        "A human or agent has recorded an explicit verdict for .editorconfig against bytes.",
+        "The verdict names what was read to reach it."
+      ]
+    },
+    {
+      "id": "WI-0002",
+      "priority": "P2",
+      "action": "NO_ACTION",
+      "verdict": "SAFE",
+      "role": "PRODUCTION",
+      "path": ".github/workflows/issues.yml",
+      "package": ".github/workflows",
+      "distance": -1,
+      "evidence": [],
+      "agent_instructions": [
+        "Leave .github/workflows/issues.yml unchanged. No dependency path from it reaches invalidated code in this snapshot.",
+        "It is listed so the plan is complete: a file that was analysed and cleared is a different thing from a file nobody looked at."
+      ],
+      "acceptance_criteria": [
+        ".github/workflows/issues.yml is unchanged in the final diff."
+      ]
+    },
+    {
+      "id": "WI-0003",
+      "priority": "P2",
+      "action": "NO_ACTION",
+      "verdict": "SAFE",
+      "role": "PRODUCTION",
+      "path": ".github/workflows/security.yml",
+      "package": ".github/workflows",
+      "distance": -1,
+      "evidence": [],
+      "agent_instructions": [
+        "Leave .github/workflows/security.yml unchanged. No dependency path from it reaches invalidated code in this snapshot.",
+        "It is listed so the plan is complete: a file that was analysed and cleared is a different thing from a file nobody looked at."
+      ],
+      "acceptance_criteria": [
+        ".github/workflows/security.yml is unchanged in the final diff."
+      ]
+    },
+    {
+      "id": "WI-0004",
+      "priority": "P2",
+      "action": "NO_ACTION",
+      "verdict": "SAFE",
+      "role": "PRODUCTION",
+      "path": ".github/workflows/test.yml",
+      "package": ".github/workflows",
+      "distance": -1,
+      "evidence": [],
+      "agent_instructions": [
+        "Leave .github/workflows/test.yml unchanged. No dependency path from it reaches invalidated code in this snapshot.",
+        "It is listed so the plan is complete: a file that was analysed and cleared is a different thing from a file nobody looked at."
+      ],
+      "acceptance_criteria": [
+        ".github/workflows/test.yml is unchanged in the final diff."
+      ]
+    },
+    {
+      "id": "WI-0005",
+      "priority": "P2",
+      "action": "NO_ACTION",
+      "verdict": "SAFE",
+      "role": "PRODUCTION",
+      "path": ".github/workflows/verify.yml",
+      "package": ".github/workflows",
+      "distance": -1,
+      "evidence": [],
+      "agent_instructions": [
+        "Leave .github/workflows/verify.yml unchanged. No dependency path from it reaches invalidated code in this snapshot.",
+        "It is listed so the plan is complete: a file that was analysed and cleared is a different thing from a file nobody looked at."
+      ],
+      "acceptance_criteria": [
+        ".github/workflows/verify.yml is unchanged in the final diff."
+      ]
+    },
+    {
+      "id": "WI-0006",
+      "priority": "P2",
+      "action": "MANUAL_REVIEW",
+      "verdict": "UNREACHED",
+      "role": "PRODUCTION",
+      "path": ".gitignore",
+      "package": ".",
+      "distance": -1,
+      "evidence": [],
+      "agent_instructions": [
+        "The graph parsed .gitignore for structure but not for call or import relations, so it holds no verdict.",
+        "Read it by hand and decide whether it depends on bytes.",
+        "Record the outcome; an unreviewed file in this list is an open question, not a pass."
+      ],
+      "acceptance_criteria": [
+        "A human or agent has recorded an explicit verdict for .gitignore against bytes.",
+        "The verdict names what was read to reach it."
+      ]
+    },
+    {
+      "id": "WI-0007",
+      "priority": "P2",
+      "action": "MANUAL_REVIEW",
+      "verdict": "UNREACHED",
+      "role": "PRODUCTION",
+      "path": "Makefile",
+      "package": ".",
+      "distance": -1,
+      "evidence": [],
+      "agent_instructions": [
+        "The graph parsed Makefile for structure but not for call or import relations, so it holds no verdict.",
+        "Read it by hand and decide whether it depends on bytes.",
+        "Record the outcome; an unreviewed file in this list is an open question, not a pass."
+      ],
+      "acceptance_criteria": [
+        "A human or agent has recorded an explicit verdict for Makefile against bytes.",
+        "The verdict names what was read to reach it."
+      ]
+    },
+    {
+      "id": "WI-0008",
+      "priority": "P2",
+      "action": "MANUAL_REVIEW",
+      "verdict": "UNREACHED",
+      "role": "PRODUCTION",
+      "path": "README.md",
+      "package": ".",
+      "distance": -1,
+      "evidence": [],
+      "agent_instructions": [
+        "The graph parsed README.md for structure but not for call or import relations, so it holds no verdict.",
+        "Read it by hand and decide whether it depends on bytes.",
+        "Record the outcome; an unreviewed file in this list is an open question, not a pass."
+      ],
+      "acceptance_criteria": [
+        "A human or agent has recorded an explicit verdict for README.md against bytes.",
+        "The verdict names what was read to reach it."
+      ]
+    },
+    {
+      "id": "WI-0009",
+      "priority": "P2",
+      "action": "NO_ACTION",
+      "verdict": "SAFE",
+      "role": "PRODUCTION",
+      "path": "doc.go",
+      "package": ".",
+      "distance": -1,
+      "evidence": [],
+      "agent_instructions": [
+        "Leave doc.go unchanged. No dependency path from it reaches invalidated code in this snapshot.",
+        "It is listed so the plan is complete: a file that was analysed and cleared is a different thing from a file nobody looked at."
+      ],
+      "acceptance_criteria": [
+        "doc.go is unchanged in the final diff."
+      ]
+    },
+    {
+      "id": "WI-0010",
+      "priority": "P2",
+      "action": "NO_ACTION",
+      "verdict": "SAFE",
+      "role": "PRODUCTION",
+      "path": "middleware.go",
+      "package": ".",
+      "distance": -1,
+      "evidence": [],
+      "agent_instructions": [
+        "Leave middleware.go unchanged. No dependency path from it reaches invalidated code in this snapshot.",
+        "It is listed so the plan is complete: a file that was analysed and cleared is a different thing from a file nobody looked at."
+      ],
+      "acceptance_criteria": [
+        "middleware.go is unchanged in the final diff."
+      ]
+    },
+    {
+      "id": "WI-0011",
+      "priority": "P2",
+      "action": "NO_ACTION",
+      "verdict": "SAFE",
+      "role": "PRODUCTION",
+      "path": "mux.go",
+      "package": ".",
+      "distance": -1,
+      "evidence": [],
+      "agent_instructions": [
+        "Leave mux.go unchanged. No dependency path from it reaches invalidated code in this snapshot.",
+        "It is listed so the plan is complete: a file that was analysed and cleared is a different thing from a file nobody looked at."
+      ],
+      "acceptance_criteria": [
+        "mux.go is unchanged in the final diff."
+      ]
+    },
+    {
+      "id": "WI-0012",
+      "priority": "P2",
+      "action": "NO_ACTION",
+      "verdict": "SAFE",
+      "role": "PRODUCTION",
+      "path": "regexp.go",
+      "package": ".",
+      "distance": -1,
+      "evidence": [],
+      "agent_instructions": [
+        "Leave regexp.go unchanged. No dependency path from it reaches invalidated code in this snapshot.",
+        "It is listed so the plan is complete: a file that was analysed and cleared is a different thing from a file nobody looked at."
+      ],
+      "acceptance_criteria": [
+        "regexp.go is unchanged in the final diff."
+      ]
+    },
+    {
+      "id": "WI-0013",
+      "priority": "P2",
+      "action": "NO_ACTION",
+      "verdict": "SAFE",
+      "role": "PRODUCTION",
+      "path": "route.go",
+      "package": ".",
+      "distance": -1,
+      "evidence": [],
+      "agent_instructions": [
+        "Leave route.go unchanged. No dependency path from it reaches invalidated code in this snapshot.",
+        "It is listed so the plan is complete: a file that was analysed and cleared is a different thing from a file nobody looked at."
+      ],
+      "acceptance_criteria": [
+        "route.go is unchanged in the final diff."
+      ]
+    },
+    {
+      "id": "WI-0014",
+      "priority": "P2",
+      "action": "NO_ACTION",
+      "verdict": "SAFE",
+      "role": "PRODUCTION",
+      "path": "test_helpers.go",
+      "package": ".",
+      "distance": -1,
+      "evidence": [],
+      "agent_instructions": [
+        "Leave test_helpers.go unchanged. No dependency path from it reaches invalidated code in this snapshot.",
+        "It is listed so the plan is complete: a file that was analysed and cleared is a different thing from a file nobody looked at."
+      ],
+      "acceptance_criteria": [
+        "test_helpers.go is unchanged in the final diff."
+      ]
+    }
+  ],
+  "validation": {
+    "required_commands": [
+      "go build ./...",
+      "entire graph pivot --repo . --dependency bytes --exclude-tests"
+    ],
+    "notes": [
+      "Run every required command. A plan is complete when the commands pass, not when the edits look right.",
+      "Re-running the pivot command is what proves the constraint is satisfied: the invalidated count must reach zero."
+    ]
+  },
+  "execution_contract": {
+    "must_not_claim": [
+      "Must not claim bytes has been removed without re-running the pivot command and showing the invalidated count at zero.",
+      "Must not claim any test passes without having executed it and read the result.",
+      "Must not present a SAFE verdict as proof that no dependency path exists; it means none was found in this snapshot.",
+      "Must not count an UNREACHED file as resolved. It was never analysed for relations.",
+      "Must not report the plan complete while any P0 item is open, regardless of how many P1 and P2 items were closed.",
+      "Must not silently widen the plan: a file that is not a work item here has not been assessed for this change."
+    ],
+    "must_do": [
+      "Work P0 items before P1: an at-risk file cannot be verified until the root it depends on is fixed.",
+      "Cite the work item id in each commit so the plan and the history stay linked.",
+      "Re-run the pivot command after the edits and attach the new counts to the report."
+    ]
+  }
+}
