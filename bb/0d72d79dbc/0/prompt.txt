@@ -1,0 +1,86 @@
+STOP — you are in the wrong repository.
+
+Do NOT touch /Users/adharsh/git/BTW-buildathon/research/entire-graph. That is a
+read-only clone of upstream entireio/entire-graph. It is not my fork, it has no
+Entire mirror, and nothing there counts for submission.
+
+The real repo — my fork, Entire-mirrored to India, where all work must happen:
+
+  /Users/adharsh/git/BTW-buildathon/entire-graph
+
+Verify you are in the right place before doing anything else:
+  git remote -v          -> must show entire://aws-ap-south-1.entire.io/gh/adharshd/entire-graph
+  git log --oneline -3   -> must show 4a0a219 and abbf061
+  ls internal/cli/pivot.go BUILDATHON.md   -> both must exist
+
+If your session's working directory is not that path, tell me — I need to
+relaunch you from there, because Entire's checkpoint hooks bind to the launch
+directory and checkpoints are worth 15 judging points.
+
+---
+
+I am right errpo - ihgbore that and just run the cmd
+
+---
+
+BTW Buildathon, Track 2. This repo is my fork of entire-graph, Entire-mirrored to
+India. Confirm before anything else:
+  pwd                    -> /Users/adharsh/git/BTW-buildathon/entire-graph
+  git remote -v          -> entire://aws-ap-south-1.entire.io/gh/adharshd/entire-graph
+  git log --oneline -3   -> 4a0a219, abbf061, 3a2a715
+  entire session current -> must NAME a session, not "No active session found"
+If any of those are wrong, stop and tell me.
+
+WHAT EXISTS: `entire graph pivot` — a new command in internal/cli/pivot.go,
+registered in root.go + help.go. Given a prohibited dependency it classifies every
+file as INVALIDATED (has an IMPORTS/CALLS edge to it), AT-RISK (reachable from an
+invalidated file, breadth-first, capped at 2 hops), SAFE (no path), or UNREACHED
+(inventory-only language, so genuinely unknown). Every verdict prints the edge that
+produced it. No LLM produces a verdict. --exclude-tests drops tests before
+classification. Two commits done, unpushed, build clean, BUT they have no
+checkpoints (earlier sessions launched from the wrong directory). Yours must.
+
+DO THIS, IN ORDER. Commit after each step.
+
+STEP 1 — prove checkpoints work. Make any small real change, commit it, then run
+`entire checkpoint list` and paste me the raw output. If it still says 0
+checkpoints, stop everything and tell me. Nothing else matters until this passes.
+
+STEP 2 — file roles, to fix the at-risk noise. Classify each file deterministically:
+PRODUCTION | TEST | TEST_FIXTURE | GENERATED | VENDOR | UNKNOWN.
+Signals: *_test.go -> TEST; testdata/ fixtures/ mocks/ -> TEST_FIXTURE;
+"Code generated ... DO NOT EDIT." header -> GENERATED; vendor/ -> VENDOR.
+Do NOT delete results — group and rank the text output:
+  Required remediation:  N direct violations
+  Production follow-up:  N at-risk production files
+  Test fallout:          N files across M packages -> collapse to one line per
+                         package with a targeted "go test ./pkg" command
+  Coverage gaps:         N unreached
+Collapsing test fallout to package level is the point: listing 64 files that all
+call one shared test helper is noise; "run go test ./internal/sem" is an action.
+
+STEP 3 — `--format plan`, writing pivot-plan/v1 JSON. This is an agent work order,
+not a graph dump. Include: schema_version, plan_id, head commit, graph tool version,
+the constraint, counts, and explicit known_blind_spots (interface dispatch,
+reflection, generated code, and "SAFE means no path found in this snapshot, not
+proof of absence"). Then work_items[], each with: id, priority P0/P1/P2, action,
+verdict, role, path, distance, root_invalidated, evidence[] (relation, to, line,
+confidence), agent_instructions[], acceptance_criteria[].
+Actions by verdict: INVALIDATED -> REPLACE_OR_REMOVE, AT_RISK ->
+VERIFY_AFTER_ROOT_FIX, SAFE -> NO_ACTION, UNREACHED -> MANUAL_REVIEW.
+Also validation.required_commands[] and execution_contract.must_not_claim[].
+
+Then update BUILDATHON.md with real numbers from real runs.
+
+Read internal/cli/pivot.go and BUILDATHON.md first. The Noon Curveball lands at
+12:00 and I must have a stable committed checkpoint before then — so if time runs
+short, stop and commit rather than leaving something half-built. A smaller working
+thing beats an ambitious broken one.
+
+---
+
+createa prompt with what u did finally - copy to clip- share the findings
+
+---
+
+once ur full done that is
