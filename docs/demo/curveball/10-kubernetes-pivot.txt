@@ -1,0 +1,829 @@
+== kubernetes @ b2ec8b6f : --dependency os/exec --exclude-tests --depth 1 ==
+Pivot: os/exec
+Repo kubernetes at b2ec8b6f | depth 1 | index cache-miss (604589ms)
+46 invalidated, 78 at-risk, 12877 safe, 48 unverified, 794 unreached (of 13843 files)
+Evidence: 52 CONFIRMED, 71 HEURISTIC, 49 UNVERIFIED — verify the non-confirmed before acting
+--exclude-tests dropped 11762 test file(s) before classification; they carry no verdict.
+
+Required remediation:  46 direct violation(s)
+Production follow-up:  78 at-risk production file(s)
+Test fallout:          0 file(s) across 0 package(s)
+Coverage gaps:         794 unreached
+
+REQUIRED REMEDIATION (46) — breaks the constraint directly, must be replaced or removed:
+- cluster/gce/gci/mounter/mounter.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS cluster/gce/gci/mounter/mounter.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- cmd/dependencyverifier/dependencyverifier.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS cmd/dependencyverifier/dependencyverifier.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- cmd/importverifier/importverifier.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS cmd/importverifier/importverifier.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- cmd/kubeadm/app/util/files/copy_unix.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS cmd/kubeadm/app/util/files/copy_unix.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- cmd/kubeadm/app/util/initsystem/initsystem_unix.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS cmd/kubeadm/app/util/initsystem/initsystem_unix.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- cmd/prune-junit-xml/prunexml.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS cmd/prune-junit-xml/prunexml.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- hack/apidiff-changelog/main.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS hack/apidiff-changelog/main.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- hack/tools/instrumentation/main.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS hack/tools/instrumentation/main.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- pkg/credentialprovider/plugin/plugin.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS pkg/credentialprovider/plugin/plugin.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- pkg/kubelet/kubelet_pods.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS pkg/kubelet/kubelet_pods.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- pkg/kubelet/kubelet_server_journal.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS pkg/kubelet/kubelet_server_journal.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- staging/src/k8s.io/apimachinery/pkg/api/apitesting/roundtrip/compatibility.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS staging/src/k8s.io/apimachinery/pkg/api/apitesting/roundtrip/compatibility.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/metrics.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/metrics.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- staging/src/k8s.io/code-generator/cmd/go-to-protobuf/protobuf/cmd.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS staging/src/k8s.io/code-generator/cmd/go-to-protobuf/protobuf/cmd.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- staging/src/k8s.io/component-base/logs/kube-log-runner/kube-log-runner.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS staging/src/k8s.io/component-base/logs/kube-log-runner/kube-log-runner.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- staging/src/k8s.io/kubectl/pkg/cmd/plugin.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS staging/src/k8s.io/kubectl/pkg/cmd/plugin.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- staging/src/k8s.io/kubectl/pkg/cmd/plugin/plugin_completion.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS staging/src/k8s.io/kubectl/pkg/cmd/plugin/plugin_completion.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- staging/src/k8s.io/kubectl/pkg/cmd/skiplookerr_go119.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS staging/src/k8s.io/kubectl/pkg/cmd/skiplookerr_go119.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- staging/src/k8s.io/kubectl/pkg/cmd/util/editor/launcher_others.go [PRODUCTION]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS staging/src/k8s.io/kubectl/pkg/cmd/util/editor/launcher_others.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/github.com/godbus/dbus/v5/conn_darwin.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/github.com/godbus/dbus/v5/conn_darwin.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/github.com/google/cadvisor/lib/fs/zfs/stats.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/github.com/google/cadvisor/lib/fs/zfs/stats.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/github.com/google/gnostic-models/compiler/extensions.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/github.com/google/gnostic-models/compiler/extensions.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/github.com/onsi/ginkgo/v2/ginkgo/internal/compile.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/github.com/onsi/ginkgo/v2/ginkgo/internal/compile.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/github.com/onsi/ginkgo/v2/ginkgo/internal/profiles_and_reports.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/github.com/onsi/ginkgo/v2/ginkgo/internal/profiles_and_reports.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/github.com/onsi/ginkgo/v2/ginkgo/internal/run.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/github.com/onsi/ginkgo/v2/ginkgo/internal/run.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/github.com/onsi/ginkgo/v2/ginkgo/internal/utils.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/github.com/onsi/ginkgo/v2/ginkgo/internal/utils.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/github.com/onsi/ginkgo/v2/ginkgo/internal/verify_version.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/github.com/onsi/ginkgo/v2/ginkgo/internal/verify_version.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/github.com/opencontainers/cgroups/systemd/user.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/github.com/opencontainers/cgroups/systemd/user.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/go.opentelemetry.io/otel/sdk/resource/host_id_exec.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/go.opentelemetry.io/otel/sdk/resource/host_id_exec.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/golang.org/x/tools/go/gcexportdata/gcexportdata.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/golang.org/x/tools/go/gcexportdata/gcexportdata.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/golang.org/x/tools/go/packages/external.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/golang.org/x/tools/go/packages/external.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/golang.org/x/tools/go/packages/golist.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/golang.org/x/tools/go/packages/golist.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/golang.org/x/tools/internal/gcimporter/exportdata.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/golang.org/x/tools/internal/gcimporter/exportdata.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/golang.org/x/tools/internal/gocommand/invoke.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/golang.org/x/tools/internal/gocommand/invoke.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/k8s.io/gengo/v2/generator/execute.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/k8s.io/gengo/v2/generator/execute.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/k8s.io/system-validators/validators/docker_validator.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/k8s.io/system-validators/validators/docker_validator.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/k8s.io/system-validators/validators/kernel_validator.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/k8s.io/system-validators/validators/kernel_validator.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/k8s.io/utils/exec/exec.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/k8s.io/utils/exec/exec.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/sigs.k8s.io/knftables/error.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/sigs.k8s.io/knftables/error.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/sigs.k8s.io/knftables/exec.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/sigs.k8s.io/knftables/exec.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/sigs.k8s.io/knftables/nftables.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/sigs.k8s.io/knftables/nftables.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/sigs.k8s.io/kustomize/api/internal/builtins/HelmChartInflationGenerator.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/sigs.k8s.io/kustomize/api/internal/builtins/HelmChartInflationGenerator.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/sigs.k8s.io/kustomize/api/internal/git/gitrunner.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/sigs.k8s.io/kustomize/api/internal/git/gitrunner.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/sigs.k8s.io/kustomize/api/internal/plugins/execplugin/execplugin.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/sigs.k8s.io/kustomize/api/internal/plugins/execplugin/execplugin.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+- vendor/sigs.k8s.io/kustomize/kyaml/fn/runtime/exec/exec.go [VENDOR]
+    uses os/exec directly
+    [CONFIRMED] evidence: IMPORTS vendor/sigs.k8s.io/kustomize/kyaml/fn/runtime/exec/exec.go -> os/exec (confidence 0.80, resolution name_only) import declaration matched by language-specific scanner
+
+PRODUCTION FOLLOW-UP (78) — no violation of its own, but built on invalidated code.
+Re-verify each after the required remediation lands, nearest first:
+- cmd/kubeadm/app/cmd/phases/reset/cleanupnode.go [PRODUCTION] (distance 1)
+    calls cmd/kubeadm/app/util/initsystem/initsystem_unix.go directly
+    [CONFIRMED] evidence: CALLS cmd/kubeadm/app/cmd/phases/reset/cleanupnode.go:56 -> cmd/kubeadm/app/util/initsystem/initsystem_unix.go (confidence 0.84, resolution import_resolved) receiver call resolved through imported module path
+- cmd/kubeadm/app/componentconfigs/kubelet_unix.go [PRODUCTION] (distance 1)
+    calls cmd/kubeadm/app/util/initsystem/initsystem_unix.go directly
+    [CONFIRMED] evidence: CALLS cmd/kubeadm/app/componentconfigs/kubelet_unix.go:56 -> cmd/kubeadm/app/util/initsystem/initsystem_unix.go (confidence 0.84, resolution import_resolved) receiver call resolved through imported module path
+- cmd/kubeadm/app/phases/kubelet/kubelet.go [PRODUCTION] (distance 1)
+    calls cmd/kubeadm/app/util/initsystem/initsystem_unix.go directly
+    [CONFIRMED] evidence: CALLS cmd/kubeadm/app/phases/kubelet/kubelet.go:68 -> cmd/kubeadm/app/util/initsystem/initsystem_unix.go (confidence 0.84, resolution import_resolved) receiver call resolved through imported module path
+- cmd/kubeadm/app/phases/upgrade/staticpods.go [PRODUCTION] (distance 1)
+    calls cmd/kubeadm/app/util/files/copy_unix.go directly
+    [CONFIRMED] evidence: CALLS cmd/kubeadm/app/phases/upgrade/staticpods.go:284 -> cmd/kubeadm/app/util/files/copy_unix.go (confidence 0.84, resolution import_resolved) receiver call resolved through imported module path
+- cmd/kubeadm/app/preflight/checks.go [PRODUCTION] (distance 1)
+    calls cmd/kubeadm/app/util/initsystem/initsystem_unix.go directly
+    [CONFIRMED] evidence: CALLS cmd/kubeadm/app/preflight/checks.go:204 -> cmd/kubeadm/app/util/initsystem/initsystem_unix.go (confidence 0.84, resolution import_resolved) receiver call resolved through imported module path
+- cmd/kubeadm/app/preflight/utils.go [PRODUCTION] (distance 1)
+    uses_type vendor/sigs.k8s.io/knftables/exec.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE cmd/kubeadm/app/preflight/utils.go:30 -> vendor/sigs.k8s.io/knftables/exec.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/apis/storage/validation/validation.go [PRODUCTION] (distance 1)
+    uses_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/apis/storage/validation/validation.go:430 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/controller/garbagecollector/graph.go [PRODUCTION] (distance 1)
+    uses_type cmd/prune-junit-xml/prunexml.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/controller/garbagecollector/graph.go:142 -> cmd/prune-junit-xml/prunexml.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/controller/garbagecollector/graph_builder.go [PRODUCTION] (distance 1)
+    uses_type cmd/prune-junit-xml/prunexml.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/controller/garbagecollector/graph_builder.go:442 -> cmd/prune-junit-xml/prunexml.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/controller/resourcepoolstatusrequest/controller.go [PRODUCTION] (distance 1)
+    uses_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/controller/resourcepoolstatusrequest/controller.go:293 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/controller/resourcepoolstatusrequest/views.go [PRODUCTION] (distance 1)
+    uses_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/controller/resourcepoolstatusrequest/views.go:92 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/credentialprovider/plugin/plugins.go [PRODUCTION] (distance 1)
+    param_type pkg/credentialprovider/plugin/plugin.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: PARAM_TYPE pkg/credentialprovider/plugin/plugins.go:45 -> pkg/credentialprovider/plugin/plugin.go (confidence 0.75, resolution name_only) parameter type referenced in signature
+- pkg/kubelet/cm/dra/plugin/dra_plugin_manager.go [PRODUCTION] (distance 1)
+    uses_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/kubelet/cm/dra/plugin/dra_plugin_manager.go:224 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/kubelet/container/runtime.go [PRODUCTION] (distance 1)
+    uses_type staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/kubelet/container/runtime.go:181 -> staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/kubelet/images/helpers.go [PRODUCTION] (distance 1)
+    uses_type staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/kubelet/images/helpers.go:47 -> staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/kubelet/images/puller.go [PRODUCTION] (distance 1)
+    uses_type staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/kubelet/images/puller.go:55 -> staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/kubelet/images/pullmanager/image_pull_manager.go [PRODUCTION] (distance 1)
+    uses_type staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/kubelet/images/pullmanager/image_pull_manager.go:91 -> staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/kubelet/images/pullmanager/interfaces.go [PRODUCTION] (distance 1)
+    uses_type staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/kubelet/images/pullmanager/interfaces.go:52 -> staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/kubelet/kubelet.go [PRODUCTION] (distance 1)
+    calls pkg/kubelet/kubelet_pods.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS pkg/kubelet/kubelet.go:457 -> pkg/kubelet/kubelet_pods.go (confidence 0.80, resolution package) direct call expression resolved to same-package symbol
+- pkg/kubelet/kubelet_getters.go [PRODUCTION] (distance 1)
+    calls pkg/kubelet/kubelet_pods.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS pkg/kubelet/kubelet_getters.go:491 -> pkg/kubelet/kubelet_pods.go (confidence 0.83, resolution type_inferred) method call resolved via typed parameter receiver
+- pkg/kubelet/kubelet_server_journal_others.go [PRODUCTION] (distance 1)
+    uses_type pkg/kubelet/kubelet_server_journal.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/kubelet/kubelet_server_journal_others.go:27 -> pkg/kubelet/kubelet_server_journal.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/kubelet/kubelet_volumes.go [PRODUCTION] (distance 1)
+    calls pkg/kubelet/kubelet_pods.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS pkg/kubelet/kubelet_volumes.go:169 -> pkg/kubelet/kubelet_pods.go (confidence 0.83, resolution type_inferred) method call resolved via typed parameter receiver
+- pkg/kubelet/kuberuntime/kuberuntime_image.go [PRODUCTION] (distance 1)
+    uses_type staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/kubelet/kuberuntime/kuberuntime_image.go:33 -> staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/kubelet/kuberuntime/kuberuntime_manager.go [PRODUCTION] (distance 1)
+    calls pkg/credentialprovider/plugin/plugin.go directly
+    [CONFIRMED] evidence: CALLS pkg/kubelet/kuberuntime/kuberuntime_manager.go:218 -> pkg/credentialprovider/plugin/plugin.go (confidence 0.84, resolution import_resolved) receiver call resolved through imported module path
+- pkg/kubelet/pod_workers.go [PRODUCTION] (distance 1)
+    uses_type pkg/kubelet/kubelet_server_journal.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/kubelet/pod_workers.go:1009 -> pkg/kubelet/kubelet_server_journal.go (confidence 0.75, resolution package) type referenced in signature
+- pkg/scheduler/framework/plugins/noderesources/resource_allocation.go [PRODUCTION] (distance 1)
+    uses_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/scheduler/framework/plugins/noderesources/resource_allocation.go:450 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/scheduler/framework/plugins/volumebinding/test_utils.go [PRODUCTION] (distance 1)
+    uses_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/scheduler/framework/plugins/volumebinding/test_utils.go:208 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/scheduler/framework/preemption/podgrouppreemption.go [PRODUCTION] (distance 1)
+    uses_type vendor/k8s.io/utils/exec/exec.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/scheduler/framework/preemption/podgrouppreemption.go:54 -> vendor/k8s.io/utils/exec/exec.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/scheduler/framework/preemption/preemption.go [PRODUCTION] (distance 1)
+    uses_type vendor/k8s.io/utils/exec/exec.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/scheduler/framework/preemption/preemption.go:79 -> vendor/k8s.io/utils/exec/exec.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/scheduler/testing/wrappers.go [PRODUCTION] (distance 1)
+    uses_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/scheduler/testing/wrappers.go:1492 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/util/slice/slice.go [PRODUCTION] (distance 1)
+    uses_type staging/src/k8s.io/code-generator/cmd/go-to-protobuf/protobuf/cmd.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/util/slice/slice.go:47 -> staging/src/k8s.io/code-generator/cmd/go-to-protobuf/protobuf/cmd.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/volume/csi/csi_drivers_store.go [PRODUCTION] (distance 1)
+    uses_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/volume/csi/csi_drivers_store.go:52 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/volume/csi/csi_node_updater.go [PRODUCTION] (distance 1)
+    uses_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/volume/csi/csi_node_updater.go:194 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/volume/csi/csi_plugin.go [PRODUCTION] (distance 1)
+    uses_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/volume/csi/csi_plugin.go:873 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) type referenced in signature
+- pkg/volume/projected/projected.go [PRODUCTION] (distance 1)
+    calls pkg/credentialprovider/plugin/plugin.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS pkg/volume/projected/projected.go:249 -> pkg/credentialprovider/plugin/plugin.go (confidence 0.68, resolution name_only) method call matched globally unique method name
+- staging/src/k8s.io/apimachinery/pkg/api/apitesting/roundtrip/construct.go [PRODUCTION] (distance 1)
+    param_type staging/src/k8s.io/apimachinery/pkg/api/apitesting/roundtrip/compatibility.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: PARAM_TYPE staging/src/k8s.io/apimachinery/pkg/api/apitesting/roundtrip/construct.go:65 -> staging/src/k8s.io/apimachinery/pkg/api/apitesting/roundtrip/compatibility.go (confidence 0.75, resolution name_only) parameter type referenced in signature
+- staging/src/k8s.io/client-go/rest/transport.go [PRODUCTION] (distance 1)
+    calls staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS staging/src/k8s.io/client-go/rest/transport.go:85 -> staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go (confidence 0.68, resolution name_only) method call matched globally unique method name
+- staging/src/k8s.io/code-generator/cmd/go-to-protobuf/main.go [PRODUCTION] (distance 1)
+    calls staging/src/k8s.io/code-generator/cmd/go-to-protobuf/protobuf/cmd.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS staging/src/k8s.io/code-generator/cmd/go-to-protobuf/main.go:31 -> staging/src/k8s.io/code-generator/cmd/go-to-protobuf/protobuf/cmd.go (confidence 0.68, resolution name_only) method call matched globally unique method name
+- staging/src/k8s.io/component-helpers/scheduling/schedulingv1/workloadbuilder/podgroup.go [PRODUCTION] (distance 1)
+    uses_type cmd/prune-junit-xml/prunexml.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE staging/src/k8s.io/component-helpers/scheduling/schedulingv1/workloadbuilder/podgroup.go:63 -> cmd/prune-junit-xml/prunexml.go (confidence 0.75, resolution name_only) type referenced in signature
+- staging/src/k8s.io/cri-streaming/pkg/streaming/remotecommand/exec.go [PRODUCTION] (distance 1)
+    uses_type vendor/k8s.io/utils/exec/exec.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE staging/src/k8s.io/cri-streaming/pkg/streaming/remotecommand/exec.go:79 -> vendor/k8s.io/utils/exec/exec.go (confidence 0.75, resolution name_only) type referenced in signature
+- staging/src/k8s.io/dynamic-resource-allocation/resourceslice/tracker/tracker.go [PRODUCTION] (distance 1)
+    uses_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE staging/src/k8s.io/dynamic-resource-allocation/resourceslice/tracker/tracker.go:626 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) type referenced in signature
+- staging/src/k8s.io/dynamic-resource-allocation/structured/allocator.go [PRODUCTION] (distance 1)
+    uses_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE staging/src/k8s.io/dynamic-resource-allocation/structured/allocator.go:69 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) type referenced in signature
+- staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatedstate.go [PRODUCTION] (distance 1)
+    uses_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatedstate.go:41 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) type referenced in signature
+- staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go [PRODUCTION] (distance 1)
+    uses_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: UNVERIFIED evidence — confirm in source or by test before acting on this verdict.
+    [UNVERIFIED] evidence: USES_TYPE staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go:910 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) type referenced in signature
+- staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/allocator_experimental.go [PRODUCTION] (distance 1)
+    uses_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/allocator_experimental.go:48 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) type referenced in signature
+- staging/src/k8s.io/dynamic-resource-allocation/structured/internal/incubating/allocator_incubating.go [PRODUCTION] (distance 1)
+    uses_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE staging/src/k8s.io/dynamic-resource-allocation/structured/internal/incubating/allocator_incubating.go:47 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) type referenced in signature
+- staging/src/k8s.io/dynamic-resource-allocation/structured/internal/stable/allocator_stable.go [PRODUCTION] (distance 1)
+    uses_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE staging/src/k8s.io/dynamic-resource-allocation/structured/internal/stable/allocator_stable.go:46 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) type referenced in signature
+- staging/src/k8s.io/dynamic-resource-allocation/structured/schedulerapi/types.go [PRODUCTION] (distance 1)
+    uses_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE staging/src/k8s.io/dynamic-resource-allocation/structured/schedulerapi/types.go:39 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) type referenced in signature
+- staging/src/k8s.io/kubectl/pkg/cmd/cmd.go [PRODUCTION] (distance 1)
+    calls staging/src/k8s.io/kubectl/pkg/cmd/plugin.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS staging/src/k8s.io/kubectl/pkg/cmd/cmd.go:107 -> staging/src/k8s.io/kubectl/pkg/cmd/plugin.go (confidence 0.80, resolution package) direct call expression resolved to same-package symbol
+- staging/src/k8s.io/kubectl/pkg/cmd/util/editor/editor.go [PRODUCTION] (distance 1)
+    calls staging/src/k8s.io/kubectl/pkg/cmd/util/editor/launcher_others.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS staging/src/k8s.io/kubectl/pkg/cmd/util/editor/editor.go:96 -> staging/src/k8s.io/kubectl/pkg/cmd/util/editor/launcher_others.go (confidence 0.83, resolution type_inferred) method call resolved via typed parameter receiver
+- staging/src/k8s.io/kubectl/pkg/util/slice/slice.go [PRODUCTION] (distance 1)
+    constructs staging/src/k8s.io/code-generator/cmd/go-to-protobuf/protobuf/cmd.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CONSTRUCTS staging/src/k8s.io/kubectl/pkg/util/slice/slice.go:32 -> staging/src/k8s.io/code-generator/cmd/go-to-protobuf/protobuf/cmd.go (confidence 0.68, resolution name_only) direct call expression matched globally unique symbol name
+- pkg/kubelet/container/testing/mocks.go [GENERATED] (distance 1)
+    uses_type staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE pkg/kubelet/container/testing/mocks.go:1435 -> staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go (confidence 0.75, resolution name_only) type referenced in signature
+- vendor/github.com/Masterminds/semver/v3/version.go [VENDOR] (distance 1)
+    returns_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: RETURNS_TYPE vendor/github.com/Masterminds/semver/v3/version.go:586 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) return type referenced in signature
+- vendor/github.com/blang/semver/v4/sql.go [VENDOR] (distance 1)
+    returns_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: RETURNS_TYPE vendor/github.com/blang/semver/v4/sql.go:28 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) return type referenced in signature
+- vendor/github.com/godbus/dbus/v5/conn.go [VENDOR] (distance 1)
+    calls vendor/github.com/godbus/dbus/v5/conn_darwin.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS vendor/github.com/godbus/dbus/v5/conn.go:146 -> vendor/github.com/godbus/dbus/v5/conn_darwin.go (confidence 0.80, resolution package) direct call expression resolved to same-package symbol
+- vendor/github.com/google/cadvisor/lib/fs/zfs/plugin.go [VENDOR] (distance 1)
+    calls vendor/github.com/google/cadvisor/lib/fs/zfs/stats.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS vendor/github.com/google/cadvisor/lib/fs/zfs/plugin.go:47 -> vendor/github.com/google/cadvisor/lib/fs/zfs/stats.go (confidence 0.80, resolution package) direct call expression resolved to same-package symbol
+- vendor/github.com/google/gnostic-models/compiler/context.go [VENDOR] (distance 1)
+    param_type vendor/github.com/google/gnostic-models/compiler/extensions.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: PARAM_TYPE vendor/github.com/google/gnostic-models/compiler/context.go:30 -> vendor/github.com/google/gnostic-models/compiler/extensions.go (confidence 0.75, resolution name_only) parameter type referenced in signature
+- vendor/github.com/google/uuid/null.go [VENDOR] (distance 1)
+    returns_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: RETURNS_TYPE vendor/github.com/google/uuid/null.go:52 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) return type referenced in signature
+- vendor/github.com/google/uuid/sql.go [VENDOR] (distance 1)
+    returns_type vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: RETURNS_TYPE vendor/github.com/google/uuid/sql.go:57 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.75, resolution name_only) return type referenced in signature
+- vendor/github.com/opencontainers/cgroups/systemd/dbus.go [VENDOR] (distance 1)
+    calls vendor/github.com/opencontainers/cgroups/systemd/user.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS vendor/github.com/opencontainers/cgroups/systemd/dbus.go:69 -> vendor/github.com/opencontainers/cgroups/systemd/user.go (confidence 0.80, resolution package) direct call expression resolved to same-package symbol
+- vendor/go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc/options.go [VENDOR] (distance 1)
+    param_type staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: PARAM_TYPE vendor/go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc/options.go:138 -> staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go (confidence 0.75, resolution name_only) parameter type referenced in signature
+- vendor/golang.org/x/tools/go/gcexportdata/importer.go [VENDOR] (distance 1)
+    calls vendor/golang.org/x/tools/go/gcexportdata/gcexportdata.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS vendor/golang.org/x/tools/go/gcexportdata/importer.go:41 -> vendor/golang.org/x/tools/go/gcexportdata/gcexportdata.go (confidence 0.80, resolution package) direct call expression resolved to same-package symbol
+- vendor/golang.org/x/tools/go/packages/golist_overlay.go [VENDOR] (distance 1)
+    calls vendor/golang.org/x/tools/go/packages/golist.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS vendor/golang.org/x/tools/go/packages/golist_overlay.go:73 -> vendor/golang.org/x/tools/go/packages/golist.go (confidence 0.68, resolution name_only) method call matched globally unique method name
+- vendor/golang.org/x/tools/go/packages/packages.go [VENDOR] (distance 1)
+    constructs vendor/golang.org/x/tools/go/packages/external.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CONSTRUCTS vendor/golang.org/x/tools/go/packages/packages.go:377 -> vendor/golang.org/x/tools/go/packages/external.go (confidence 0.80, resolution package) direct call expression resolved to same-package symbol
+- vendor/golang.org/x/tools/internal/gcimporter/gcimporter.go [VENDOR] (distance 1)
+    calls vendor/golang.org/x/tools/internal/gcimporter/exportdata.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS vendor/golang.org/x/tools/internal/gcimporter/gcimporter.go:47 -> vendor/golang.org/x/tools/internal/gcimporter/exportdata.go (confidence 0.80, resolution package) direct call expression resolved to same-package symbol
+- vendor/golang.org/x/tools/internal/gocommand/vendor.go [VENDOR] (distance 1)
+    param_type vendor/golang.org/x/tools/internal/gocommand/invoke.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: PARAM_TYPE vendor/golang.org/x/tools/internal/gocommand/vendor.go:135 -> vendor/golang.org/x/tools/internal/gocommand/invoke.go (confidence 0.75, resolution package) parameter type referenced in signature
+- vendor/golang.org/x/tools/internal/gocommand/version.go [VENDOR] (distance 1)
+    param_type vendor/golang.org/x/tools/internal/gocommand/invoke.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: PARAM_TYPE vendor/golang.org/x/tools/internal/gocommand/version.go:56 -> vendor/golang.org/x/tools/internal/gocommand/invoke.go (confidence 0.75, resolution package) parameter type referenced in signature
+- vendor/google.golang.org/grpc/credentials/insecure/insecure.go [VENDOR] (distance 1)
+    uses_type staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE vendor/google.golang.org/grpc/credentials/insecure/insecure.go:102 -> staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go (confidence 0.75, resolution name_only) type referenced in signature
+- vendor/google.golang.org/grpc/dialoptions.go [VENDOR] (distance 1)
+    param_type staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: PARAM_TYPE vendor/google.golang.org/grpc/dialoptions.go:461 -> staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go (confidence 0.75, resolution name_only) parameter type referenced in signature
+- vendor/google.golang.org/grpc/rpc_util.go [VENDOR] (distance 1)
+    param_type staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: PARAM_TYPE vendor/google.golang.org/grpc/rpc_util.go:484 -> staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go (confidence 0.75, resolution name_only) parameter type referenced in signature
+- vendor/google.golang.org/grpc/server.go [VENDOR] (distance 1)
+    param_type staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: PARAM_TYPE vendor/google.golang.org/grpc/server.go:476 -> staging/src/k8s.io/client-go/plugin/pkg/client/auth/exec/exec.go (confidence 0.75, resolution name_only) parameter type referenced in signature
+- vendor/k8s.io/gengo/v2/execute.go [VENDOR] (distance 1)
+    calls vendor/k8s.io/gengo/v2/generator/execute.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS vendor/k8s.io/gengo/v2/execute.go:76 -> vendor/k8s.io/gengo/v2/generator/execute.go (confidence 0.68, resolution name_only) method call matched globally unique method name
+- vendor/k8s.io/gengo/v2/generator/generator.go [VENDOR] (distance 1)
+    calls vendor/k8s.io/gengo/v2/generator/execute.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS vendor/k8s.io/gengo/v2/generator/generator.go:179 -> vendor/k8s.io/gengo/v2/generator/execute.go (confidence 0.80, resolution package) direct call expression resolved to same-package symbol
+- vendor/sigs.k8s.io/knftables/fake.go [VENDOR] (distance 1)
+    calls vendor/sigs.k8s.io/knftables/error.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS vendor/sigs.k8s.io/knftables/fake.go:684 -> vendor/sigs.k8s.io/knftables/error.go (confidence 0.80, resolution package) direct call expression resolved to same-package symbol
+- vendor/sigs.k8s.io/knftables/netlink.go [VENDOR] (distance 1)
+    calls vendor/sigs.k8s.io/knftables/nftables.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS vendor/sigs.k8s.io/knftables/netlink.go:63 -> vendor/sigs.k8s.io/knftables/nftables.go (confidence 0.80, resolution package) direct call expression resolved to same-package symbol
+- vendor/sigs.k8s.io/knftables/objects.go [VENDOR] (distance 1)
+    uses_type vendor/sigs.k8s.io/knftables/nftables.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: USES_TYPE vendor/sigs.k8s.io/knftables/objects.go:451 -> vendor/sigs.k8s.io/knftables/nftables.go (confidence 0.75, resolution name_only) type referenced in signature
+- vendor/sigs.k8s.io/knftables/types.go [VENDOR] (distance 1)
+    param_type vendor/sigs.k8s.io/knftables/nftables.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: PARAM_TYPE vendor/sigs.k8s.io/knftables/types.go:40 -> vendor/sigs.k8s.io/knftables/nftables.go (confidence 0.75, resolution name_only) parameter type referenced in signature
+- vendor/sigs.k8s.io/kustomize/api/internal/git/cloner.go [VENDOR] (distance 1)
+    calls vendor/sigs.k8s.io/kustomize/api/internal/git/gitrunner.go directly
+    VERIFY: HEURISTIC evidence — confirm in source or by test before acting on this verdict.
+    [HEURISTIC] evidence: CALLS vendor/sigs.k8s.io/kustomize/api/internal/git/cloner.go:16 -> vendor/sigs.k8s.io/kustomize/api/internal/git/gitrunner.go (confidence 0.80, resolution package) direct call expression resolved to same-package symbol
+
+COVERAGE GAPS (794) — inventory-only language: the graph parses these files for structure but not for call or import relations, so their verdict is unknown rather than Safe
+- api/openapi-spec/v3                        65 file(s)
+- api/discovery                              62 file(s)
+- CHANGELOG                                  37 file(s)
+- vendor/go.opentelemetry.io/otel            12 file(s)
+- .                                           8 file(s)
+- vendor/github.com/prometheus/procfs         8 file(s)
+- vendor/github.com/distribution/reference    7 file(s)
+- vendor/go.uber.org/zap                      7 file(s)
+- vendor/google.golang.org/grpc               7 file(s)
+- staging/src/k8s.io/client-go                6 file(s)
+- vendor/cel.dev/expr                         6 file(s)
+- vendor/github.com/go-openapi/jsonpointer    6 file(s)
+- vendor/github.com/go-openapi/jsonreference    6 file(s)
+- vendor/github.com/go-openapi/swag           6 file(s)
+- vendor/github.com/onsi/ginkgo/v2            6 file(s)
+- vendor/github.com/spf13/cobra               6 file(s)
+- vendor/k8s.io/klog/v2                       6 file(s)
+- vendor/sigs.k8s.io/knftables                6 file(s)
+- cluster/addons/dns/kube-dns                 5 file(s)
+- vendor/github.com/Masterminds/semver/v3     5 file(s)
+- vendor/github.com/emicklei/go-restful/v3    5 file(s)
+- vendor/github.com/fxamacker/cbor/v2         5 file(s)
+- vendor/github.com/golang-jwt/jwt/v5         5 file(s)
+- vendor/github.com/onsi/gomega               5 file(s)
+- vendor/github.com/opencontainers/cgroups    5 file(s)
+- vendor/go.etcd.io/raft/v3                   5 file(s)
+- vendor/sigs.k8s.io/json                     5 file(s)
+- vendor/sigs.k8s.io/yaml                     5 file(s)
+- build/pause                                 4 file(s)
+- cluster/addons/addon-manager                4 file(s)
+- cluster/addons/dns/coredns                  4 file(s)
+- staging/src/k8s.io/apiserver                4 file(s)
+- staging/src/k8s.io/pod-security-admission    4 file(s)
+- staging/src/k8s.io/pod-security-admission/webhook    4 file(s)
+- staging/src/k8s.io/sample-controller        4 file(s)
+- vendor/github.com/NYTimes/gziphandler       4 file(s)
+- vendor/github.com/containerd/ttrpc          4 file(s)
+- vendor/github.com/coreos/go-oidc            4 file(s)
+- vendor/github.com/fsnotify/fsnotify         4 file(s)
+- vendor/github.com/go-logr/logr              4 file(s)
+- vendor/github.com/go-task/slim-sprig/v3     4 file(s)
+- vendor/github.com/jonboulle/clockwork       4 file(s)
+- vendor/github.com/mdlayher/netlink          4 file(s)
+- vendor/github.com/vishvananda/netlink       4 file(s)
+- vendor/go.etcd.io/bbolt                     4 file(s)
+- vendor/go.uber.org/goleak                   4 file(s)
+- vendor/go.uber.org/multierr                 4 file(s)
+- vendor/gopkg.in/go-jose/go-jose.v2          4 file(s)
+- cluster/gce/gci/mounter                     3 file(s)
+- staging/src/k8s.io/api                      3 file(s)
+- staging/src/k8s.io/apiextensions-apiserver    3 file(s)
+- staging/src/k8s.io/apimachinery             3 file(s)
+- staging/src/k8s.io/cli-runtime              3 file(s)
+- staging/src/k8s.io/cloud-provider           3 file(s)
+- staging/src/k8s.io/cluster-bootstrap        3 file(s)
+- staging/src/k8s.io/code-generator           3 file(s)
+- staging/src/k8s.io/component-base           3 file(s)
+- staging/src/k8s.io/component-helpers        3 file(s)
+- staging/src/k8s.io/controller-manager       3 file(s)
+- staging/src/k8s.io/cri-api                  3 file(s)
+- staging/src/k8s.io/cri-client               3 file(s)
+- staging/src/k8s.io/cri-streaming            3 file(s)
+- staging/src/k8s.io/csi-translation-lib      3 file(s)
+- staging/src/k8s.io/dynamic-resource-allocation    3 file(s)
+- staging/src/k8s.io/endpointslice            3 file(s)
+- staging/src/k8s.io/externaljwt              3 file(s)
+- staging/src/k8s.io/kms                      3 file(s)
+- staging/src/k8s.io/kms/internal/plugins/_mock    3 file(s)
+- staging/src/k8s.io/kube-aggregator          3 file(s)
+- staging/src/k8s.io/kube-controller-manager    3 file(s)
+- staging/src/k8s.io/kube-proxy               3 file(s)
+- staging/src/k8s.io/kube-scheduler           3 file(s)
+- staging/src/k8s.io/kubectl                  3 file(s)
+- staging/src/k8s.io/kubelet                  3 file(s)
+- staging/src/k8s.io/metrics                  3 file(s)
+- staging/src/k8s.io/mount-utils              3 file(s)
+- staging/src/k8s.io/sample-apiserver         3 file(s)
+- staging/src/k8s.io/sample-cli-plugin        3 file(s)
+- staging/src/k8s.io/streaming                3 file(s)
+- vendor/bitbucket.org/bertimus9/systemstat    3 file(s)
+- vendor/github.com/Microsoft/go-winio        3 file(s)
+- vendor/github.com/Microsoft/hnslib          3 file(s)
+- vendor/github.com/cenkalti/backoff/v5       3 file(s)
+- vendor/github.com/cyphar/filepath-securejoin    3 file(s)
+- vendor/github.com/felixge/httpsnoop         3 file(s)
+- vendor/github.com/godbus/dbus/v5            3 file(s)
+- vendor/github.com/google/uuid               3 file(s)
+- vendor/github.com/mdlayher/socket           3 file(s)
+- vendor/github.com/sirupsen/logrus           3 file(s)
+- vendor/github.com/spf13/pflag               3 file(s)
+- vendor/sigs.k8s.io/randfill                 3 file(s)
+- .github                                     2 file(s)
+- api/openapi-spec                            2 file(s)
+- cluster/addons/dns-horizontal-autoscaler    2 file(s)
+- cluster/images/kubemark                     2 file(s)
+- hack                                        2 file(s)
+- hack/tools                                  2 file(s)
+- logo                                        2 file(s)
+- pkg/api/testing                             2 file(s)
+- staging/src/k8s.io/cli-runtime/artifacts/openapi    2 file(s)
+- staging/src/k8s.io/client-go/examples/in-cluster-client-configuration    2 file(s)
+- staging/src/k8s.io/kubectl/.github/ISSUE_TEMPLATE    2 file(s)
+- staging/src/k8s.io/kubectl/docs/maintainers    2 file(s)
+- staging/src/k8s.io/kubectl/pkg/explain      2 file(s)
+- staging/src/k8s.io/kubectl/pkg/explain/v2/templates    2 file(s)
+- vendor/github.com/Azure/go-ansiterm         2 file(s)
+- vendor/github.com/antlr4-go/antlr/v4        2 file(s)
+- vendor/github.com/armon/go-socks5           2 file(s)
+- vendor/github.com/docker/go-units           2 file(s)
+- vendor/github.com/exponent-io/jsonpath      2 file(s)
+- vendor/github.com/fatih/camelcase           2 file(s)
+- vendor/github.com/go-logr/zapr              2 file(s)
+- vendor/github.com/google/gnostic-models/jsonschema    2 file(s)
+- vendor/github.com/google/gnostic-models/openapiv2    2 file(s)
+- vendor/github.com/google/nftables           2 file(s)
+- vendor/github.com/gorilla/websocket         2 file(s)
+- vendor/github.com/ishidawataru/sctp         2 file(s)
+- vendor/github.com/mitchellh/go-wordwrap     2 file(s)
+- vendor/github.com/moby/ipvs                 2 file(s)
+- vendor/github.com/moby/spdystream           2 file(s)
+- vendor/github.com/moby/term                 2 file(s)
+- vendor/github.com/opencontainers/go-digest    2 file(s)
+- vendor/github.com/prometheus/client_golang/prometheus    2 file(s)
+- vendor/github.com/robfig/cron/v3            2 file(s)
+- vendor/github.com/russross/blackfriday/v2    2 file(s)
+- vendor/github.com/soheilhy/cmux             2 file(s)
+- vendor/github.com/stretchr/objx             2 file(s)
+- vendor/github.com/xiang90/probing           2 file(s)
+- vendor/github.com/xlab/treeprint            2 file(s)
+- vendor/go.opentelemetry.io/auto/sdk         2 file(s)
+- vendor/go.opentelemetry.io/otel/semconv/v1.37.0    2 file(s)
+- vendor/go.opentelemetry.io/otel/semconv/v1.40.0    2 file(s)
+- vendor/go.opentelemetry.io/otel/semconv/v1.41.0    2 file(s)
+- vendor/golang.org/x/net/http2               2 file(s)
+- vendor/golang.org/x/oauth2                  2 file(s)
+- vendor/golang.org/x/sys/unix                2 file(s)
+- vendor/golang.org/x/term                    2 file(s)
+- vendor/gopkg.in/evanphx/json-patch.v4       2 file(s)
+- vendor/gopkg.in/natefinch/lumberjack.v2     2 file(s)
+- vendor/k8s.io/gengo/v2                      2 file(s)
+- vendor/sigs.k8s.io/kustomize/kyaml/openapi    2 file(s)
+- api/api-rules                               1 file(s)
+- build                                       1 file(s)
+- build/root                                  1 file(s)
+- build/server-image                          1 file(s)
+- build/server-image/kube-apiserver           1 file(s)
+- build/server-image/kubectl                  1 file(s)
+- cluster                                     1 file(s)
+- cluster/addons                              1 file(s)
+- cluster/addons/calico-policy-controller     1 file(s)
+- cluster/addons/cluster-loadbalancing/glbc    1 file(s)
+- cluster/addons/dns/nodelocaldns             1 file(s)
+- cluster/addons/fluentd-gcp                  1 file(s)
+- cluster/addons/fluentd-gcp/fluentd-gcp-image    1 file(s)
+- cluster/addons/metadata-agent               1 file(s)
+- cluster/addons/metadata-proxy               1 file(s)
+- cluster/addons/metrics-server               1 file(s)
+- cluster/gce/addons                          1 file(s)
+- cluster/gce/gci                             1 file(s)
+- cluster/gce/windows                         1 file(s)
+- cluster/log-dump                            1 file(s)
+- cmd/cloud-controller-manager                1 file(s)
+- cmd/import-boss                             1 file(s)
+- docs                                        1 file(s)
+- hack/jenkins                                1 file(s)
+- hack/tools/golangci-lint/sorted             1 file(s)
+- hack/tools/instrumentation                  1 file(s)
+- hack/tools/instrumentation/documentation    1 file(s)
+- hack/tools/traceparse                       1 file(s)
+- pkg/kubelet/checkpointmanager               1 file(s)
+- pkg/kubelet/pluginmanager/pluginwatcher     1 file(s)
+- pkg/proxy/ipvs                              1 file(s)
+- pkg/proxy/nftables                          1 file(s)
+- pkg/scheduler/framework/plugins             1 file(s)
+- staging                                     1 file(s)
+- staging/src/k8s.io/api/.github              1 file(s)
+- staging/src/k8s.io/apiextensions-apiserver/.github    1 file(s)
+- staging/src/k8s.io/apiextensions-apiserver/artifacts/simple-image    1 file(s)
+- staging/src/k8s.io/apiextensions-apiserver/examples/client-go    1 file(s)
+- staging/src/k8s.io/apimachinery/.github     1 file(s)
+- staging/src/k8s.io/apimachinery/pkg/api/validate    1 file(s)
+- staging/src/k8s.io/apiserver/.github        1 file(s)
+- staging/src/k8s.io/cli-runtime/.github      1 file(s)
+- staging/src/k8s.io/cli-runtime/artifacts/kustomization    1 file(s)
+- staging/src/k8s.io/client-go/.github        1 file(s)
+- staging/src/k8s.io/client-go/examples       1 file(s)
+- staging/src/k8s.io/client-go/examples/create-update-delete-deployment    1 file(s)
+- staging/src/k8s.io/client-go/examples/dynamic-create-update-delete-deployment    1 file(s)
+- staging/src/k8s.io/client-go/examples/fake-client    1 file(s)
+- staging/src/k8s.io/client-go/examples/leader-election    1 file(s)
+- staging/src/k8s.io/client-go/examples/out-of-cluster-client-configuration    1 file(s)
+- staging/src/k8s.io/client-go/examples/workqueue    1 file(s)
+- staging/src/k8s.io/cloud-provider/.github    1 file(s)
+- staging/src/k8s.io/cloud-provider/sample    1 file(s)
+- staging/src/k8s.io/cluster-bootstrap/.github    1 file(s)
+- staging/src/k8s.io/code-generator/.github    1 file(s)
+- staging/src/k8s.io/code-generator/cmd/client-gen    1 file(s)
+- staging/src/k8s.io/code-generator/cmd/go-to-protobuf    1 file(s)
+- staging/src/k8s.io/code-generator/cmd/validation-gen/examples/custom-prefix    1 file(s)
+- staging/src/k8s.io/code-generator/cmd/validation-gen/output_tests/tags    1 file(s)
+- staging/src/k8s.io/code-generator/docs      1 file(s)
+- staging/src/k8s.io/code-generator/examples    1 file(s)
+- staging/src/k8s.io/component-base/.github    1 file(s)
+- staging/src/k8s.io/component-base/logs/example    1 file(s)
+- staging/src/k8s.io/component-base/logs/kube-log-runner    1 file(s)
+- staging/src/k8s.io/component-base/zpages    1 file(s)
+- staging/src/k8s.io/component-helpers/.github    1 file(s)
+- staging/src/k8s.io/controller-manager/.github    1 file(s)
+- staging/src/k8s.io/cri-api/.github          1 file(s)
+- staging/src/k8s.io/cri-client/.github       1 file(s)
+- staging/src/k8s.io/cri-streaming/.github    1 file(s)
+- staging/src/k8s.io/csi-translation-lib/.github    1 file(s)
+- staging/src/k8s.io/dynamic-resource-allocation/.github    1 file(s)
+- staging/src/k8s.io/dynamic-resource-allocation/structured/internal    1 file(s)
+- staging/src/k8s.io/endpointslice/.github    1 file(s)
+- staging/src/k8s.io/externaljwt/.github      1 file(s)
+- staging/src/k8s.io/kms/.github              1 file(s)
+- staging/src/k8s.io/kube-aggregator/.github    1 file(s)
+- staging/src/k8s.io/kube-aggregator/artifacts/simple-image    1 file(s)
+- staging/src/k8s.io/kube-controller-manager/.github    1 file(s)
+- staging/src/k8s.io/kube-proxy/.github       1 file(s)
+- staging/src/k8s.io/kube-scheduler/.github    1 file(s)
+- staging/src/k8s.io/kubectl/.github          1 file(s)
+- staging/src/k8s.io/kubectl/docs/roadmap     1 file(s)
+- staging/src/k8s.io/kubectl/pkg/util/i18n/translations    1 file(s)
+- staging/src/k8s.io/kubelet/.github          1 file(s)
+- staging/src/k8s.io/metrics/.github          1 file(s)
+- staging/src/k8s.io/mount-utils/.github      1 file(s)
+- staging/src/k8s.io/pod-security-admission/.github    1 file(s)
+- staging/src/k8s.io/pod-security-admission/webhook/manifests    1 file(s)
+- staging/src/k8s.io/sample-apiserver/.github    1 file(s)
+- staging/src/k8s.io/sample-apiserver/artifacts/simple-image    1 file(s)
+- staging/src/k8s.io/sample-apiserver/docs    1 file(s)
+- staging/src/k8s.io/sample-cli-plugin/.github    1 file(s)
+- staging/src/k8s.io/sample-controller/.github    1 file(s)
+- staging/src/k8s.io/sample-controller/docs    1 file(s)
+- staging/src/k8s.io/streaming/.github        1 file(s)
+- vendor/github.com/MakeNowJust/heredoc       1 file(s)
+- vendor/github.com/cespare/xxhash/v2         1 file(s)
+- vendor/github.com/chai2010/gettext-go       1 file(s)
+- vendor/github.com/containerd/log            1 file(s)
+- vendor/github.com/cpuguy83/go-md2man/v2     1 file(s)
+- vendor/github.com/cyphar/filepath-securejoin/pathrs-lite    1 file(s)
+- vendor/github.com/cyphar/filepath-securejoin/pathrs-lite/internal/gocompat    1 file(s)
+- vendor/github.com/dustin/go-humanize        1 file(s)
+- vendor/github.com/go-errors/errors          1 file(s)
+- vendor/github.com/go-logr/stdr              1 file(s)
+- vendor/github.com/go-openapi/swag/jsonutils    1 file(s)
+- vendor/github.com/go-openapi/swag/mangling    1 file(s)
+- vendor/github.com/go-openapi/swag/pools     1 file(s)
+- vendor/github.com/gogo/protobuf/gogoproto    1 file(s)
+- vendor/github.com/gogo/protobuf/proto       1 file(s)
+- vendor/github.com/gogo/protobuf/protoc-gen-gogo/descriptor    1 file(s)
+- vendor/github.com/gogo/protobuf/protoc-gen-gogo/plugin    1 file(s)
+- vendor/github.com/google/btree              1 file(s)
+- vendor/github.com/google/cel-go/ext         1 file(s)
+- vendor/github.com/google/cel-go/parser/gen    1 file(s)
+- vendor/github.com/google/gnostic-models/compiler    1 file(s)
+- vendor/github.com/google/gnostic-models/extensions    1 file(s)
+- vendor/github.com/google/gnostic-models/openapiv3    1 file(s)
+- vendor/github.com/inconshreveable/mousetrap    1 file(s)
+- vendor/github.com/liggitt/tabwriter         1 file(s)
+- vendor/github.com/lithammer/dedent          1 file(s)
+- vendor/github.com/monochromegane/go-gitignore    1 file(s)
+- vendor/github.com/munnerz/goautoneg         1 file(s)
+- vendor/github.com/onsi/ginkgo/v2/ginkgo/automaxprocs    1 file(s)
+- vendor/github.com/opencontainers/selinux/pkg/pwalkdir    1 file(s)
+- vendor/github.com/peterbourgon/diskv        1 file(s)
+- vendor/github.com/pquerna/cachecontrol      1 file(s)
+- vendor/github.com/stretchr/testify/internal/spew    1 file(s)
+- vendor/github.com/vishvananda/netns         1 file(s)
+- vendor/github.com/x448/float16              1 file(s)
+- vendor/go.etcd.io/etcd/client/v3            1 file(s)
+- vendor/go.etcd.io/etcd/pkg/v3/adt           1 file(s)
+- vendor/go.opentelemetry.io/otel/attribute    1 file(s)
+- vendor/go.opentelemetry.io/otel/baggage     1 file(s)
+- vendor/go.opentelemetry.io/otel/codes       1 file(s)
+- vendor/go.opentelemetry.io/otel/exporters/otlp/otlptrace    1 file(s)
+- vendor/go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc    1 file(s)
+- vendor/go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc/internal/x    1 file(s)
+- vendor/go.opentelemetry.io/otel/metric      1 file(s)
+- vendor/go.opentelemetry.io/otel/metric/embedded    1 file(s)
+- vendor/go.opentelemetry.io/otel/metric/noop    1 file(s)
+- vendor/go.opentelemetry.io/otel/propagation    1 file(s)
+- vendor/go.opentelemetry.io/otel/sdk         1 file(s)
+- vendor/go.opentelemetry.io/otel/sdk/instrumentation    1 file(s)
+- vendor/go.opentelemetry.io/otel/sdk/internal/x    1 file(s)
+- vendor/go.opentelemetry.io/otel/sdk/resource    1 file(s)
+- vendor/go.opentelemetry.io/otel/sdk/trace    1 file(s)
+- vendor/go.opentelemetry.io/otel/sdk/trace/tracetest    1 file(s)
+- vendor/go.opentelemetry.io/otel/trace       1 file(s)
+- vendor/go.opentelemetry.io/otel/trace/embedded    1 file(s)
+- vendor/go.opentelemetry.io/otel/trace/noop    1 file(s)
+- vendor/go.yaml.in/yaml/v2                   1 file(s)
+- vendor/go.yaml.in/yaml/v3                   1 file(s)
+- vendor/google.golang.org/grpc/reflection    1 file(s)
+- vendor/gopkg.in/go-jose/go-jose.v2/json     1 file(s)
+- vendor/k8s.io/klog/v2/internal/clock        1 file(s)
+- vendor/k8s.io/kube-openapi/pkg/generators    1 file(s)
+- vendor/k8s.io/kube-openapi/pkg/validation/errors    1 file(s)
+- vendor/k8s.io/kube-openapi/pkg/validation/strfmt    1 file(s)
+- vendor/k8s.io/kube-openapi/pkg/validation/validate    1 file(s)
+- vendor/k8s.io/utils/clock                   1 file(s)
+- vendor/k8s.io/utils/exec                    1 file(s)
+- vendor/k8s.io/utils/inotify                 1 file(s)
+- vendor/k8s.io/utils/io                      1 file(s)
+- vendor/k8s.io/utils/ptr                     1 file(s)
+- vendor/k8s.io/utils/trace                   1 file(s)
+- vendor/sigs.k8s.io/kustomize/kyaml/openapi/kustomizationapi    1 file(s)
+
+UNVERIFIED (48) — the parser reported a warning or partial failure against these files, so the absence of a dependency path is unknown rather than established; verify against source or a test before treating one as Safe
+- build/common.sh                                    [PRODUCTION] parser reported E_PARSE_ERROR
+- cluster/addons/fluentd-gcp/fluentd-gcp-ds.yaml     [PRODUCTION] parser reported E_PARSE_ERROR
+- cluster/gce/addons/konnectivity-agent/konnectivity-agent-ds.yaml [PRODUCTION] parser reported E_PARSE_ERROR
+- cluster/gce/config-common.sh                       [PRODUCTION] parser reported E_PARSE_ERROR
+- cluster/gce/config-default.sh                      [PRODUCTION] parser reported E_PARSE_ERROR
+- cluster/gce/config-test.sh                         [PRODUCTION] parser reported E_PARSE_ERROR
+- cluster/gce/manifests/konnectivity-server.yaml     [PRODUCTION] parser reported E_PARSE_ERROR
+- cluster/gce/util.sh                                [PRODUCTION] parser reported E_PARSE_ERROR
+- cluster/get-kube-binaries.sh                       [PRODUCTION] parser reported E_PARSE_ERROR
+- cluster/get-kube.sh                                [PRODUCTION] parser reported E_PARSE_ERROR
+- hack/_update-generated-protobuf-dockerized.sh      [PRODUCTION] parser reported E_PARSE_ERROR
+- hack/benchmark-go.sh                               [PRODUCTION] parser reported E_PARSE_ERROR
+- hack/diff-protobuf.sh                              [PRODUCTION] parser reported E_PARSE_ERROR
+- hack/lib/etcd.sh                                   [PRODUCTION] parser reported E_PARSE_ERROR
+- hack/lib/golang.sh                                 [PRODUCTION] parser reported E_PARSE_ERROR
+- hack/lib/test.sh                                   [PRODUCTION] parser reported E_PARSE_ERROR
+- hack/local-up-cluster.sh                           [PRODUCTION] parser reported E_PARSE_ERROR
+- hack/tools/instrumentation/stability-utils.sh      [PRODUCTION] parser reported E_PARSE_ERROR
+- hack/update-codegen.sh                             [PRODUCTION] parser reported E_PARSE_ERROR
+- hack/update-gofmt.sh                               [PRODUCTION] parser reported E_PARSE_ERROR
+- hack/update-mocks.sh                               [PRODUCTION] parser reported E_PARSE_ERROR
+- hack/update-netparse-cve.sh                        [PRODUCTION] parser reported E_PARSE_ERROR
+- hack/verify-openapi-spec.sh                        [PRODUCTION] parser reported E_PARSE_ERROR
+- pkg/api/job/util.go                                [PRODUCTION] parser reported E_PARSE_ERROR
+- pkg/apis/apps/fuzzer/fuzzer.go                     [PRODUCTION] parser reported E_PARSE_ERROR
+- staging/src/k8s.io/apiextensions-apiserver/hack/update-codegen.sh [PRODUCTION] parser reported E_PARSE_ERROR
+- staging/src/k8s.io/code-generator/kube_codegen.sh  [PRODUCTION] parser reported E_PARSE_ERROR
+- vendor/github.com/containerd/containerd/api/types/fieldpath.proto [VENDOR] parser reported E_PARSE_ERROR
+- vendor/github.com/gogo/protobuf/gogoproto/gogo.proto [VENDOR] parser reported E_PARSE_ERROR
+- vendor/github.com/google/gnostic-models/openapiv2/OpenAPIv2.proto [VENDOR] parser reported E_PARSE_ERROR
+- vendor/github.com/google/gnostic-models/openapiv3/OpenAPIv3.proto [VENDOR] parser reported E_PARSE_ERROR
+- vendor/github.com/google/gnostic-models/openapiv3/annotations.proto [VENDOR] parser reported E_PARSE_ERROR
+- vendor/github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2/options/annotations.proto [VENDOR] parser reported E_PARSE_ERROR
+- vendor/go.etcd.io/etcd/api/v3/etcdserverpb/raft_internal.proto [VENDOR] parser reported E_PARSE_ERROR
+- vendor/go.etcd.io/etcd/api/v3/versionpb/version.proto [VENDOR] parser reported E_PARSE_ERROR
+- vendor/go.etcd.io/etcd/server/v3/etcdserver/api/rafthttp/msgappv2_codec.go [VENDOR] parser reported E_PARSE_ERROR
+- vendor/go.etcd.io/etcd/server/v3/etcdserver/bootstrap.go [VENDOR] parser reported E_PARSE_ERROR
+- vendor/go.etcd.io/etcd/server/v3/etcdserver/server.go [VENDOR] parser reported E_PARSE_ERROR
+- vendor/go.etcd.io/etcd/server/v3/storage/wal/encoder.go [VENDOR] parser reported E_PARSE_ERROR
+- vendor/go.etcd.io/etcd/server/v3/storage/wal/wal.go [VENDOR] parser reported E_PARSE_ERROR
+- vendor/go.etcd.io/raft/v3/bootstrap.go             [VENDOR] parser reported E_PARSE_ERROR
+- vendor/go.etcd.io/raft/v3/raft.go                  [VENDOR] parser reported E_PARSE_ERROR
+- vendor/go.etcd.io/raft/v3/raftpb/confchange.go     [VENDOR] parser reported E_PARSE_ERROR
+- vendor/go.etcd.io/raft/v3/rawnode.go               [VENDOR] parser reported E_PARSE_ERROR
+- vendor/go.etcd.io/raft/v3/storage.go               [VENDOR] parser reported E_PARSE_ERROR
+- vendor/go.uber.org/zap/checklicense.sh             [VENDOR] parser reported E_PARSE_ERROR
+- vendor/golang.org/x/sys/unix/gccgo_c.c             [VENDOR] parser reported E_PARSE_ERROR
+- vendor/sigs.k8s.io/kustomize/kyaml/openapi/kubernetesapi/v1_21_2/swagger.go [VENDOR] parser reported E_MINIFIED
+
+SAFE (12877) — no dependency path to invalidated code, and the file parsed cleanly.
+
+Verify before acting: Safe means no path was found, not that none exists.
+Calls through interfaces, reflection, or generated code leave no edge to follow.
+real 608.84
+user 874.03
+sys 330.79

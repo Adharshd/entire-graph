@@ -18,15 +18,16 @@ Started 12:35 IST, 6 Sep 2026. Submission 15:00.
 
 - [x] 0. Reconstruct from checkpoint 9ab0f807a913 (not from memory)
 - [x] 1. Graph commands BEFORE any edit, captured to files (01-06, 00)
-- [ ] 2. Verify in source that confidence/warnings are discarded
-- [ ] 3. Implement evidence tiers (pivot.go, pivot_roles.go, pivot_plan.go)
-- [ ] 4. Fixture representing incomplete analysis + tests
-- [ ] 5. go build ./... && go test ./internal/cli/ -count=1
-- [ ] 6. Commit + verify Entire-Checkpoint trailer + push
-- [ ] 7. Assess on kubernetes (dynamic dispatch/generated/reflection at scale)
-- [ ] 8. Control run on prometheus (fully resolved code unchanged)
-- [ ] 9. Semantic diff 90d1939..HEAD; fill BUILDATHON.md Noon Curveball section
-- [ ] 10. Final checkpoint + push
+- [x] 2. Verify in source that confidence/warnings are discarded
+- [x] 3. Implement evidence tiers (pivot.go, pivot_roles.go, pivot_plan.go)
+- [x] 4. Fixture representing incomplete analysis + tests
+- [x] 5. go build ./... && go test ./internal/cli/ -count=1
+- [x] 6. Commit + verify Entire-Checkpoint trailer + push
+- [~] 7. Assess on kubernetes (dynamic dispatch/generated/reflection at scale)
+- [~] 8. Control run on prometheus — DROPPED. kubernetes carries the demo; a
+       second large repo adds size, not a new claim.
+- [x] 9. Semantic diff 90d1939..HEAD; fill BUILDATHON.md Noon Curveball section
+- [x] 10. Final checkpoint + push
 
 ## Findings recorded during step 1 (evidence, not assumption)
 
@@ -48,3 +49,20 @@ Started 12:35 IST, 6 Sep 2026. Submission 15:00.
 kubernetes: 17838 Go files, 4259 generated, 1592 using reflect, 3754 interfaces.
 prometheus:   731 Go files,    9 generated,   18 using reflect,  115 interfaces.
 Neither has Entire checkpoints; the checkpoint overlay stays demonstrated on this repo.
+
+## Outcome
+
+| Commit | Checkpoint | What it carries |
+|---|---|---|
+| `d09e6af` | `c8f225bf19ba` | evidence tiers, fixture, 9 tests |
+| `400afc5` | `6e867071c6b6` | BUILDATHON.md curveball section, dead helper removed |
+| `29b17c5` | `053542bdde85` | requirement-to-answer table |
+
+Suite: `go test ./internal/cli/ -count=1` -> ok, 56.071s, no existing assertion
+modified. `cmd/graph-bench` still fails on this machine (local git rejects
+`checkout --end-of-options`), pre-existing and unrelated; not a fully green suite
+and not claimed as one.
+
+Live result on this repository: five files previously reported SAFE while carrying
+`E_PARSE_ERROR` are now UNVERIFIED --
+`internal/sem/grammars/{csharp,erlang,fsharp,haskell,perl}/tree_sitter/array.h`.
