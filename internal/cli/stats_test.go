@@ -907,7 +907,14 @@ func TestStatsTranscriptDirectoryIsNotATranscript(t *testing.T) {
 // TestStatsDefaultOutputIsOneHeadlineLine pins the reported problem: the default is the number,
 // not a report. Everything the old default printed is still one --verbose away.
 func TestStatsDefaultOutputIsOneHeadlineLine(t *testing.T) {
-	t.Parallel()
+	// The headline is colourised through sem.ShouldUseColor, which honours
+	// FORCE_COLOR and ENTIRE_GRAPH_FORCE_COLOR before it ever looks at whether the
+	// writer is a terminal. A developer who exports either one then sees this test
+	// fail on an exact-string compare against a plain headline, while CI -- with no
+	// such variable set -- passes. Pin the setting rather than read the ambient one,
+	// the way the text escape tests already do. t.Setenv cannot be combined with
+	// t.Parallel, so this case gives up parallelism to become hermetic.
+	t.Setenv("NO_COLOR", "1")
 	repo := t.TempDir()
 	sessions := t.TempDir()
 	now := statsTime(0)
