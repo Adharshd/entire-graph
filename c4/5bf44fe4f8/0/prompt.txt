@@ -1,0 +1,25 @@
+sorry - lets pause - where are we ? confused what step are we working on
+
+---
+
+do we have bg agents working right now
+
+---
+
+pls tell me what we have done and what is left as per the plan
+
+---
+
+What is B ? communicate brioeftly -lets just focus on stuff till the curveball for now
+
+---
+
+Stop. I am asking question - dont do any work
+
+---
+
+WHat is the loop/ explain the loop ?
+
+---
+
+Sure - we need a varifier - and let the developer to config it in some way = lets ask a quick /research-prompt on ways to configure the loop as loop engg is buzzing right and it has value I think
