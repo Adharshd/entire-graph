@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.10.5",
+  "checkpoint_id": "55a616b19136",
+  "strategy": "manual-commit",
+  "branch": "pivot-work-order",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "BUILDATHON.md",
+    "docs/demo/curveball/15-loop-findings-from-checkpoint.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/55/a616b19136/0/metadata.json",
+      "transcript": "/55/a616b19136/0/full.jsonl",
+      "compact_transcript": "/55/a616b19136/0/transcript.jsonl",
+      "content_hash": "/55/a616b19136/0/content_hash.txt",
+      "prompt": "/55/a616b19136/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 16,
+    "cache_creation_tokens": 31929,
+    "cache_read_tokens": 387105,
+    "output_tokens": 3241,
+    "api_call_count": 8
+  }
+}
