@@ -1,0 +1,131 @@
+DO u have the plan ?
+
+---
+
+What is 3 ? keep ur prompts short and communciate effectively - we are in ahckathon and we dont ahve much time
+
+---
+
+what story man ? what is the use of a .md file ?
+
+---
+
+We have to build featuire - niot .md files - I dont udnertsand u -what r u even tryong to say ? in few lines explainb
+
+---
+
+The other terminbal is working on : BTW Buildathon, Track 2. This repo is my fork of entire-graph, Entire-mirrored to
+India. Confirm before anything else:
+  pwd                    -> /Users/adharsh/git/BTW-buildathon/entire-graph
+  git remote -v          -> entire://aws-ap-south-1.entire.io/gh/adharshd/entire-graph
+  git branch --show-current -> pivot-work-order
+  entire session current -> must NAME a session, not "No active session found"
+If any of those are wrong, stop and tell me.
+
+DO NOT touch /Users/adharsh/git/BTW-buildathon/research/entire-graph — that is a
+read-only upstream clone, not my fork, and nothing there counts for submission.
+
+IMPORTANT: `main` is a PROTECTED branch on the Entire mirror. Pushes to main are
+rejected. All work goes on `pivot-work-order` and lands via PR. The Entire
+checkpoint ref (entire/checkpoints/v1) pushes fine and independently.
+
+WHAT EXISTS — `entire graph pivot`, a new command in this fork.
+
+Given a prohibited dependency it classifies every file as INVALIDATED (has an
+IMPORTS/CALLS/CONSTRUCTS edge to it), AT-RISK (reachable from an invalidated file,
+breadth-first, capped at --depth, default 2), SAFE (no path found), or UNREACHED
+(inventory-only language, so genuinely unknown). Every verdict prints the edge that
+produced it — relation, target, line, confidence. No LLM produces a verdict; the
+plugin stays inside its no-egress contract. `--exclude-tests` drops test files
+BEFORE classification, not as a filter over the finished report, so a production
+file whose only route to invalidated code runs through a test comes back SAFE.
+
+Source layout:
+  internal/cli/pivot.go        classifier, flags, BFS propagation, JSON response
+  internal/cli/pivot_roles.go  file-role classification + grouped text renderer
+  internal/cli/pivot_plan.go   pivot-plan/v1 work-order emitter (--format plan)
+  internal/cli/pivot_test.go, pivot_roles_test.go, pivot_plan_test.go
+  registered in internal/cli/root.go and internal/cli/help.go
+
+WHAT IS DONE (all committed on pivot-work-order, all checkpointed, all pushed):
+
+  4a0a219  --exclude-tests, applied before classification      (pre-existing, no checkpoint)
+  abbf061  classify what survives a changed requirement        (pre-existing, no checkpoint)
+  2ff8446  header keeps depth + index provenance on uncommitted runs   [checkpoint bb0d72d79dbc]
+  934d180  file roles, so the report ranks work instead of listing files [checkpoint 4a14d2327199]
+
+STEP 1 (done) — proved Entire checkpoints bind from this launch directory.
+`entire checkpoint list` reports 2 checkpoints, each linked to its commit. Earlier
+sessions produced 0 because they were launched from the wrong worktree.
+
+STEP 2 (done) — file roles, to kill the at-risk noise. Every file is classified
+deterministically as PRODUCTION | TEST | TEST_FIXTURE | GENERATED | VENDOR | UNKNOWN.
+Signals: a vendor/ path segment -> VENDOR; a testdata|fixtures|mocks segment ->
+TEST_FIXTURE; the _test.go suffix -> TEST; a "Code generated ... DO NOT EDIT."
+header read from the file itself -> GENERATED; a file the snapshot lists but the
+working tree lacks -> UNKNOWN. Precedence is deliberate: vendor wins outright,
+testdata/ beats the _test.go suffix (the toolchain never builds those), and the
+generated probe runs only for files that would otherwise be production.
+
+The role never changes a verdict, only how the report groups and ranks it. Text
+output now leads with four counted lines — Required remediation / Production
+follow-up / Test fallout / Coverage gaps — then lists production work file by file
+with its evidence and collapses test fallout to ONE LINE PER PACKAGE carrying a
+targeted `go test ./pkg`. Nothing is deleted: the JSON carries every file with its
+role and every collapsed line carries its count.
+
+STEP 3 (done, needs final commit) — `--format plan` emits pivot-plan/v1 JSON: an
+agent work order, not a graph dump. Carries schema_version, a deterministic plan_id
+(sha256 over head commit + constraint + depth + flags + counts), head_commit,
+graph tool provenance, the constraint, counts (including per-priority and per-role),
+and six explicit known_blind_spots each pairing a limitation with its consequence:
+interface-dispatch, reflection, generated-code, safe-is-not-proof,
+unreached-languages, name-matching.
+
+work_items[] carry id (WI-0001, assigned AFTER sorting so reading top to bottom is
+reading execution order), priority P0/P1/P2, action, verdict, role, path, package,
+distance, root_invalidated, evidence[], agent_instructions[], acceptance_criteria[].
+Action per verdict: INVALIDATED -> REPLACE_OR_REMOVE, AT-RISK ->
+VERIFY_AFTER_ROOT_FIX, SAFE -> NO_ACTION, UNREACHED -> MANUAL_REVIEW. Priority:
+P0 = direct violation in shipped code (blocks everything), P1 = violation in a test
+or shipped code standing on an invalidated foundation, P2 = covered by a package
+command, or not a change at all. validation.required_commands[] ends with the exact
+pivot re-run that proves the constraint is satisfied.
+execution_contract.must_not_claim[] forbids the likely failure — a confident report
+of success nobody ran a command to check — and grows role-specific clauses only when
+GENERATED or VENDOR files are actually present.
+
+The BFS now tracks the true root invalidated file, so a two-hop at-risk item reports
+the root that must be fixed rather than the intermediate neighbour it was reached
+through.
+
+REAL NUMBERS, this repo, commit 934d180 (632 files, 357 of them tests):
+  --dependency net/http                                 3 inv | 78 at-risk | 468 safe | 85 unreached
+  --dependency net/http --exclude-tests                 0 inv |  0 at-risk | 204 safe | 73 unreached
+  --dependency os/exec                                 32 inv | 287 at-risk | 230 safe | 85 unreached
+  --dependency os/exec --exclude-tests                  8 inv | 100 at-risk |  96 safe | 73 unreached
+  --dependency os/exec --exclude-tests --depth 1        8 inv |  11 at-risk | 185 safe | 73 unreached
+
+Grouped os/exec run (no flags): 32 direct violations = 8 production listed
+individually + 24 test collapsed to 5 packages; 99 production follow-up;
+186 test files collapsed to 4 packages; 85 coverage gaps.
+
+WHAT REMAINS
+1. Commit Step 3 (pivot_plan.go, pivot_plan_test.go, the pivot.go --format plan
+   wiring, help.go). Full `go test ./...` must be green first.
+2. Update BUILDATHON.md with the real numbers above, the role/grouping section, and
+   the pivot-plan/v1 section. Fill "Checkpoint links and what each checkpoint proves".
+3. Open the PR from pivot-work-order (main is protected).
+4. The Noon Curveball lands at 12:00 and is not yet known.
+
+HOW I WANT YOU TO WORK
+- Commit after each step. Every commit must carry an Entire checkpoint; verify with
+  `entire checkpoint list` rather than assuming.
+- Build and test before every commit: `go build ./...` then `go test ./...`.
+- A smaller working thing beats an ambitious broken one. If time runs short, stop
+  and commit rather than leaving something half-built.
+- Never report that tests pass without having run them.
+
+
+
+So what else is remionuing in polan
