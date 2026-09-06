@@ -66,6 +66,7 @@ type pivotFlags struct {
 	CacheDir     string
 	DisableCache bool
 	Depth        int
+	ExcludeTests bool
 }
 
 // pivotEdge is the single piece of evidence behind one verdict: the relation that
@@ -86,7 +87,7 @@ type pivotFile struct {
 	Verdict string `json:"verdict"`
 	// Distance is hops from the nearest invalidated file: 0 for an invalidated
 	// file itself, 1 for a direct dependent, and so on up to the depth cap.
-	Distance int `json:"distance"`
+	Distance int    `json:"distance"`
 	Language string `json:"language,omitempty"`
 	// Why is a one-line reading of the evidence, in the report's own voice.
 	Why string `json:"why"`
@@ -112,6 +113,7 @@ type pivotResponse struct {
 	Commit        string   `json:"commit,omitempty"`
 	Prohibited    []string `json:"prohibited"`
 	MaxDepth      int      `json:"max_depth"`
+	ExcludeTests  bool     `json:"exclude_tests,omitempty"`
 
 	// Checkpoint, when supplied, is the intent half of the evidence.
 	Checkpoint      string                `json:"checkpoint,omitempty"`
@@ -146,6 +148,10 @@ type pivotCounts struct {
 	Safe        int `json:"safe"`
 	Unreached   int `json:"unreached"`
 	Total       int `json:"total"`
+	// ExcludedTests is how many files --exclude-tests removed from the run. It is
+	// reported rather than silently dropped: a file that was never classified is
+	// not a file that came back Safe.
+	ExcludedTests int `json:"excluded_tests,omitempty"`
 }
 
 func parsePivotFlags(args []string) (pivotFlags, error) {
@@ -210,6 +216,8 @@ func parsePivotFlags(args []string) (pivotFlags, error) {
 			flags.CacheDir, i = value, next
 		case "--no-cache":
 			flags.DisableCache = true
+		case "--exclude-tests":
+			flags.ExcludeTests = true
 		case "--worktree":
 			flags.Worktree = true
 		default:
@@ -261,9 +269,9 @@ func runPivot(ctx context.Context, opts Options, args []string) error {
 	indexStarted := totalStarted
 	cacheDir := resolveCacheDir(flags.CacheDir, opts.Env.PluginDataDir)
 	snapshot, cacheHit, err := sem.LoadOrBuildProviderSnapshot(ctx, repo, opts.Version, sem.ProviderSnapshotOptions{
-		NoNetwork:    true,
-		Worktree:     flags.Worktree,
-		Profile:      profile,
+		NoNetwork: true,
+		Worktree:  flags.Worktree,
+		Profile:   profile,
 	}, cacheDir, flags.DisableCache)
 	if err != nil {
 		return err
@@ -308,6 +316,7 @@ func buildPivotResponse(snapshot sem.ProviderSnapshot, flags pivotFlags) pivotRe
 		Commit:        snapshot.Header.Commit,
 		Prohibited:    flags.Dependency,
 		MaxDepth:      flags.Depth,
+		ExcludeTests:  flags.ExcludeTests,
 		Warnings:      snapshot.Header.Warnings,
 	}
 
@@ -333,6 +342,16 @@ func buildPivotResponse(snapshot sem.ProviderSnapshot, flags pivotFlags) pivotRe
 		return ""
 	}
 
+	// classified decides whether a file takes part in the run at all. --exclude-tests
+	// drops test files before classification rather than filtering them out of the
+	// finished report, which matters for propagation as much as for the listing: a
+	// test file is not a foundation anything ships on, so a production file should
+	// not be pulled in At-Risk by a path that only runs through one.
+	classified := func(filePath string) bool {
+		return !flags.ExcludeTests || !isConventionalTestPath(filePath)
+	}
+	excludedTests := 0
+
 	verdicts := make(map[string]*pivotFile)
 	ensure := func(filePath string) *pivotFile {
 		if existing, ok := verdicts[filePath]; ok {
@@ -348,6 +367,10 @@ func buildPivotResponse(snapshot sem.ProviderSnapshot, flags pivotFlags) pivotRe
 		return created
 	}
 	for _, file := range snapshot.Files {
+		if !classified(file.Path) {
+			excludedTests++
+			continue
+		}
 		ensure(file.Path)
 	}
 
@@ -365,7 +388,7 @@ func buildPivotResponse(snapshot sem.ProviderSnapshot, flags pivotFlags) pivotRe
 			continue
 		}
 		filePath := endpointFile(relation.FromID)
-		if filePath == "" {
+		if filePath == "" || !classified(filePath) {
 			continue
 		}
 		entry := ensure(filePath)
@@ -403,6 +426,9 @@ func buildPivotResponse(snapshot sem.ProviderSnapshot, flags pivotFlags) pivotRe
 			edges := dependents[invalidatedPath]
 			sort.Slice(edges, func(a, b int) bool { return edges[a].from < edges[b].from })
 			for _, edge := range edges {
+				if !classified(edge.from) {
+					continue
+				}
 				entry := ensure(edge.from)
 				if entry.Verdict == verdictInvalidated || entry.Distance >= 0 {
 					continue
@@ -462,11 +488,12 @@ func buildPivotResponse(snapshot sem.ProviderSnapshot, flags pivotFlags) pivotRe
 	sortPivotFiles(response.Safe)
 
 	response.Counts = pivotCounts{
-		Invalidated: len(response.Invalidated),
-		AtRisk:      len(response.AtRisk),
-		Safe:        len(response.Safe),
-		Unreached:   len(response.Unreached),
-		Total:       len(response.Invalidated) + len(response.AtRisk) + len(response.Safe) + len(response.Unreached),
+		Invalidated:   len(response.Invalidated),
+		AtRisk:        len(response.AtRisk),
+		Safe:          len(response.Safe),
+		Unreached:     len(response.Unreached),
+		Total:         len(response.Invalidated) + len(response.AtRisk) + len(response.Safe) + len(response.Unreached),
+		ExcludedTests: excludedTests,
 	}
 	response.PartialFailures = snapshot.Header.PartialFailures
 	response.Stats = snapshot.Header.Stats
@@ -655,6 +682,12 @@ func writePivotText(out io.Writer, response pivotResponse) {
 		fmt.Fprintf(out, ", %d unreached", response.Counts.Unreached)
 	}
 	fmt.Fprintf(out, " (of %d files)\n", response.Counts.Total)
+	if response.ExcludeTests {
+		// Said out loud rather than left as a silently shorter list: an excluded
+		// file was never classified, which is not the same as coming back Safe.
+		fmt.Fprintf(out, "--exclude-tests dropped %d test file(s) before classification; they carry no verdict.\n",
+			response.Counts.ExcludedTests)
+	}
 
 	if response.Checkpoint != "" {
 		fmt.Fprintf(out, "\nCheckpoint %s (%s..%s) touched %d file(s):\n",

@@ -46,7 +46,7 @@ One new command in this fork: `internal/cli/pivot.go`, registered in the existin
 `internal/cli/root.go`.
 
 ```
-entire graph pivot --dependency <prohibited package> [--checkpoint <id>] [--depth N]
+entire graph pivot --dependency <prohibited package> [--checkpoint <id>] [--depth N] [--exclude-tests]
 ```
 
 Pipeline:
@@ -66,6 +66,13 @@ Pipeline:
 5. **Checkpoint overlay (optional).** `sem.AnalyzeCheckpoint` folds in what a session changed and how
    many dependents each change has, and marks affected files that session wrote with `*`.
 
+`--exclude-tests` (the same path predicate `impact` and `neighbors` use) drops test files *before*
+classification rather than filtering them out of the finished report. The difference matters for
+propagation, not just for the listing: a test file is not a foundation anything ships on, so a
+production file whose only route to invalidated code runs through a test file should come back Safe,
+not At-Risk. The count of excluded files is printed, because a file that was never classified is not
+a file that came back Safe.
+
 Every verdict prints the edge that produced it — relation type, target, confidence, source line — so a
 reader can check the claim rather than trust it.
 
@@ -83,7 +90,36 @@ output a shortlist a person can actually work through.
 
 ## Entire Graph findings and verification
 
-*(filled in during the build — see the checkpoint history for the runs)*
+Run against this repository (631 files, 355 of them tests), at commit `abbf061`:
+
+| Run | INVALIDATED | AT-RISK | SAFE | UNREACHED |
+|---|---|---|---|---|
+| `--dependency net/http` | 3 | 78 | 465 | 85 |
+| `--dependency net/http --exclude-tests` | **0** | **0** | 203 | 73 |
+| `--dependency os/exec` | 32 | 284 | 230 | 85 |
+| `--dependency os/exec --exclude-tests` | 8 | 99 | 96 | 73 |
+| `--dependency os/exec --exclude-tests --depth 1` | 8 | 11 | 184 | 73 |
+
+Two findings, both of which the graph produced and neither of which grep would have:
+
+**`net/http` is a test-only dependency here.** All three files that import it are
+`internal/sem/provider_parallel_matrix_test.go`, `internal/sem/provider_test.go`, and a fixture under
+`internal/sem/testdata/`. The 78 At-Risk files were almost entirely other `_test.go` files calling
+helpers in `provider_test.go`. With `--exclude-tests` the answer is a clean zero: a constraint
+forbidding `net/http` would not touch a single shipped line of this provider. That empty result is the
+report doing its job, not failing — and it is only legible because the excluded count is printed
+alongside it.
+
+**`os/exec` is the real one.** It is the no-egress boundary's neighbor: 8 production files reach it,
+seven of them the git-subprocess and verification layers (`internal/gitutil/*`, `internal/cli/verify.go`,
+`internal/sem/search_verify.go`). At `--depth 1` that plus its 11 direct dependents is a 19-file
+shortlist a person can read in one sitting — down from 316 files without the flag, a 94% reduction with
+no loss of anything that ships.
+
+Verification is in `internal/cli/pivot_test.go`. The load-bearing case is `fixtures.go` in the test
+fixture: production code whose only path to invalidated code runs through a test file. It is AT-RISK
+without the flag and SAFE with it, which is what proves the exclusion happens before classification
+rather than as a filter over the output.
 
 ## Noon Curveball: what changed and how we adapted
 
@@ -100,6 +136,7 @@ mise run build          # builds ./entire-graph (needs Go + CGO for tree-sitter)
 mise run test           # go test ./...
 
 entire graph pivot --repo . --dependency net/http
+entire graph pivot --repo . --dependency os/exec --exclude-tests --depth 1
 entire graph pivot --repo . --dependency net/http --checkpoint <id> --format json
 ```
 
@@ -114,6 +151,10 @@ entire graph pivot --repo . --dependency net/http --checkpoint <id> --format jso
   The natural-language step belongs outside the no-egress boundary.
 - **Prohibited-name matching is path-shaped** (exact, or a `pkg/` prefix). A dependency referred to by
   an alias in source is not currently resolved to its canonical package.
+- **Test exclusion is path-shaped, not build-tag-shaped.** `--exclude-tests` recognizes conventional
+  test paths (`_test.go`, `*.test.*`, a `test/`/`testdata/` directory segment, and the equivalents in
+  the other supported languages). A test helper that lives in a normally-named file is still
+  classified, and a production file that happens to sit under `testdata/` is still excluded.
 - **Next step:** severity beyond the three buckets — an At-Risk file whose only link is a type
   reference is a much smaller job than one that calls an invalidated function on every request path,
   and the graph already carries enough to tell those apart.
