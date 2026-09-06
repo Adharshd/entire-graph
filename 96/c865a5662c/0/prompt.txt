@@ -1,0 +1,90 @@
+use bg agents for work as much as possible
+
+---
+
+/Users/adharsh/git/BTW-buildathon/entire-graph/docs/loop engg config options in agent loop of pivotmap plan.txt
+
+---
+
+communicate effectlively
+
+---
+
+<task-notification>
+<task-id>ad502920dace092ab</task-id>
+<tool-use-id>toolu_01TvzqP8C8V8LayVQNSbVnCj</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/fea6b82a-ee27-4474-94af-26129e05ba94/tasks/ad502920dace092ab.output</output-file>
+<status>completed</status>
+<summary>Agent "Write judging demo script" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Written to exactly one file: `/Users/adharsh/git/BTW-buildathon/entire-graph/docs/demo/DEMO.md`. No other files touched, no git commands run.
+
+Summary of what it contains:
+- Opening one-sentence problem statement and a pre-flight checklist.
+- A timed 5-minute run-order table (search → impact → pivot text → pivot plan/multi-agent loop → semantic diff → close), each row with the exact command, one/two lines of spoken narration, and a "fallback if it fails" column pointing to the pre-captured `docs/demo/graph-evidence.txt`.
+- The three required artifacts explicitly labeled and mapped to specific run-order steps.
+- The real verified numbers table (net/http and os/exec across flag variants) plus the two narrative findings (net/http is test-only → clean zero; os/exec → 19-file shortlist, 94% reduction).
+- The single strongest closing claim (every verdict traces to one printed edge).
+- A "known limitations to say out loud" section: SAFE ≠ proof of non-use, the gorilla/mux `Route.Match` interface-dispatch blind spot with the `W_DATA_FLOW_EVIDENCE_UNMERGED` warning, UNREACHED vs safe, and roles never changing verdicts.
+- One clearly marked TODO: the exact live CLI invocation for the fresh-agent-executes-P0/pivot-re-verifies loop wasn't given, so I flagged it rather than inventing a command, while still writing up the intended behavior and the mux/`bytes` reference numbers from the brief.</result>
+<usage><subagent_tokens>57999</subagent_tokens><tool_uses>5</tool_uses><duration_ms>58118</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a74faea865e5fd526</task-id>
+<tool-use-id>toolu_01AqDw4qMjmk1JgefiuuDVoM</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/fea6b82a-ee27-4474-94af-26129e05ba94/tasks/a74faea865e5fd526.output</output-file>
+<status>completed</status>
+<summary>Agent "Execute pivot work order" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Only test files (already excluded by `--exclude-tests` in the plan, and not work items) import `bytes` now. No production file does.
+
+## Report
+
+**WI-0001 (regexp.go, P0, REPLACE_OR_REMOVE) — outcome: fixed**
+- File: `/Users/adharsh/.claude/jobs/fea6b82a/tmp/mux-loop/regexp.go`
+- Confirmed the evidence before editing: line 8 imported `"bytes"`, used at two call sites in `findFirstQueryKey` (originally lines 261 and 270): `bytes.IndexAny(foundKey, "&amp;;")` and `bytes.IndexByte(foundKey, '=')`, operating on a `[]byte(rawQuery)` conversion.
+- Change: removed the `"bytes"` import, and rewrote `findFirstQueryKey` to operate directly on `string` instead of `[]byte`, replacing the two calls with the string-package equivalents:
+  - `query := []byte(rawQuery)` → `query := rawQuery`
+  - `bytes.IndexAny(foundKey, "&amp;;")` → `strings.IndexAny(foundKey, "&amp;;")`
+  - `query = query[:0]` → `query = ""`
+  - `var value []byte` → `var value string`
+  - `bytes.IndexByte(foundKey, '=')` → `strings.IndexByte(foundKey, '=')`
+  - `url.QueryUnescape(string(foundKey))` / `url.QueryUnescape(string(value))` → `url.QueryUnescape(foundKey)` / `url.QueryUnescape(value)` (no `string()` conversion needed since they're already strings)
+  - `strings` was already imported in this file, so no new import was added.
+- Behavior is identical: `strings.IndexAny`/`strings.IndexByte` on a string give the same byte-offset results as `bytes.IndexAny`/`bytes.IndexByte` on `[]byte(s)`, and the loop/slicing logic is unchanged in structure.
+
+**WI-0002, WI-0003, WI-0004, WI-0005 (mux.go, route.go, middleware.go, test_helpers.go, all P1, VERIFY_AFTER_ROOT_FIX) — not edited, per instructions**
+- Did not edit any of them first, as directed.
+- After the root fix, re-checked each file's actual dependency:
+  - `mux.go` and `route.go` use `routeRegexp`/`newRouteRegexp` from regexp.go — signatures unchanged by the fix, so no diff needed.
+  - `middleware.go`:55 (`CORSMethodMiddleware`) uses `*Router` (defined in mux.go), which transitively touches regexp.go — `Router` struct untouched, so no diff needed.
+  - `test_helpers.go` calls `requestWithVars` (mux.go) — untouched, no diff needed.
+- Outcome for all four: `no_change_needed` — the root fix kept the same interface, exactly the scenario the plan calls out as the correct "no diff" outcome.
+- **Evidence discrepancy to flag**: WI-0003's evidence cites `source_file: regexp.go, line: 676` for a `CALLS` relation into route.go, but `regexp.go` is only 413 lines (415 before my edit) — line 676 doesn't exist in that file. Line 676 of `mux.go` is `methodNotAllowedHandler`, unrelated to regexp or route.go. This specific evidence entry (confidence 0.68, "method call matched globally unique method name" — a heuristic match) does not hold up as cited. That said, route.go's *actual* dependency on regexp.go is real and separately verifiable (`route.go:68` type-asserts `*routeRegexp`, `route.go:259` calls `newRouteRegexp(...)`), so the AT-RISK classification itself is still correct — only the specific cited evidence line is wrong. This doesn't change the outcome (no edit needed either way) but is worth a human's attention if the evidence field is meant to be load-bearing elsewhere.
+
+**Items not touched, and why:**
+- WI-0006, WI-0011, WI-0012, WI-0013 (`.editorconfig`, `.gitignore`, `Makefile`, `README.md` — MANUAL_REVIEW/UNREACHED): not edited. Manually reviewed each by reading its content — none references `bytes` as a Go import or dependency (they are config/doc/build files with no Go import statements). Recording verdict: no dependency on `bytes` found by inspection, but per the plan these remain open manual-review items, not a "pass" — I'm reporting them as reviewed-and-clear rather than resolved.
+- WI-0007, WI-0008, WI-0009, WI-0010 (GitHub workflow YAMLs — NO_ACTION/SAFE): left unchanged, as instructed.
+- WI-0014 (`doc.go` — NO_ACTION/SAFE): left unchanged, as instructed.
+
+**Validation — literal output:**
+```
+$ go build ./...
+(no output, exit 0)
+
+$ go test .
+ok  	github.com/gorilla/mux	0.635s
+
+$ go test ./...
+ok  	github.com/gorilla/mux	(cached)
+```
+
+**What I did not/could not verify:**
+- Did not run `entire graph pivot --repo . --dependency bytes --exclude-tests` myself — the brief explicitly says not to run any pivot command and that re-verification happens independently.
+- I am not claiming the constraint is fully resolved — only that WI-0001 (the sole P0 item) is fixed, `go build`/`go test` pass, and no production `.go` file imports `bytes` anymore (only the four `_test.go` files still do, which are excluded from this constraint's scope per the plan).
+- Per known_blind_spots (`interface-dispatch`, `reflection`, `name-matching`), I did not do a deep audit for interface-dispatched or reflectively-invoked `bytes` usage beyond grep for the literal string `"bytes"` across the repo — that grep found only the four test files plus the now-fixed regexp.go, with nothing else matching.</result>
+<usage><subagent_tokens>65139</subagent_tokens><tool_uses>17</tool_uses><duration_ms>110256</duration_ms></usage>
+</task-notification>
