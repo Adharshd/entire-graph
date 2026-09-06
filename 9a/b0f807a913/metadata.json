@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.10.5",
+  "checkpoint_id": "9ab0f807a913",
+  "strategy": "manual-commit",
+  "branch": "pivot-work-order",
+  "checkpoints_count": 17,
+  "files_touched": [
+    "docs/POST-CURVEBALL-PLAN.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/9a/b0f807a913/0/metadata.json",
+      "transcript": "/9a/b0f807a913/0/full.jsonl",
+      "compact_transcript": "/9a/b0f807a913/0/transcript.jsonl",
+      "content_hash": "/9a/b0f807a913/0/content_hash.txt",
+      "prompt": "/9a/b0f807a913/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 384,
+    "cache_creation_tokens": 513072,
+    "cache_read_tokens": 40960014,
+    "output_tokens": 186412,
+    "api_call_count": 192,
+    "subagent_tokens": {
+      "input_tokens": 66,
+      "cache_creation_tokens": 30727,
+      "cache_read_tokens": 2575161,
+      "output_tokens": 14653,
+      "api_call_count": 33
+    }
+  }
+}

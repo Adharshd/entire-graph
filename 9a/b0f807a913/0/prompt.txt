@@ -1,0 +1,1273 @@
+we can fic other termibnal code now
+
+---
+
+audiotor is a bg agent ?
+
+---
+
+we are running the loop on wghat changes ?
+
+---
+
+are u free ?
+
+---
+
+<task-notification>
+<task-id>bg7sxrjo2</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/fea6b82a-ee27-4474-94af-26129e05ba94/tasks/bg7sxrjo2.output</output-file>
+<status>completed</status>
+<summary>Background command "Run internal/cli tests after fix" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+how can something fail at clean HEAD if passed their CI ?
+
+---
+
+I think the particapant asks for test suite running green throughout so ?
+
+---
+
+<task-notification>
+<task-id>bay1cb25b</task-id>
+<tool-use-id>toolu_012pT3DitN4oi8ooyCNzZNjL</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/fea6b82a-ee27-4474-94af-26129e05ba94/tasks/bay1cb25b.output</output-file>
+<status>completed</status>
+<summary>Background command "Full internal/cli suite without FORCE_COLOR" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+is the force color a easy fix ? dont worry too much abt the curveball
+
+---
+
+<task-notification>
+<task-id>ad57468ef7fb751b7</task-id>
+<tool-use-id>toolu_01FwvpMe6m4Rdc8mo2wGzwtx</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/fea6b82a-ee27-4474-94af-26129e05ba94/tasks/ad57468ef7fb751b7.output</output-file>
+<status>completed</status>
+<summary>Agent "Audit BUILDATHON claims" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>## Findings
+
+**1. The headline "Entire Graph findings and verification" table has drifted from current HEAD (numbers are stale, not wrong-as-written).**
+Claim (BUILDATHON.md:110-118): the table is captioned "Run against this repository at commit `934d180`" and states, e.g., `--dependency net/http` → `3 / 78 / 468 / 85 / 0` and `--dependency os/exec --exclude-tests --depth 1` → `8 / 11 / 185 / 73 / 357`, with role counts "277 PRODUCTION, 266 TEST and 91 TEST_FIXTURE" (line 108).
+- I reproduced these exactly at commit `934d180` via `git worktree add --detach` (634 files, role_counts `{PRODUCTION:277, TEST:266, TEST_FIXTURE:91}`, and every row of the table matches bit-for-bit). **The table is accurate as a historical snapshot.**
+- But at current HEAD (`b0ab303`, and now `5a7a3dd` — the branch tip moved again mid-audit, see caveat below), the same commands now return: net/http `3/78/470/86`, net/http+exclude-tests `0/0/205/74/excl 358`, os/exec `32/287/232/86`, os/exec+exclude-tests `8/100/97/74/excl 358`, os/exec+exclude-tests+depth1 `8/11/186/74/excl 358`, and role_counts `{PRODUCTION:279, TEST:267, TEST_FIXTURE:91}` (sum 637, not 634). The drift is caused by files added in later commits (`pivot_plan.go`, `pivot_plan_test.go`, `docs/demo/*`, `.entire/pivot-agent-brief.md`).
+- Since the task instructions treat "current HEAD" as the standard to check against, a judge who runs the documented commands today will see numbers that don't match the printed table, even though the doc is internally honest about which commit it was measured at. Suggested correction: either re-measure the table at current HEAD before submission, or add one line stating the table is frozen historical evidence and will not reproduce byte-for-bit at a later HEAD.
+
+**2. The `--format plan` section's counts and plan id no longer reproduce at current HEAD.**
+Claim (BUILDATHON.md:184-186): "Run at `--dependency os/exec --exclude-tests --depth 1` against `53ff6bd`: **278 work items — 8 P0, 11 P1, 259 P2**, plan id `pivot-09dbca466cc4`."
+- Reproduced exactly at commit `53ff6bd` (via worktree, preserving the real commit hash): 278 items, 8 P0/11 P1/259 P2, plan id `pivot-4e979518245b`. **The counts (278/8/11/259) match the doc; the plan id in the doc does not** — actual is `pivot-4e979518245b`, not `pivot-09dbca466cc4`. This is deterministic and reproducible (verified 3x), so it isn't a flake — the id printed in the document is simply wrong (likely transcribed from a different run/commit, or a typo). File/line: BUILDATHON.md:186. Suggested correction: replace `pivot-09dbca466cc4` with the actual reproducible id `pivot-4e979518245b`, or drop the specific id from prose since it's not independently checkable by a reader without rebuilding at that exact commit.
+- At current HEAD the item counts have also drifted to 279 items (260 P2) for the same reason as finding 1 — two new files added since `53ff6bd`.
+
+**3. Environment note, not a document defect — flag for awareness only.** While auditing, the repository was being actively modified by a concurrent process outside this audit: HEAD moved from `b0ab303` to `5a7a3dd` mid-session, and uncommitted working-tree edits appeared and disappeared on `internal/cli/pivot.go`, `internal/cli/pivot_roles.go`, and `internal/cli/stats_test.go`, plus an untracked file `docs/loop engg config options in agent loop of pivotmap plan.txt`. None of this was made by this audit (strictly read-only, no edits made, two scratch worktrees I created for verification were removed afterward). This means the repository is a moving target right now — re-verify numbers immediately before submission, since something is actively landing commits on this branch concurrently.
+
+## Claims verified correct (not defects — listed for completeness of the audit, not as findings)
+- Grouped `text` report numbers (`Required remediation: 32 (8 production, 24 test across 5 packages)`, `Production follow-up: 100`, `Test fallout: 187 across 4 packages`, and the exact package breakdown) match current HEAD output exactly, aside from `unreached` drifting 85→86 and total 636→637 for the same file-count-drift reason as findings 1–2.
+- `role never changes a verdict` (pivot.go:511 comment + code order — roles assigned after verdicts are finalized): confirmed.
+- `--exclude-tests` applies before classification, not as a post-filter: confirmed directly in `internal/cli/pivot_test.go` (`fixtures.go` case: AT-RISK without the flag, SAFE with it).
+- `root_invalidated` / callsite.go example (BUILDATHON.md:198-200): confirmed verbatim — `internal/cli/callsite.go` reports `root_invalidated: internal/gitutil/git.go`.
+- Checkpoint trailers: `2ff8446` → `Entire-Checkpoint: bb0d72d79dbc`, `934d180` → `4a14d2327199`, and `abbf061`/`4a0a219` genuinely carry none — all match the table exactly.
+- All named file paths exist (pivot.go/pivot_roles.go/pivot_plan.go/pivot_test.go, the 8 os/exec production files, gitutil files, verify.go, search_verify.go, root.go, mise.toml, docs/adr/0001).
+- `mise run test` / `cmd/graph-bench` failure claim: reproduces exactly as described (`checkout --end-of-options` rejected by local git), and `go test ./internal/cli/...` passes in full once an environment-only `FORCE_COLOR=3` variable is unset (this var was set in my sandbox, not a code defect — with it set, one unrelated stats test fails on ANSI codes; this is an artifact of my shell, not the repo, and matches the class of caveat the prompt told me to expect, so treated as verified-true rather than a new finding).
+- Flags (`--dependency`, `--checkpoint`, `--depth 1..5`, `--exclude-tests`, `--format text|json|plan`, `--worktree`, `--profile`, `--cache-dir`, `--no-cache`) all exist in `internal/cli/pivot.go:172-239` exactly as described.
+- 94% reduction (19 of 319) and gorilla/mux `Route.Match` 0-callers claim: both arithmetically/evidentially correct (the mux claim is substantiated by `docs/evidence/2026-08-16-mux-agent-session.md:606`).
+
+## Verdict
+**Not safe to submit as-is.** Two corrections are needed before judging: (1) the plan id `pivot-09dbca466cc4` in the `--format plan` section (BUILDATHON.md:186) does not reproduce — replace with the actual `pivot-4e979518245b` or remove the specific id; (2) the file-count/verdict tables are stale relative to current HEAD by a small margin (a few files added since the cited commits shifted several counts by 1-2) — either re-measure at the commit you'll actually submit, or explicitly label the tables as frozen historical snapshots so a judge re-running the commands isn't surprised by a mismatch. Everything else checked out.</result>
+<usage><subagent_tokens>95379</subagent_tokens><tool_uses>44</tool_uses><duration_ms>625528</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b0mr2rgac</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adharsh-git-BTW-buildathon-entire-graph/fea6b82a-ee27-4474-94af-26129e05ba94/tasks/b0mr2rgac.output</output-file>
+<status>completed</status>
+<summary>Background command "Full package test with FORCE_COLOR still set" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+is aufitor differenmt from a loop ?
+
+---
+
+okay - can we merge PRs now ?
+
+---
+
+the loop engg - we will worry later-
+
+---
+
+Ok, we need one release bratnch where all our code are
+
+---
+
+Awesome - why the name  pivot-work-order ? jsut something we oicked
+
+---
+
+thats fine - yes - lets try and merge thgat with main
+
+---
+
+make sure - checkoiounst wil work - thats part of the expectations
+
+---
+
+can we add checkpints for those commits ? I think curveball will bite us
+
+---
+
+sure - run it
+
+---
+
+once done - cerate a quick /work-towards-alignment on the stuff worked on so far
+
+---
+
+ask em - i will aoorve
+
+---
+
+ask me for main m,erge
+
+---
+
+align doc can be just for us - ope it
+
+---
+
+[Image #1] very concenring -why ???
+
+---
+
+hope we cna mirror gaian
+
+---
+
+v[Image #2]
+
+---
+
+So I ma confiused = why 3 sessions ?
+
+---
+
+Open teh align doc = actually - let it just have what we have buoilyt so far
+
+---
+
+be quickk and open in browser
+
+---
+
+create a pdf out it - remove The honest limit — stated, not hidden and Still open - this is for submission before noon curevball
+
+---
+
+ok then we can add known limitations
+
+---
+
+teach me what extrenakl AI said about loop engg - communicate effectievely
+
+---
+
+So how can a human devloper config this loop veruy eail ? with good UX ?
+
+---
+
+/research-prompt on above
+
+---
+
+The best UX is a **generated, reviewable starter contract plus a small stable vocabulary of checks**—not a blank YAML file and not a full policy language. Your tool should observe the repository, propose a contract from that evidence, show exactly what the verifier will do, and make every risky relaxation explicit.
+
+Your draft is pointed in the right direction, but it currently conflates analysis inputs, acceptance criteria, sandbox policy, and anti-gaming guardrails. It also hides crucial semantics behind booleans. Make the short form easy, but ensure `verify explain` always shows the fully resolved contract, baseline, commands, protected inputs, and pass/fail interpretation.
+
+## Best starting point
+
+**Build `entire verify init --from <pivot-run>` plus `entire verify explain`.**
+
+`init` should generate a minimal configuration from a real baseline run; `explain` should render the canonical expanded form and a dry-run execution plan before an agent ever edits code.
+
+Why this is the best starting point:
+
+- Developers begin with evidence from their actual repository, not a generic template.
+- The scaffold contains concrete package paths, observed counts, targeted test packages, parser coverage gaps, and protected verifier assets.
+- Developers primarily **delete, accept, or tighten** proposed checks rather than invent a DSL.
+- It makes hidden defaults visible and reviewable.
+- It gives you a path to advanced configuration without forcing advanced configuration on day one.
+- It fits the established “generate → inspect → apply” UX used by Terraform planning, Renovate onboarding PRs, TypeScript initialization, and hook/config generators. Terraform’s core workflow deliberately separates plan from apply, while Renovate generates an onboarding PR that users can edit and merge after seeing the expected automation behavior. [developer.hashicorp](https://developer.hashicorp.com/terraform/cli/run)
+
+## Direct critique of your draft
+
+Your draft is readable, but it is **too magical and too underspecified** to be a trustworthy acceptance contract.
+
+```yaml
+version: verification-contract/v1
+constraint:
+  prohibited: [os/exec]
+  depth: 1
+require:
+  no_violations: true
+  tests: go test ./internal/...
+  no_new_coverage_gaps: true
+protect:
+  - .entire/verify.yaml
+limits:
+  max_deletions: 20
+  allow_test_edits: false
+```
+
+### What is good
+
+- `version` is non-negotiable. Keep it.
+- `constraint` gives a concrete analysis target.
+- `require` is a good top-level mental model.
+- `protect` correctly recognizes that a verifier contract is special: the agent can read it but should not control it.
+- `max_deletions` and `allow_test_edits` acknowledge reward hacking instead of pretending it will not happen.
+
+### What is wrong
+
+| Draft field | Problem | Better design |
+|---|---|---|
+| `prohibited: [os/exec]` | Ambiguous: package import path, module, symbol, regex, or semantic category? | Make target kind explicit: `dependency: { ecosystem: go, import_paths: ["os/exec"] }` |
+| `depth: 1` | Is this traversal depth, policy scope, agent work scope, or a verification threshold? A future reader will not know. | Put it under an analyzer-specific check: `analysis: { max_reachability_depth: 1 }` |
+| `no_violations: true` | Hides which finding class must be zero. Does it mean direct invalidations only? All at-risk files? Zero warnings? | Use a named metric: `graph.invalidated: { equals: 0 }` |
+| `tests: go test ./internal/...` | A scalar shell command has unclear quoting, platform semantics, timeout, working directory, network policy, retry behavior, and expected result. | Use argv array plus explicit exit/timeout: `command: ["go","test","./internal/..."]` |
+| `no_new_coverage_gaps: true` | “Coverage gap” is ambiguous: test coverage? graph parser coverage? unreachable files? Relative to which baseline? | Name the metric and comparator: `graph.unreached: { compare_to: baseline, op: "<=" }` |
+| `protect` | Protecting only the config file does not protect verifier scripts, analyzer binary/version, CI workflow, baseline report, test harness, or source of policy. | Use `protected_paths` plus immutable contract/baseline hashes supplied outside the agent write boundary |
+| `max_deletions: 20` | A raw line/file deletion count is a weak proxy. Deleting one critical function can be worse than deleting 50 generated lines; test deletion may be an exploit. | Use separate policies for production deletions, public API removal, test deletion, and generated files |
+| `allow_test_edits: false` | Too blunt. Legitimate remediation often requires test changes; teams will disable this wholesale. | Default `require_approval` or constrain test changes: no deletions/skips/suppressions, changed test must still execute |
+| Missing baseline | Your differential checks cannot be reproduced without a fixed pre-agent baseline commit and report. | Add `baseline: { ref, report_sha256, generated_at }` |
+| Missing unknown state | Static analysis has `UNREACHED`; the config forces a false binary. | Add `unknown_policy` and statuses: `pass`, `fail`, `cannot_verify`, `needs_review` |
+| Missing authority model | A repo file alone does not prevent an agent from changing it in its branch. | Add `authority`/`provenance`; verify against a protected ref or signed artifact |
+| Missing evidence | No instruction says what to retain after a check runs. | Add evidence artifacts: command argv, stdout/stderr, tool version, report JSON, diff summary |
+| Missing check IDs | Humans and automation need stable identifiers to refer to failures. | Every check gets an `id` |
+| Missing change scope | The agent may rewrite unrelated code while technically passing. | Add allowed paths/work-order scope and a changed-files budget |
+| Missing test selection semantics | `./internal/...` can run unrelated tests and hide why it was chosen. | Generate targeted packages from graph roots and show them in `explain` |
+
+### What I would cut
+
+Cut these as top-level, opaque booleans:
+
+```yaml
+no_violations: true
+no_new_coverage_gaps: true
+allow_test_edits: false
+```
+
+They look simple, but they conceal important domain semantics. Keep sugar for generated config if you want, but normalize it internally into explicit checks.
+
+### A better v1 shape
+
+```yaml
+version: verification-contract/v1
+
+baseline:
+  ref: "a1b2c3d4"
+  pivot_report_sha256: "sha256:..."
+  generated_at: "2026-09-06T11:55:00Z"
+
+constraint:
+  id: "prohibit-go-os-exec"
+  kind: prohibited_dependency
+  target:
+    ecosystem: go
+    import_paths:
+      - "os/exec"
+
+checks:
+  - id: direct-violations-eliminated
+    kind: graph_metric
+    analyzer:
+      command:
+        - entire
+        - graph
+        - pivot
+        - --dependency
+        - os/exec
+        - --format
+        - json
+    metric: summary.invalidated
+    assert:
+      equals: 0
+    on_unavailable: cannot_verify
+
+  - id: no-new-parser-coverage-gaps
+    kind: graph_metric_delta
+    metric: summary.unreached
+    baseline: baseline.pivot_report
+    assert:
+      less_than_or_equal: 0
+    on_unavailable: cannot_verify
+
+  - id: affected-package-tests
+    kind: command
+    command:
+      - go
+      - test
+      - ./internal/...
+    expect:
+      exit_code: 0
+    timeout: 10m
+    retries:
+      max_attempts: 1
+      retry_on:
+        - transient_infrastructure_error
+
+integrity:
+  protected_paths:
+    - .entire/verify.yaml
+    - .entire/policies/**
+    - .github/workflows/entire-verify.yml
+    - scripts/verify/**
+    - test/harness/**
+  forbidden_added_patterns:
+    - "t.Skip("
+    - "pytest.skip"
+    - "@SuppressWarnings"
+    - "// nolint"
+    - "# nosemgrep"
+  changes:
+    production_deletions:
+      max_files: 0
+      require_approval_above: 0
+    test_changes:
+      mode: require_approval
+      forbid_deletions: true
+      forbid_skip_or_suppression_additions: true
+
+execution:
+  require_clean_checkout: true
+  max_agent_attempts: 2
+  network: deny
+
+result:
+  success:
+    all:
+      - direct-violations-eliminated
+      - no-new-parser-coverage-gaps
+      - affected-package-tests
+      - verifier-assets-unchanged
+  unknown:
+    policy: needs_review
+  evidence:
+    retain:
+      - resolved_contract
+      - baseline_report
+      - candidate_report
+      - command_output
+      - changed_paths
+      - tool_versions
+```
+
+This is longer, but a developer should not have to write most of it. `verify init` generates it; the everyday author edits a compact front section and uses an `advanced:` expansion only when necessary.
+
+## Scaffold from observed state
+
+### Verdict: keep the idea
+
+Generating configuration from a real run is one of the strongest UX decisions you can make. A blank config asks users to understand your abstract model before they have seen value. An observed-state scaffold starts from facts:
+
+```text
+Observed:
+  3 direct invalidations
+  78 at-risk files
+  84 unreached files
+  direct roots under ./internal/sem
+  tests exist in ./internal/sem/...
+  current baseline count: unreached=84
+
+Generated:
+  direct invalidations must become zero
+  no increase in unreached count
+  run ./internal/sem/... tests
+  protect contract, analyzer settings, CI workflow, test harness
+```
+
+The generator should use **current facts as candidates**, never silently turn observed state into policy. For example, `unreached: 84` should become:
+
+```yaml
+# Proposed from baseline run: 84 files were unreached.
+# Keep this check if parser coverage must not regress.
+- id: no-new-parser-coverage-gaps
+  kind: graph_metric_delta
+  metric: summary.unreached
+  baseline_value: 84
+  assert:
+    less_than_or_equal: 0
+```
+
+That distinction prevents “the generator decided our policy for us.”
+
+### Real precedents
+
+| Tool/pattern | What it generates or reveals | What to borrow |
+|---|---|---|
+| `tsc --init` | A `tsconfig.json` template with compiler options and explanatory comments; TypeScript 5.9 explicitly revised the generated shape after years of a very full commented template. | Generated config is a product surface; defaults and comments must be curated over time, not treated as a one-off artifact.  [typescriptlang](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-9.html) |
+| Renovate onboarding | A “Configure Renovate” pull request containing a repository configuration; users can edit it and Renovate updates/comment-previews expected behavior. | Put generated config in a reviewable PR and show predicted behavior before activation.  [docs.renovatebot](https://docs.renovatebot.com/getting-started/installing-onboarding/) |
+| Renovate reconfiguration | A `renovate/reconfigure` branch/PR workflow, with comments describing expected changes from changed configuration. | Make config changes observable: config diff → predicted automation diff.  [docs.renovatebot](https://docs.renovatebot.com/getting-started/installing-onboarding/) |
+| `pre-commit sample-config` | A small `.pre-commit-config.yaml` starter configuration. | Generate a minimal valid starter, not every possible knob.  [pre-commit](https://pre-commit.com/) |
+| Lefthook | `lefthook.yml` supports named hook jobs and command configuration. | Keep command checks in a familiar declarative shape.  [lefthook](https://lefthook.dev/configuration/Hook/) |
+| Terraform plan/apply | Does not generally generate HCL from live state as its core UX, but it computes an execution plan from desired config plus observed state. | The most important generated artifact may be the **plan**, not the config: show resolved impact before action.  [developer.hashicorp](https://developer.hashicorp.com/terraform/cli/commands/plan) |
+| Kubernetes dry-run | Server-side dry-run sends a modifying request with `dryRun`, exercising admission/defaulting without persistence. | A dry run is credible when it uses the same authoritative path as execution, not a weak local approximation.  [github](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/576-dry-run/README.md) |
+| Semgrep configuration | Supports YAML rule configuration and auto configuration selection, but `--config auto` is primarily auto-selected rules rather than a durable generated local config contract. | Do not misrepresent automatic discovery as authored policy; distinguish suggested checks from committed policy.  [docs.semgrep](https://docs.semgrep.dev/writing-rules/rule-syntax) |
+
+### What not to claim
+
+There is limited clean, causal evidence that configuration generation alone reduces abandonment across all developer tools. Tool vendors commonly use onboarding generators because they lower startup friction, but “generated config reduces abandonment” is not a settled universal result from the sources found here.
+
+There is stronger qualitative and design evidence for the mechanism:
+
+- Configuration has high cognitive cost when users must choose options before understanding consequences.
+- Deep nesting and high “viscosity” make local changes mentally expensive.
+- Users benefit when a tool exposes observed state, generated consequences, and minimal safe defaults rather than requiring speculative authoring. Cognitive Dimensions research identifies hard mental operations, visibility, and viscosity as central concerns for notation design. [cl.cam.ac](https://www.cl.cam.ac.uk/~afb21/publications/CT2001.pdf)
+
+Generated configs also fail in familiar ways:
+
+- The template is huge and users accept it without reading.
+- Comments become stale.
+- Defaults freeze old assumptions into repositories.
+- Regeneration overwrites manual edits.
+- “Recommended” settings become cargo cult.
+- Configuration becomes a copy/paste artifact nobody owns.
+
+TypeScript itself is a useful warning: its generated `tsconfig.json` has changed over time; TypeScript 5.9 discusses the longstanding “very full” generated configuration with commented-out settings. That is evidence that config scaffolding must be actively maintained as UX, not merely emitted. [typescriptlang](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-9.html)
+
+### Regeneration rules
+
+Never make regeneration destructive by default.
+
+| Situation | Default behavior |
+|---|---|
+| No config exists | Generate a new config |
+| Existing generated config is unmodified | Offer replace with a versioned update |
+| Existing config has manual edits | Generate a sidecar proposal, e.g. `verify.generated.yaml`, and show a semantic diff |
+| Schema is old | Run `verify migrate --check`; offer deterministic rewrite with a backup |
+| Observed state changed | Do not update thresholds silently; report drift and offer a patch |
+| New suggested check is discovered | Add as commented or `proposed:` entry, not active enforcement |
+| Generator cannot infer safely | Emit `needs_review`, not an arbitrary default |
+
+Recommended commands:
+
+```bash
+entire verify init --from .entire/pivot-baseline.json
+entire verify explain
+entire verify drift
+entire verify migrate --check
+entire verify migrate --write
+entire verify scaffold --diff
+```
+
+The key command is:
+
+```bash
+entire verify scaffold --diff
+```
+
+It should output a semantic comparison:
+
+```text
+Observed state changed since baseline:
+
+  graph.unreached:
+    configured baseline: 84
+    current observed baseline candidate: 91
+    action: no automatic update
+
+  targeted test scope:
+    configured: go test ./internal/sem/...
+    suggested:  go test ./internal/sem/... ./internal/cli/...
+    reason: new direct violation root in internal/cli
+
+  new protected file suggested:
+    .entire/policies/dependency-policy.yaml
+```
+
+## Progressive disclosure
+
+### Use sugar, but make it reversible
+
+Your `no_violations: true` idea is valid as **authoring sugar**, not as the canonical execution representation.
+
+For example:
+
+```yaml
+require:
+  no_violations: true
+```
+
+desugars to:
+
+```yaml
+checks:
+  - id: direct-violations-eliminated
+    kind: graph_metric
+    metric: summary.invalidated
+    assert:
+      equals: 0
+```
+
+The non-negotiable rule:
+
+> Every shorthand must have one deterministic, inspectable expansion.
+
+Provide:
+
+```bash
+entire verify explain --expanded
+```
+
+Output:
+
+```text
+require.no_violations: true
+
+expands to:
+
+checks[0]:
+  id: direct-violations-eliminated
+  kind: graph_metric
+  command:
+    - entire graph pivot --dependency os/exec --format json
+  metric: summary.invalidated
+  assert: equals 0
+  baseline: candidate commit
+  failure: FAIL
+  unavailable: CANNOT_VERIFY
+```
+
+Terraform is the strongest product precedent for this behavior: a declarative desired state is turned into a concrete plan artifact before apply. A saved plan can then be reviewed and applied, rather than forcing users to reason only from raw configuration. [developer.hashicorp](https://developer.hashicorp.com/terraform/cli/commands/plan)
+
+### Recommended complexity levels
+
+```yaml
+# Level 1: common intent
+require:
+  no_direct_violations: true
+  tests: "./internal/..."
+```
+
+```yaml
+# Level 2: explicit check options
+checks:
+  - use: graph.no_direct_violations
+    dependency: os/exec
+  - use: go.test
+    packages:
+      - ./internal/...
+    timeout: 10m
+```
+
+```yaml
+# Level 3: full explicit form
+checks:
+  - id: direct-violations-eliminated
+    kind: graph_metric
+    analyzer:
+      argv: ["entire", "graph", "pivot", "--dependency", "os/exec", "--format", "json"]
+    extract:
+      json_path: "$.summary.invalidated"
+    assert:
+      equals: 0
+```
+
+```yaml
+# Level 4: extension point
+extensions:
+  - id: organization-policy
+    kind: command
+    argv: ["conftest", "test", "--policy", ".policy", "verification-input.json"]
+```
+
+Most users should never need Level 3 or Level 4.
+
+### Where sugar backfires
+
+Sugar fails when:
+
+- It cannot express the first real exception.
+- It maps to behavior users cannot inspect.
+- Multiple short forms interact in surprising ways.
+- It silently changes expansion across tool versions.
+- It makes a developer think a Boolean means a broad guarantee.
+
+Your riskiest sugar is `no_new_coverage_gaps: true`, because “coverage” has overloaded meanings. Do not use that term without a metric namespace:
+
+```yaml
+require:
+  graph_parser_coverage:
+    no_new_unreached_files: true
+```
+
+or:
+
+```yaml
+require:
+  test_coverage:
+    line_percent:
+      not_below_baseline_by: 0.2
+```
+
+### Evidence on config comprehension
+
+Cognitive Dimensions of Notations is the best durable lens:
+
+- **Visibility:** can a developer find the relevant rule?
+- **Viscosity:** how much unrelated editing is needed to change one rule?
+- **Hidden dependencies:** does a short key depend on defaults elsewhere?
+- **Premature commitment:** must users choose options before they understand the system?
+- **Hard mental operations:** does deep nesting require too much working memory?
+
+Deeply nested configuration increases the cognitive burden of local edits because users must track hierarchy, scope, and cascading effects. A recent serialization-format study found that syntax alone does not consistently determine usability; ecosystem, tooling, documentation, and community practices often matter more than whether the file is YAML, TOML, or JSON. Treat this as a recent preprint, but its conclusion matches practical experience: editor support and explainability matter more than format ideology. [cl.cam.ac](https://www.cl.cam.ac.uk/~afb21/publications/CT2001.pdf)
+
+## Safe defaults and anti-gaming
+
+### Keep safe defaults, but do not make them blunt
+
+Your instinct is right: developers defining “success” are not necessarily thinking adversarially about how an agent might satisfy the letter of that success destructively.
+
+Secure-by-default guidance strongly supports conservative defaults. NIST defines secure defaults as a restrictive and conservative enforcement of policy; ENISA likewise recommends minimizing exposed services and requiring minimal user action for secure initial configuration. [csf](https://csf.tools/reference/nist-sp-800-53/r5/sa/sa-8/sa-8-23/)
+
+But “secure by default” does not mean “forbid everything by default.” A restrictive default that blocks legitimate work without explanation trains people to disable it.
+
+A study of Content Security Policy as a default found that secure defaults have benefits, but poor information flow, violation messages, documentation, and IDE support can cause developers to weaken security instead of using it correctly. [stephanwiefling](https://www.stephanwiefling.de/papers/csp-study-haisa2018.pdf)
+
+### Better defaults
+
+| Risk | Bad default | Better default |
+|---|---|---|
+| Test edits | `allow_test_edits: false` | `test_changes: require_approval` |
+| Test deletion | No restriction | `test_deletions: forbidden` |
+| Skipping/suppressing | No restriction | `new_suppressions: forbidden` |
+| Production deletion | `max_deletions: 20` | `production_file_deletion: require_approval`; separate line budget as advisory |
+| Verifier changes | “Please don’t edit verifier” | Protected paths, clean checkout, authoritative contract hash |
+| Analysis coverage loss | Ignore it | No increase in `UNREACHED`, otherwise `NEEDS_REVIEW` |
+| Unknown tool failure | Retry until green | `CANNOT_VERIFY` with exact cause and evidence |
+| Network-dependent tests | Fail mysteriously | Explicit `network: deny|allow` and dependency-cache policy |
+
+### Make overrides deliberate
+
+An override should be:
+
+- explicit;
+- local in scope;
+- time-bounded where possible;
+- attributed;
+- reviewable;
+- visible in verification output;
+- unable to silently persist forever.
+
+For example:
+
+```yaml
+exceptions:
+  - id: allow-test-refactor-for-mock-migration
+    reason: "Provider test helper API changed as part of dependency replacement."
+    paths:
+      - internal/sem/**/*_test.go
+    allow:
+      test_edits: true
+    forbid:
+      test_deletion: true
+      skip_or_suppression_additions: true
+    expires_after: "2026-10-01"
+    requires_approval:
+      - "@platform-security"
+```
+
+Then `verify explain` should say:
+
+```text
+Exception active:
+  allow-test-refactor-for-mock-migration
+  applies to: internal/sem/**/*_test.go
+  expires: 2026-10-01
+  still forbidden: test deletion, new skips, new suppressions
+```
+
+That is far better than a global `allow_test_edits: true` switch.
+
+## Dry-run and explain
+
+### Treat explain as part of correctness
+
+A verifier contract that cannot explain itself is not really developer-configurable; it is merely developer-editable.
+
+Your tool should expose:
+
+```bash
+entire verify validate
+entire verify explain
+entire verify explain --expanded
+entire verify plan --baseline <sha> --candidate <sha>
+entire verify run --dry-run
+```
+
+### What `verify explain` must show
+
+1. **Configuration source and authority**
+   - path;
+   - schema version;
+   - canonical hash;
+   - trusted source ref/artifact;
+   - whether candidate changes affect protected paths.
+
+2. **Resolved constraint**
+   - exact dependency identifier;
+   - language/ecosystem;
+   - analyzer version;
+   - traversal depth;
+   - scope and exclusions.
+
+3. **Baseline**
+   - baseline commit SHA;
+   - baseline report hash;
+   - baseline metrics such as invalidated and unreached counts;
+   - baseline creation time.
+
+4. **Checks in execution order**
+   - stable check ID;
+   - human description;
+   - actual argv, not a shell rendering only;
+   - working directory;
+   - timeout;
+   - network policy;
+   - retries;
+   - expected output/metric;
+   - fail versus cannot-verify behavior.
+
+5. **Integrity policy**
+   - protected paths;
+   - forbidden additions;
+   - allowed change scope;
+   - deletion and test-edit policy.
+
+6. **Success expression**
+   - the resolved `all` / `any` / `not` logic.
+
+7. **Uncertainty**
+   - which checks can produce `CANNOT_VERIFY`;
+   - parser coverage limitations;
+   - current `UNREACHED` files or count.
+
+### Example dry-run output
+
+```text
+Verification plan: prohibit-go-os-exec
+Authority: policy artifact sha256:ca8f...
+Baseline: a1b2c3d4 (pivot report sha256:9d2e...)
+Candidate: HEAD
+
+1. direct-violations-eliminated
+   Run:
+     entire graph pivot --dependency os/exec --format json
+   Expect:
+     summary.invalidated == 0
+   Baseline:
+     3
+   Candidate:
+     not measured
+   On tool/parser failure:
+     CANNOT_VERIFY
+
+2. no-new-parser-coverage-gaps
+   Compare:
+     candidate.summary.unreached <= baseline.summary.unreached
+   Baseline:
+     84
+   On missing baseline:
+     CANNOT_VERIFY
+
+3. affected-package-tests
+   Run:
+     go test ./internal/...
+   Timeout:
+     10m
+   Expect:
+     exit code 0
+   Network:
+     deny
+   Retry:
+     1 only for classified infrastructure failure
+
+4. verifier-assets-unchanged
+   Check:
+     .entire/verify.yaml
+     .entire/policies/**
+     .github/workflows/entire-verify.yml
+     scripts/verify/**
+   Expect:
+     unchanged from baseline
+
+Overall:
+  PASS only if all four checks pass.
+  CANNOT_VERIFY blocks automatic completion.
+```
+
+### Dry-run precedents
+
+| Tool | Why its dry-run model matters |
+|---|---|
+| Terraform `plan` | Computes intended infrastructure changes before apply; saved plan files enable review and later application.  [developer.hashicorp](https://developer.hashicorp.com/terraform/tutorials/cli/plan) |
+| Kubernetes server dry-run | Sends a request through server-side admission/defaulting with `dryRun`, giving stronger confidence than a client-only preview.  [github](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/576-dry-run/README.md) |
+| `git apply --check` | Validates applicability without modifying files; useful pattern for a cheap, specific preflight. |
+| `apt -s` / simulation | Shows intended package manager actions before mutation; useful for clearly marking prediction versus actual outcome. |
+| `rsync -n` | Produces a file-level view of prospective synchronization; useful for concise changed-path displays. |
+
+The general lesson is not “always simulate.” It is:
+
+> A plan is trustworthy when it is generated by the same resolver/evaluator that execution will use, with the same inputs, and clearly identifies any assumptions that may change before execution.
+
+Terraform’s plan/apply separation is especially relevant because it distinguishes desired configuration, current observed state, planned mutation, and application. [developer.hashicorp](https://developer.hashicorp.com/terraform/cli/run)
+
+## Error and failure output
+
+### Use a fixed failure envelope
+
+Every failed verification check should answer, in this order:
+
+1. **What failed?**
+2. **What was required?**
+3. **What was observed?**
+4. **Why does that matter?**
+5. **How do I reproduce it?**
+6. **What may the agent change next?**
+7. **What remains unknown?**
+
+Example:
+
+```text
+FAIL  direct-violations-eliminated
+
+Required:
+  graph.summary.invalidated == 0
+
+Observed:
+  graph.summary.invalidated == 2
+  baseline: 3
+  change: -1
+
+Remaining direct violations:
+  - internal/runner/exec.go:12
+    IMPORTS → os/exec
+    confidence: 0.80
+  - internal/worker/process.go:48
+    CALLS → os/exec.Command
+    confidence: 0.75
+
+Reproduce:
+  entire graph pivot --dependency os/exec --format json
+
+Allowed next action:
+  Edit the two listed production files and their direct tests.
+  Do not modify .entire/verify.yaml, verifier scripts, or add suppressions.
+
+Overall:
+  PARTIAL — one direct violation was removed, but the acceptance criterion is not met.
+```
+
+### Good compiler/tool diagnostics
+
+The common themes in respected diagnostics from Elm, Rust, TypeScript, and ESLint are not merely “friendly tone.” They are:
+
+- point to the exact source location;
+- name the violated rule;
+- show expected versus actual;
+- preserve nearby context;
+- suggest a plausible next step;
+- avoid redundant noise;
+- distinguish primary failure from cascaded failures;
+- use stable error/rule IDs where automation needs them;
+- provide a path to reproduce or configure behavior.
+
+A C++ standards paper summarizing compiler-error-message research recommends plain language, reduced cognitive load, relevant context near the source, actionable hints/examples, coherent narratives, and presenting information at the time it is useful. [open-std](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2429r0.pdf)
+
+For your verifier, source-linked graph evidence is already a major advantage. Preserve it in every failure report.
+
+### Partial results
+
+Never render a green headline because one check passed.
+
+Use:
+
+```text
+Overall: PARTIAL
+3 of 5 required checks passed.
+1 check failed.
+1 check could not verify.
+```
+
+Then group:
+
+```text
+Passed
+  ✓ direct violations reduced from 3 to 0
+  ✓ protected verifier assets unchanged
+  ✓ targeted package tests passed
+
+Failed
+  ✗ no new parser coverage gaps
+    expected candidate.unreached <= 84
+    observed 89
+
+Cannot verify
+  ? full integration suite
+    tool unavailable: docker
+```
+
+This gives the executor a bounded follow-up while remaining honest to reviewers.
+
+## Schema, validation, and editor support
+
+### Use JSON Schema, even if authors write YAML
+
+YAML is a convenient authoring format, but its semantic model can be validated against JSON Schema after parsing.
+
+Publish:
+
+```text
+https://entire.example/schemas/verification-contract/v1.json
+```
+
+Support YAML language-server associations, for example:
+
+```yaml
+# yaml-language-server: $schema=https://entire.example/schemas/verification-contract/v1.json
+version: verification-contract/v1
+```
+
+Also ship a local schema with the CLI so offline use remains possible:
+
+```text
+.entire/schemas/verification-contract-v1.json
+```
+
+### Unknown keys: reject by default
+
+For a verification contract, **reject unknown keys** in active sections. Silently ignoring an unknown key is dangerous:
+
+```yaml
+require:
+  no_violation: true   # typo, silently ignored = false confidence
+```
+
+Use a controlled extension namespace:
+
+```yaml
+x-company:
+  policy_ticket: SEC-123
+```
+
+Recommended behavior:
+
+| Case | Behavior |
+|---|---|
+| Unknown key in core schema | Hard validation error |
+| Deprecated key | Warning with replacement and migration command |
+| Unsupported schema version | Hard error |
+| Unknown extension under `x-*` | Preserve but do not interpret |
+| Unknown check `kind` | Hard error |
+| Unknown enum option | Hard error |
+| Missing required security/integrity field | Hard error |
+| Optional missing field | Apply documented default and show it in `explain` |
+
+### Versioning and migration UX
+
+Use both a file-level version and a tool compatibility range if needed:
+
+```yaml
+version: verification-contract/v1
+requires:
+  entire: ">=0.4.0 <0.6.0"
+```
+
+Provide:
+
+```bash
+entire verify validate
+entire verify migrate --check
+entire verify migrate --write
+entire verify explain --show-deprecations
+```
+
+Migration output should be mechanical and reviewable:
+
+```text
+Migration available: verification-contract/v1 → v2
+
+Changed:
+  require.no_violations → checks[].kind=graph_metric
+  limits.allow_test_edits → integrity.test_changes.mode
+
+No semantic change detected.
+Backup written:
+  .entire/verify.yaml.v1.bak
+```
+
+TypeScript’s evolving `tsc --init` output is a reminder that generated config defaults change over time; versioned migrations are better than silently rewriting developer files. [typescriptlang](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-9.html)
+
+### Format choice
+
+| Format | Best use | Strengths | Weaknesses | Recommendation |
+|---|---|---|---|---|
+| YAML | Repository policy/config with lists and nested checks | Familiar for CI, Kubernetes, pre-commit, Dependabot, GitHub Actions | Indentation/implicit typing pitfalls; can become deeply nested | **Best v1 choice** if schema/editor support is excellent |
+| TOML | Mostly settings-like config with moderate nesting | Conservative syntax, comments, less indentation ambiguity | Less idiomatic for complex workflow graphs | Good if you want a compact settings surface |
+| JSON | Generated canonical form, machine APIs | Unambiguous, schema-native, easy hashing | Poor hand-authoring experience; no comments | Use internally and for signed artifacts, not primary authoring |
+| KDL | Human-friendly structured documents | Explicit nodes and less YAML ambiguity | Smaller ecosystem; less editor/tool familiarity | Not worth introducing unless your audience already uses it |
+| Starlark | Rich deterministic extension logic | Sandboxed compared with general-purpose code; known in Bazel ecosystems | Crosses into programming; higher learning burden | Use only as an advanced extension boundary |
+| Rego/CEL | Organizational policy logic over structured verifier data | Good for centralized rules and compound policy | Another language, testing, debugging, and governance surface | Add later, outside everyday repo config |
+| Shell scripts | Existing build/test workflows | Maximum flexibility, no new DSL | Opaque semantics, platform/environment fragility | Support as a `command` check, not as the whole configuration model |
+
+A recent empirical preprint on serialization-format usability suggests no format has a universal usability advantage; task complexity, tool support, documentation, and community practice can matter more than syntax. That supports choosing YAML because your target ecosystem already recognizes it—not because YAML is inherently superior. [arxiv](https://arxiv.org/html/2607.26211v1)
+
+## Adversarial config boundary
+
+### The config file is not protected merely because it exists
+
+If the agent works in a Git branch, it can modify `.entire/verify.yaml` in that branch. A rule saying “do not edit this file” is a prompt instruction, not an enforcement mechanism.
+
+The authority boundary must be external to the candidate working tree.
+
+### Strong enforcement patterns
+
+| Mechanism | What it protects | Strength | Leakage/failure mode |
+|---|---|---|---|
+| CI fetches contract from protected base ref | Candidate cannot redefine pass criteria | Strong | Base branch/admin compromise; wrong ref wiring |
+| Signed, content-addressed contract artifact generated before agent run | Candidate cannot rewrite authoritative input | Strong | Key management and artifact provenance complexity |
+| Separate policy repository with required review | Keeps policy ownership distinct from code author | Strong | Review latency; broad admin bypass |
+| GitHub protected branch/ruleset | Blocks direct push, force push, deletion; can require checks/signed commits | Strong for merge gate | Admin bypass policy, misconfigured rules, compromised maintainer |
+| CODEOWNERS + required review | Requires designated reviewer for policy/verifier paths | Medium–strong | Must protect `CODEOWNERS` itself; owners require correct permissions |
+| Required status checks | Makes independent verifier a merge condition | Medium–strong | Check naming collisions or workflow trust configuration |
+| Read-only mount into agent environment | Prevents local process writes | Medium | Agent can still commit modified repo copies unless final verifier uses authority copy |
+| Diff check on protected paths | Detects modifications | Medium | Diff checker itself must be trusted |
+| Prompt instruction | None | Weak | Agent can ignore it |
+
+GitHub documents that protected branches can require passing status checks, restrict force pushes/deletions, and require signed commits. CODEOWNERS can define responsible people/teams, and branch protection can require their review for changes to owned paths. [docs.github](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+
+### Recommended practical design
+
+For your tool:
+
+```text
+1. Developer merges .entire/verify.yaml to protected main.
+2. CI records:
+   - base commit SHA
+   - canonical contract hash
+   - baseline report hash
+   - analyzer image/version hash
+3. Agent works on a candidate branch and may read a copy.
+4. Verifier checks out:
+   - trusted contract from base SHA, or signed artifact
+   - candidate source from candidate SHA
+5. Verifier rejects:
+   - candidate modifications to protected paths
+   - mismatch between expected and actual contract hash
+   - missing baseline artifact
+6. CI posts only the verifier’s signed/attested result.
+```
+
+This is intentionally similar to policy-as-code enforcement: policies are useful only when the policy interpreter and the policy source are outside the subject’s control.
+
+## Differing viewpoints
+
+### “A config file is the wrong answer; just run a script”
+
+This is a legitimate view.
+
+A script can be simpler when:
+
+- A repository already has `./scripts/verify.sh`.
+- The team only needs “run these commands and require exit zero.”
+- Checks are highly bespoke and unlikely to be shared.
+- The team already understands shell/Make/Bazel/Nix tooling.
+- You do not need machine-readable check-level results or a UI.
+
+The problem is that a plain script does not naturally answer:
+
+- What exact metric was expected?
+- What was the baseline?
+- Which check failed?
+- Is a timeout a task failure or inability to verify?
+- Is a test deletion prohibited?
+- Which verifier inputs are protected?
+- Can the agent receive a structured bounded follow-up?
+
+A good compromise is: **commands are one check kind inside a declarative contract**.
+
+### “Put it in CI, not a new config”
+
+Also valid for organization-wide checks. GitHub Actions already provides YAML jobs, dependencies, conditions, secrets, and required status checks. [docs.github](https://docs.github.com/actions/using-workflows/workflow-syntax-for-github-actions)
+
+But CI workflow files are not ideal as the semantic source of acceptance criteria:
+
+- They mix orchestration, runner setup, secrets, caching, and business policy.
+- They are difficult for coding agents to consume as a bounded work order.
+- They do not naturally express baseline comparison or `CANNOT_VERIFY`.
+- They do not give your CLI a stable, portable contract independent of GitHub.
+
+A strong architecture is:
+
+```text
+.entire/verify.yaml = policy/acceptance semantics
+.github/workflows/entire-verify.yml = execution adapter
+```
+
+### “Hard-code it”
+
+Hard-code when there is one correct invariant for every user:
+
+```text
+A malformed report must always fail.
+A missing baseline hash must always block verification.
+A candidate modifying the evaluator must always be rejected.
+```
+
+Do not expose those as optional repository settings.
+
+Make configurable only the genuinely domain-specific policy:
+
+```text
+Which dependency is prohibited?
+Is zero direct violations required?
+Which tests are relevant?
+May parser coverage gaps increase?
+Are test edits allowed with approval?
+```
+
+### “Every config becomes a maintenance burden”
+
+This is true if you create a general-purpose language before you know the recurring use cases.
+
+Avoid it by:
+
+- limiting v1 to 4–6 check kinds;
+- providing generator and explain commands;
+- rejecting unknown keys;
+- pinning stable semantics by schema version;
+- tracking real config usage and adding fields only when repeated;
+- using commands/extensions for rare cases rather than bloating core syntax;
+- maintaining a config linter and migration tool.
+
+## Categorized knowledge base
+
+## 1. Primary and original sources
+
+| Title | Author/org | Direct URL | Date | Why it matters |
+|---|---|---|---|---|
+| Cognitive Dimensions of Notations: Design Tools for Cognitive Technology | Thomas R. G. Green and Marian Petre | [cl.cam.ac.uk/~afb21/publications/CT2001.pdf](https://www.cl.cam.ac.uk/~afb21/publications/CT2001.pdf) | 1996/2001 version | Canonical framework for evaluating notation usability: visibility, viscosity, hidden dependencies, premature commitment, and hard mental operations.  [cl.cam.ac](https://www.cl.cam.ac.uk/~afb21/publications/CT2001.pdf) |
+| Cognitive dimensions of notations | Thomas R. G. Green | [dl.acm.org/doi/10.5555/92968.93015](https://dl.acm.org/doi/10.5555/92968.93015) | 1989 | Original conference source for the cognitive-dimensions framework.  [dl.acm](https://dl.acm.org/doi/10.5555/92968.93015) |
+| The Protection of Information in Computer Systems | Jerome H. Saltzer and Michael D. Schroeder | [web.mit.edu/Saltzer/www/publications/protection/](https://web.mit.edu/Saltzer/www/publications/protection/)) | 1975 | Canonical source for the fail-safe defaults principle underlying secure-by-default configuration. URL ending is verifiable in MIT’s Saltzer publications hierarchy, but verify the exact page path before citation in a formal document. |
+| Security Usability Fundamentals | Simson Garfinkel and Heather Richter Lipford, Google Research | [static.googleusercontent.com/media/research.google.com/en//pubs/archive/32872.pdf](https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/32872.pdf) | 2005 | Concise foundational guidance: auto-configure where possible and ensure the default/obvious action is the safe one.  [static.googleusercontent](https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/32872.pdf) |
+| Warn if Secure or How to Deal with Security by Default in Software Development? | Stephan Wiefling, Luigi Lo Iacono, and colleagues | [stephanwiefling.de/papers/csp-study-haisa2018.pdf](https://www.stephanwiefling.de/papers/csp-study-haisa2018.pdf) | 2018 | Empirical warning that secure defaults fail when violation messages, documentation, and tooling are unusable.  [stephanwiefling](https://www.stephanwiefling.de/papers/csp-study-haisa2018.pdf) |
+| Concepts Error Messages for Humans | Isabelle M. O. G. et al., ISO C++ paper | [open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2429r0.pdf](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2429r0.pdf) | May 16, 2022 | Consolidates compiler-error-message research into concrete diagnostic design principles.  [open-std](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2429r0.pdf) |
+
+## 2. Official documentation
+
+| Title | Author/org | Direct URL | Date | Why it matters |
+|---|---|---|---|---|
+| TypeScript 5.9 release notes | Microsoft / TypeScript | [typescriptlang.org/docs/handbook/release-notes/typescript-5-9.html](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-9.html) | 2025 | Documents the evolution of `tsc --init` output and acknowledges prior generated config verbosity.  [typescriptlang](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-9.html) |
+| TypeScript compiler options | Microsoft / TypeScript | [typescriptlang.org/docs/handbook/compiler-options.html](https://www.typescriptlang.org/docs/handbook/compiler-options.html) | Current | Documents `--init` and the compiler-option model.  [typescriptlang](https://www.typescriptlang.org/docs/handbook/compiler-options.html) |
+| Renovate onboarding | Renovate | [docs.renovatebot.com/getting-started/installing-onboarding/](https://docs.renovatebot.com/getting-started/installing-onboarding/) | Current | Best direct precedent for a generated configuration PR, editable onboarding, and configuration-change preview.  [docs.renovatebot](https://docs.renovatebot.com/getting-started/installing-onboarding/) |
+| Renovate configuration options | Renovate | [docs.renovatebot.com/configuration-options/](https://docs.renovatebot.com/configuration-options/) | Current | Mature config reference demonstrating defaults, inheritance, package rules, and documented options.  [docs.renovatebot](https://docs.renovatebot.com/configuration-options/) |
+| Renovate configuration overview | Renovate | [docs.renovatebot.com/config-overview/](https://docs.renovatebot.com/config-overview/) | Current | Explains configuration layering and precedence, useful for your workspace/constraint/run hierarchy.  [docs.renovatebot](https://docs.renovatebot.com/config-overview/) |
+| Dependabot options reference | GitHub | [docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference) | Current | Mature YAML configuration surface for schedules, ecosystems, scopes, and update policy.  [docs.github](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference) |
+| pre-commit | pre-commit contributors | [pre-commit.com](https://pre-commit.com/) | Current | Documents `.pre-commit-config.yaml` and `sample-config`; good minimal config-generator precedent.  [pre-commit](https://pre-commit.com/) |
+| Lefthook configuration | Lefthook | [lefthook.dev/configuration/Hook/](https://lefthook.dev/configuration/Hook/) | Current | Practical YAML command-hook schema for staged files and job controls.  [lefthook](https://lefthook.dev/configuration/Hook/) |
+| Semgrep rule syntax | Semgrep | [docs.semgrep.dev/writing-rules/rule-syntax](https://docs.semgrep.dev/writing-rules/rule-syntax) | Current | Strong reference for readable YAML policies with explicit rule IDs and required fields.  [docs.semgrep](https://docs.semgrep.dev/writing-rules/rule-syntax) |
+| Semgrep CLI reference | Semgrep | [docs.semgrep.dev/cli-reference](https://docs.semgrep.dev/cli-reference) | Current | Documents local and remote rule configuration selection, including `--config`.  [docs.semgrep](https://docs.semgrep.dev/cli-reference) |
+| Terraform plan command | HashiCorp | [developer.hashicorp.com/terraform/cli/commands/plan](https://developer.hashicorp.com/terraform/cli/commands/plan) | Current | Canonical plan artifact and dry-run workflow.  [developer.hashicorp](https://developer.hashicorp.com/terraform/cli/commands/plan) |
+| Terraform apply command | HashiCorp | [developer.hashicorp.com/terraform/cli/commands/apply](https://developer.hashicorp.com/terraform/cli/commands/apply) | Current | Documents applying saved plans, useful for reviewable handoff semantics.  [developer.hashicorp](https://developer.hashicorp.com/terraform/cli/commands/apply) |
+| Terraform CLI workflow | HashiCorp | [developer.hashicorp.com/terraform/cli/run](https://developer.hashicorp.com/terraform/cli/run) | Current | Explains the full desired-state → plan → apply flow.  [developer.hashicorp](https://developer.hashicorp.com/terraform/cli/run) |
+| Kubernetes dry-run enhancement proposal | Kubernetes SIG API Machinery | [github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/576-dry-run/README.md](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/576-dry-run/README.md) | Original KEP; repository result indexed 2016 | Primary design record for Kubernetes dry-run semantics; explains server-side request behavior.  [github](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/576-dry-run/README.md) |
+| About protected branches | GitHub | [docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches) | Current | Documents required checks, restricted pushes, force-push/deletion protection, and signed-commit rules.  [docs.github](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches) |
+| About code owners | GitHub | [docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners) | Current | Documents `CODEOWNERS` and requiring code-owner review via branch protection.  [docs.github](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners) |
+| Managing a branch protection rule | GitHub | [docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule) | Current | Concrete setup reference for requiring PR review, status checks, and optional signed commits.  [docs.github](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule) |
+| NIST SA-8(23): Secure Defaults | NIST SP 800-53 reference | [csf.tools/reference/nist-sp-800-53/r5/sa/sa-8/sa-8-23/](https://csf.tools/reference/nist-sp-800-53/r5/sa/sa-8/sa-8-23/) | Mar. 5, 2021 | Clear authoritative formulation of restrictive, conservative default policy.  [csf](https://csf.tools/reference/nist-sp-800-53/r5/sa/sa-8/sa-8-23/) |
+
+## 3. In-depth analysis and critiques
+
+| Title | Author/org | Direct URL | Date | Why it matters |
+|---|---|---|---|---|
+| SoK: The Design Paradigm of Safe and Secure Defaults | Jukka Ruohonen | [arxiv.org/pdf/2412.17329.pdf](https://arxiv.org/pdf/2412.17329.pdf) | 2024 | Systematic mapping of secure-defaults research; useful for separating established principles from slogans.  [arxiv](https://arxiv.org/pdf/2412.17329.pdf) |
+| Secure by default: a behavioral approach to cyber security | Stanford research thesis | [purl.stanford.edu/fn897wh2511](https://purl.stanford.edu/fn897wh2511) | 2020s; inspect repository record for exact defense/publication date | Empirical claim that secure configurations often arise from provider defaults, while individually configured systems are frequently insecure.  [purl.stanford](https://purl.stanford.edu/fn897wh2511) |
+| Reading Between the Curly Braces: On Textual Data Serialization Format Usability | Research authors | [arxiv.org/html/2607.26211v1](https://arxiv.org/html/2607.26211v1) | 2026 preprint | Useful corrective to YAML/TOML wars: tooling/ecosystem may matter more than syntax alone. Treat as preprint.  [arxiv](https://arxiv.org/html/2607.26211v1) |
+| Three Mechanisms to Protect Your Git Repositories | GitGuardian | [blog.gitguardian.com/three-mechanisms-to-protect-your-git-repositories/](https://blog.gitguardian.com/three-mechanisms-to-protect-your-git-repositories/) | Mar. 14, 2024 | Practical explanation of branch protection, CODEOWNERS, and the need to protect ownership configuration itself.  [blog.gitguardian](https://blog.gitguardian.com/three-mechanisms-to-protect-your-git-repositories/) |
+| TOML vs YAML: Config Format Comparison | Jsonic | [jsonic.io/guides/toml-vs-yaml](https://jsonic.io/guides/toml-vs-yaml) | May 11, 2026 | Practitioner comparison; useful for discussion, but not primary research.  [jsonic](https://jsonic.io/guides/toml-vs-yaml) |
+
+## 4. Academic and research papers
+
+| Title | Author/org | Direct URL | Date | Why it matters |
+|---|---|---|---|---|
+| Cognitive Dimensions of Notations: Design Tools for Cognitive Technology | Green and Petre | [cl.cam.ac.uk/~afb21/publications/CT2001.pdf](https://www.cl.cam.ac.uk/~afb21/publications/CT2001.pdf) | 1996/2001 | Apply this directly to your configuration language design review.  [cl.cam.ac](https://www.cl.cam.ac.uk/~afb21/publications/CT2001.pdf) |
+| Warn if Secure or How to Deal with Security by Default in Software Development? | Wiefling et al. | [stephanwiefling.de/papers/csp-study-haisa2018.pdf](https://www.stephanwiefling.de/papers/csp-study-haisa2018.pdf) | 2018 | Evidence that security defaults need usable diagnostics and guidance, or users work around them.  [stephanwiefling](https://www.stephanwiefling.de/papers/csp-study-haisa2018.pdf) |
+| SoK: The Design Paradigm of Safe and Secure Defaults | Ruohonen | [arxiv.org/pdf/2412.17329.pdf](https://arxiv.org/pdf/2412.17329.pdf) | 2024 | Broad literature map of safe/secure default concepts and gaps.  [arxiv](https://arxiv.org/pdf/2412.17329.pdf) |
+| Concepts Error Messages for Humans | ISO C++ working group paper | [open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2429r0.pdf](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2429r0.pdf) | 2022 | Useful source-backed checklist for your verifier’s failure output.  [open-std](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2429r0.pdf) |
+| Reading Between the Curly Braces: On Textual Data Serialization Format Usability | Research authors | [arxiv.org/html/2607.26211v1](https://arxiv.org/html/2607.26211v1) | 2026 preprint | Recent comparative format-usability work; supports prioritizing tooling over format ideology.  [arxiv](https://arxiv.org/html/2607.26211v1) |
+
+## 5. Tools, code, and demos
+
+| Title | Author/org | Direct URL | Date | Why it matters |
+|---|---|---|---|---|
+| Renovate tutorial | Renovate contributors | [github.com/renovatebot/tutorial](https://github.com/renovatebot/tutorial) | Repository result indexed Jun. 9, 2022; inspect latest commit and `LICENSE` before reuse | Demonstrates the onboarding PR and how editing config changes generated automation behavior.  [github](https://github.com/renovatebot/tutorial) |
+| Renovate onboarding discussion | Renovate contributors/community | [github.com/renovatebot/renovate/discussions/16801](https://github.com/renovatebot/renovate/discussions/16801) | Jul. 27, 2022 | Concrete discussion of onboarding configuration behavior and when disabling onboarding is appropriate.  [github](https://github.com/renovatebot/renovate/discussions/16801) |
+| Hypothesis | HypothesisWorks | [github.com/HypothesisWorks/hypothesis](https://github.com/HypothesisWorks/hypothesis/) | Repository created 2013; inspect latest commit and `LICENSE` before reuse | Excellent implementation reference for developer-authored properties rather than example-only tests. |
+| GitHub Actions workflow syntax | GitHub | [docs.github.com/actions/using-workflows/workflow-syntax-for-github-actions](https://docs.github.com/actions/using-workflows/workflow-syntax-for-github-actions) | Current | Exemplary real-world YAML workflow schema with jobs, dependencies, conditions, and validation semantics.  [docs.github](https://docs.github.com/actions/using-workflows/workflow-syntax-for-github-actions) |
+| Semgrep rules documentation | Semgrep | [docs.semgrep.dev/writing-rules/rule-syntax](https://docs.semgrep.dev/writing-rules/rule-syntax) | Current | Study its rule IDs, required fields, message design, and YAML readability tradeoffs.  [docs.semgrep](https://docs.semgrep.dev/writing-rules/rule-syntax) |
+
+## 6. Discussions
+
+| Title | Author/org | Direct URL | Date | Why it matters |
+|---|---|---|---|---|
+| Question about Onboarding `renovate.json` | Renovate community | [github.com/renovatebot/renovate/discussions/16801](https://github.com/renovatebot/renovate/discussions/16801) | Jul. 27, 2022 | A concrete discussion around onboarding behavior, configuration discovery, and disabling generated onboarding.  [github](https://github.com/renovatebot/renovate/discussions/16801) |
+| Document that Terraform detects stale saved plan files during apply | HashiCorp documentation issue | [github.com/hashicorp/web-unified-docs/issues/2827](https://github.com/hashicorp/web-unified-docs/issues/2827) | Jul. 12, 2026 | Useful reminder that plan/apply UX depends on explaining staleness and mismatched state; inspect issue resolution before treating behavior as normative.  [github](https://github.com/hashicorp/web-unified-docs/issues/2827) |
+
+## What is outdated or superseded
+
+- **Large commented `tsc --init` templates:** TypeScript 5.9 explicitly revisited the generated config experience. Do not copy old “emit every option with comments” scaffolding; produce a small actionable contract and link to docs or `explain` for the rest. [typescriptlang](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-9.html)
+- **Client-only Kubernetes dry-run terminology:** Kubernetes evolved from older `--server-dry-run`/Boolean variants toward explicit dry-run modes. Use current `kubectl` docs for exact CLI behavior in implementation; the KEP is still useful as design history. [github](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/576-dry-run/README.md)
+- **Treating a repository config file as its own authority:** This is not obsolete in the sense of unsupported, but it is insufficient for an adversarial coding-agent workflow. Replace self-authentication with protected-ref or signed-artifact authority.
+- **Format-first debates:** YAML versus TOML is a secondary decision. Schema, editor support, examples, dry-run, explain, error messages, and migration behavior dominate developer experience more than format alone. [arxiv](https://arxiv.org/html/2607.26211v1)
+
+## Follow-up research topics
+
+1. **Semantic-diff UX for verification contracts:** Research how to show behavior-level changes—new commands, changed thresholds, removed protections—rather than raw YAML diffs, because that is the key review surface for policy changes.
+
+2. **Contract authority and attestation:** Compare protected Git refs, OCI artifacts, Sigstore/cosign, SLSA provenance, and remote policy services for making verifier contracts immutable to coding agents.
+
+3. **Config telemetry without surveillance:** Decide what anonymous signals—unused keys, frequent overrides, migration failures, disabled defaults—could reveal config pain without collecting repository content.
+
+4. **Adversarial usability testing:** Create controlled “bad agent patches” that delete tests, add suppressions, weaken analyzers, and alter workflow files, then test whether generated defaults and error output steer developers toward safe responses.
+
+5. **Editor extension design:** Prototype YAML Schema completion, hover text that expands sugar, quick fixes for deprecated keys, and a “show resolved contract” command inside VS Code or JetBrains, because editor feedback is where configuration comprehension succeeds or fails.
+
+
+verify and communicate effectivelyv
+
+---
+
+pls forget curveball - I am here - they will annouce - 
+
+
+lets create a plan for pist curveball - add whjats worth inclduing
+
+---
+
+create .md file
+
+---
+
+for post curveball plan
