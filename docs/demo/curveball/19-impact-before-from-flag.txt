@@ -1,0 +1,58 @@
+Index: cache-miss (29368ms) | Query: 8ms | Total: 29377ms
+Completeness: no parse failures in Go (423 files parsed); 1 elsewhere (JSON 1) cannot affect this answer — see --format json.
+Impact: buildPivotResponse (internal/cli/pivot.go:378) def=378 span=378-639 [function]
+Blast radius: 12 callers (11 direct, 1 transitive), 17 callees, 6 type consumers, 6 data flows, 7 co-change files, 0 siblings.
+Callers (11 direct, 1 transitive; who breaks if behavior changes):
+- runPivot (internal/cli/pivot.go:341, def :311)
+- TestPivotDoesNotReportUnparsedFileAsSafe (internal/cli/pivot_evidence_test.go:99, def :98)
+- TestPivotTiersEvidenceByResolution (internal/cli/pivot_evidence_test.go:145, def :144)
+- TestPivotFullyResolvedBehaviourUnchanged (internal/cli/pivot_evidence_test.go:177, def :176)
+- TestPivotTextTagsEvidenceForUsers (internal/cli/pivot_evidence_test.go:215, def :214)
+- TestPivotPlanCarriesEvidenceForAgents (internal/cli/pivot_evidence_test.go:241, def :240)
+- TestPlanForbidsTrivialSatisfaction (internal/cli/pivot_evidence_test.go:391, def :390) [+1 more call site]
+- TestPlanEmitsCheckableInvariants (internal/cli/pivot_evidence_test.go:429, def :428)
+- TestInvariantsNeverPinFilesTheAgentIsToldNotToEdit (internal/cli/pivot_evidence_test.go:480, def :476)
+- TestPivotClassifiesTestFilesWithoutExclusion (internal/cli/pivot_test.go:75, def :74)
+- TestPivotExcludeTestsDropsTestsAndTheirPropagation (internal/cli/pivot_test.go:98, def :97)
+- Run (internal/cli/root.go:105, def :43) [via runPivot]
+Callees (17; what it depends on):
+- fmt.Sprintf
+- sort.Slice
+- sort.Strings
+- strings.Join
+- isConventionalTestPath (internal/cli/neighbors.go:579)
+- buildFileDependents (internal/cli/pivot.go:659)
+- pivotAtRiskWhy (internal/cli/pivot.go:685)
+- prohibitedMatch (internal/cli/pivot.go:698)
+- prohibitedTargets (internal/cli/pivot.go:735)
+- fileRecordPath (internal/cli/pivot.go:751)
+- firstEvidenceLine (internal/cli/pivot.go:760)
+- semanticLanguages (internal/cli/pivot.go:767)
+- sortPivotFiles (internal/cli/pivot.go:779)
+- classifyEvidenceTier (internal/cli/pivot_evidence.go:92)
+- weakestEvidenceTier (internal/cli/pivot_evidence.go:130)
+- ... +2 more (use --format json for the full list)
+Type consumers (0 in, 6 out; USES_TYPE/PARAM_TYPE/RETURNS_TYPE):
+- -> pivotFlags (internal/cli/pivot.go:62) [PARAM_TYPE]
+- -> pivotFlags (internal/cli/pivot.go:62) [USES_TYPE]
+- -> pivotResponse (internal/cli/pivot.go:151) [RETURNS_TYPE]
+- -> pivotResponse (internal/cli/pivot.go:151) [USES_TYPE]
+- -> ProviderSnapshot (internal/sem/provider.go:417) [PARAM_TYPE]
+- -> ProviderSnapshot (internal/sem/provider.go:417) [USES_TYPE]
+Data flows (1 in, 5 out):
+- -> buildFileDependents (internal/cli/pivot.go:659)
+- -> prohibitedMatch (internal/cli/pivot.go:698)
+- <- fileRecordPath (internal/cli/pivot.go:751)
+- -> semanticLanguages (internal/cli/pivot.go:767)
+- -> incompleteAnalysisFiles (internal/cli/pivot_evidence.go:145)
+- -> classifyPivotRole (internal/cli/pivot_roles.go:62)
+Co-change coupling (7; files that historically change with internal/cli/pivot.go):
+- BUILDATHON.md [files changed together in 3 recent commits]
+- docs/demo/curveball/PLAN.md [files changed together in 2 recent commits]
+- internal/cli/help.go [files changed together in 3 recent commits]
+- internal/cli/pivot_evidence_test.go [files changed together in 2 recent commits]
+- internal/cli/pivot_plan.go [files changed together in 2 recent commits]
+- internal/cli/pivot_roles.go [files changed together in 3 recent commits]
+- internal/cli/pivot_test.go [files changed together in 2 recent commits]
+Same-container siblings (0):
+- none

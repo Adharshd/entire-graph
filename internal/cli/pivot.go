@@ -70,6 +70,13 @@ type pivotFlags struct {
 	DisableCache bool
 	Depth        int
 	ExcludeTests bool
+	// From scopes WHO the rule applies to. A constraint is "X may no longer reach
+	// Y": --dependency is Y, and this is X. Empty means every file in the
+	// repository, which is the right default for a vendor removal and the wrong
+	// one for an architecture boundary -- "the API layer may not touch storage"
+	// is a rule about the API layer, and reporting every other violation in the
+	// repository alongside it buries the answer.
+	From []string
 	// RepoRoot is set by runPivot after the repo resolves. It exists only so the
 	// GENERATED role can be decided by the file's own header, which the snapshot
 	// does not carry. Left empty, classification does no disk I/O at all, which is
@@ -231,6 +238,19 @@ func parsePivotFlags(args []string) (pivotFlags, error) {
 			for _, part := range strings.Split(value, ",") {
 				if trimmed := strings.TrimSpace(part); trimmed != "" {
 					flags.Dependency = append(flags.Dependency, trimmed)
+				}
+			}
+			i = next
+		case "--from":
+			value, next, err := pivotFlagValue(args, i, "--from")
+			if err != nil {
+				return pivotFlags{}, err
+			}
+			// Repeatable and comma-separated, like --dependency, so a boundary
+			// covering two packages does not need two runs.
+			for _, part := range strings.Split(value, ",") {
+				if trimmed := strings.TrimSpace(part); trimmed != "" {
+					flags.From = append(flags.From, trimmed)
 				}
 			}
 			i = next
@@ -464,6 +484,17 @@ func buildPivotResponse(snapshot sem.ProviderSnapshot, flags pivotFlags) pivotRe
 		if filePath == "" || !classified(filePath) {
 			continue
 		}
+		// --from scopes the rule's subject. "The API layer may not touch storage"
+		// is a statement about the API layer; a file elsewhere that reaches the
+		// same package is not breaking THIS rule, and reporting it here would
+		// answer a question nobody asked.
+		//
+		// Propagation is deliberately NOT scoped the same way. An at-risk file is
+		// one standing on something that has to change, and it stands there
+		// whatever directory it lives in.
+		if !withinPivotScope(filePath, flags.From) {
+			continue
+		}
 		entry := ensure(filePath)
 		entry.Verdict = verdictInvalidated
 		entry.Distance = 0
@@ -695,6 +726,30 @@ func pivotAtRiskWhy(depth int, relation, target, root string) string {
 // none of them. Matching is on the import path an author would actually write:
 // exact, or a path prefix, so "net/http" also catches "net/http/httptest" while
 // "net/httpx" is left alone.
+// withinPivotScope reports whether a file is inside the rule's subject. An empty
+// scope means the whole repository, which is what a vendor removal wants: nothing
+// anywhere may use the dropped library.
+//
+// Matching is on path segments rather than raw prefixes, so `--from internal/cli`
+// covers internal/cli/pivot.go without also catching internal/climate.go. That
+// distinction is the same one prohibitedMatch had to make, and getting it wrong in
+// either place produces a confident answer about the wrong files.
+func withinPivotScope(filePath string, scope []string) bool {
+	if len(scope) == 0 {
+		return true
+	}
+	for _, prefix := range scope {
+		prefix = strings.TrimSuffix(prefix, "/")
+		if prefix == "" {
+			continue
+		}
+		if filePath == prefix || strings.HasPrefix(filePath, prefix+"/") {
+			return true
+		}
+	}
+	return false
+}
+
 func prohibitedMatch(toID string, prohibited []string) string {
 	target := toID
 	if trimmed, ok := strings.CutPrefix(target, "external:import:"); ok {

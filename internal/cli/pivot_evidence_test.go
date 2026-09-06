@@ -509,3 +509,75 @@ func TestDeletionBudgetScalesWithTheWork(t *testing.T) {
 		})
 	}
 }
+
+// TestFromScopesTheRulesSubject covers the half of a constraint the command could
+// not previously express. A constraint is "X may no longer reach Y": --dependency
+// is Y, and --from is X. Without it every rule was repo-wide, which is right for a
+// vendor removal and wrong for an architecture boundary -- "the API layer may not
+// touch storage" is a statement about the API layer, and answering it with every
+// violation in the repository buries the answer among files the rule does not
+// govern.
+func TestFromScopesTheRulesSubject(t *testing.T) {
+	// handler.go and handler_test.go both import net/http. Scoping to handler.go's
+	// directory is not interesting in this fixture (everything is at the root), so
+	// scope by file path, which is the same predicate.
+	scoped := buildPivotResponse(pivotTestSnapshot(), pivotFlags{
+		Dependency: []string{"net/http"},
+		Depth:      pivotMaxDepth,
+		From:       []string{"handler.go"},
+	})
+	if got := pivotVerdict(scoped, "handler.go"); got != verdictInvalidated {
+		t.Errorf("handler.go is inside the scope: verdict = %q, want %q", got, verdictInvalidated)
+	}
+	// handler_test.go breaks the same rule, but the rule was not addressed to it.
+	if got := pivotVerdict(scoped, "handler_test.go"); got == verdictInvalidated {
+		t.Error("handler_test.go is outside --from and must not be reported as violating this rule")
+	}
+
+	// Propagation is deliberately NOT scoped. router.go stands on handler.go, which
+	// has to change, and it stands there whatever directory it lives in.
+	if got := pivotVerdict(scoped, "router.go"); got != verdictAtRisk {
+		t.Errorf("router.go: verdict = %q, want %q -- a dependent is at risk wherever it lives", got, verdictAtRisk)
+	}
+
+	// Omitting --from must behave exactly as before.
+	unscoped := buildPivotResponse(pivotTestSnapshot(), pivotFlags{
+		Dependency: []string{"net/http"},
+		Depth:      pivotMaxDepth,
+	})
+	if got := pivotVerdict(unscoped, "handler_test.go"); got != verdictInvalidated {
+		t.Errorf("without --from, handler_test.go = %q, want %q", got, verdictInvalidated)
+	}
+	if unscoped.Counts.Invalidated <= scoped.Counts.Invalidated {
+		t.Errorf("scoping must narrow the result: unscoped %d, scoped %d",
+			unscoped.Counts.Invalidated, scoped.Counts.Invalidated)
+	}
+}
+
+// TestWithinPivotScopeMatchesPathSegments pins the boundary rule directly. A raw
+// prefix test would make `--from internal/cli` silently cover internal/climate.go,
+// which is the same mistake prohibitedMatch had to avoid on the other end of the
+// relation.
+func TestWithinPivotScopeMatchesPathSegments(t *testing.T) {
+	for _, testCase := range []struct {
+		name  string
+		path  string
+		scope []string
+		want  bool
+	}{
+		{"empty scope is the whole repository", "anything/at/all.go", nil, true},
+		{"file inside the scope", "internal/cli/pivot.go", []string{"internal/cli"}, true},
+		{"the scope directory itself", "internal/cli", []string{"internal/cli"}, true},
+		{"trailing slash is tolerated", "internal/cli/pivot.go", []string{"internal/cli/"}, true},
+		{"a sibling directory does not match", "internal/sem/provider.go", []string{"internal/cli"}, false},
+		{"a prefix that is not a path segment does not match", "internal/climate.go", []string{"internal/cli"}, false},
+		{"any one of several scopes is enough", "internal/sem/provider.go", []string{"internal/cli", "internal/sem"}, true},
+		{"outside every scope", "cmd/main.go", []string{"internal/cli", "internal/sem"}, false},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			if got := withinPivotScope(testCase.path, testCase.scope); got != testCase.want {
+				t.Errorf("withinPivotScope(%q, %v) = %v, want %v", testCase.path, testCase.scope, got, testCase.want)
+			}
+		})
+	}
+}

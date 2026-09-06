@@ -42,6 +42,18 @@ and grep has none.
 ./entire-graph pivot --repo . --dependency <package> --format json         # everything, archived
 ```
 
+A constraint has two halves — **"X may no longer reach Y"**. `--dependency` is Y, `--from` is X:
+
+```sh
+./entire-graph pivot --repo . --dependency <package>                  # nothing anywhere may reach it
+./entire-graph pivot --repo . --from <path> --dependency <package>    # only this layer is governed
+```
+
+Use `--from` whenever the constraint names a layer, module, or directory — "the API layer may not
+touch storage" is a rule about the API layer, and running it repo-wide returns every other
+dependency on storage as if it were a violation. Omit it for a vendor removal, where the rule really
+does apply everywhere.
+
 `--dependency` takes a **package name, not a sentence**. Turning "we can't send customer
 data through Library X" into `libraryx` is your job, and if the phrasing maps to more than
 one package in this repo, ask which one rather than picking. An impact claim built on a

@@ -143,9 +143,37 @@ One new command in this fork, in three files, registered in the existing dispatc
 - `internal/cli/pivot_plan.go` — the `pivot-plan/v1` work order.
 
 ```
-entire graph pivot --dependency <prohibited package> [--checkpoint <id>] [--depth N]
-                   [--exclude-tests] [--format text|json|plan]
+entire graph pivot --dependency <what may no longer be reached> [--from <who the rule governs>]
+                   [--checkpoint <id>] [--depth N] [--exclude-tests] [--format text|json|plan]
 ```
+
+A constraint is a sentence of the shape **"X may no longer reach Y"**. `--dependency` is Y and
+`--from` is X, and the command needs both halves to state a real rule:
+
+```sh
+# vendor removal -- X is everything, so --from is omitted
+entire graph pivot --repo . --dependency github.com/stripe/stripe-go
+
+# architecture boundary -- X is scoped
+entire graph pivot --repo . --from internal/cli --dependency internal/sem
+```
+
+The second is not a smaller version of the first, it is a different question. Repo-wide,
+`--dependency internal/sem` reports 139 invalidated files in this repository; scoped to
+`internal/cli` it reports 23. The other 116 are real dependencies on `internal/sem` and entirely
+legitimate — they are simply not what "the CLI layer may not reach the graph layer" is about, and
+listing them buries the files the rule actually governs.
+
+`--from` scopes who can violate the rule. Propagation is deliberately not scoped the same way: an
+at-risk file is one standing on something that has to change, and it stands there whatever
+directory it lives in.
+
+**What this shape does and does not cover.** It answers any constraint expressible over the
+dependency graph — a dropped vendor, a banned library, a module boundary, a layering rule. It does
+not answer behavioural constraints ("no background workers", "no PII in logs"), which are about how
+code behaves rather than what it reaches, or migrations ("move from REST to gRPC"), where the
+question is what to build rather than what breaks. Those need a different classifier, not a
+different flag.
 
 Pipeline:
 
