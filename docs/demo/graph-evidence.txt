@@ -1,0 +1,1323 @@
+### 1. SEARCH ###
+1. internal/cli/pivot.go:596-631 [contains ranks 1,3 - contiguous, nothing elided] score=31.7512 symbol=prohibitedMatch kind=function focus=596 signals=body,symbol-name,graph:callers,complete-symbol,contiguous-span
+func prohibitedMatch(toID string, prohibited []string) string {
+	target := toID
+	if trimmed, ok := strings.CutPrefix(target, "external:import:"); ok {
+		target = trimmed
+	} else if trimmed, ok := strings.CutPrefix(target, "external:"); ok {
+		target = trimmed
+	}
+	for _, candidate := range prohibited {
+		if target == candidate {
+			return candidate
+		}
+		if strings.HasPrefix(target, candidate+"/") {
+			return candidate
+		}
+		// A symbol id carries its package in the middle, so a call into the
+		// prohibited package still resolves when the id is not a bare import.
+		if strings.Contains(target, ":"+candidate+":") || strings.Contains(target, "/"+candidate+":") {
+			return candidate
+		}
+	}
+	return ""
+}
+
+func prohibitedTargets(evidence []pivotEdge) []string {
+	seen := make(map[string]bool, len(evidence))
+	targets := make([]string, 0, len(evidence))
+	for _, edge := range evidence {
+		if edge.SourceFile != "" || seen[edge.Target] {
+			continue
+		}
+		seen[edge.Target] = true
+		targets = append(targets, edge.Target)
+	}
+	sort.Strings(targets)
+	return targets
+}
+
+2. internal/sem/search_file_class.go:281-322 score=28.4412 symbol=classifySearchFile kind=function focus=281 signals=body,symbol-name,graph:callers,complete-symbol
+func classifySearchFile(filePath string) searchFileClass {
+	lower := strings.ToLower(filepath.ToSlash(filePath))
+	segments := searchPathSegments(lower)
+	base := filepath.Base(lower)
+	dirs := segments
+	if len(dirs) > 0 {
+		dirs = dirs[:len(dirs)-1]
+	}
+	for _, segment := range dirs {
+		if searchVendoredDirSegments[segment] {
+			return searchFileClassVendored
+		}
+	}
+	if searchGeneratedBases[base] || searchGeneratedArtifactPath("/"+lower) {
+		return searchFileClassGenerated
+	}
+	if searchDocumentationClassPath(lower, base, dirs) {
+		return searchFileClassDoc
+	}
+	if searchFixtureClassPath(lower, dirs) {
+		return searchFileClassFixture
+	}
+	if searchDeclarationClassPath(lower) {
+		return searchFileClassDeclaration
+	}
+	for _, ext := range searchDataExtensions {
+		if strings.HasSuffix(lower, ext) {
+			return searchFileClassData
+		}
+	}
+	for _, segment := range dirs {
+		if searchHarnessDirSegments[segment] {
+			return searchFileClassHarness
+		}
+	}
+	for _, segment := range dirs {
+		if searchExampleDirSegments[segment] {
+			return searchFileClassExample
+		}
+	}
+	return searchFileClassSource
+}
+
+3. internal/sem/search_file_class.go:369-421 score=28.4312 symbol=searchFileClassPrior kind=function focus=369 signals=graph:calls,graph:incoming,graph:callers,complete-symbol
+func searchFileClassPrior(q searchQuery, filePath string) float64 {
+	switch classifySearchFile(filePath) {
+	case searchFileClassDoc:
+		if searchQuerySupplied(q, searchDocIntentTerms...) {
+			return 1
+		}
+		return searchNonSourceClassPrior
+	case searchFileClassVendored:
+		if searchQuerySupplied(q, searchVendoredIntentTerms...) {
+			return 1
+		}
+		return searchNonSourceClassPrior
+	case searchFileClassGenerated:
+		if searchQuerySupplied(q, searchGeneratedIntentTerms...) {
+			return 1
+		}
+		return searchNonSourceClassPrior
+	case searchFileClassData:
+		if searchQuerySupplied(q, searchDataIntentTerms...) {
+			return 1
+		}
+		return searchNonSourceClassPrior
+	case searchFileClassExample:
+		if searchQuerySupplied(q, searchExampleIntentTerms...) {
+			return 1
+		}
+		return searchSecondaryClassPrior
+	case searchFileClassDeclaration:
+		if searchQuerySupplied(q, searchDeclarationIntentTerms...) {
+			return 1
+		}
+		// Same strength as a fixture, and for the same reason: a fix often updates the declared
+		// surface alongside the implementation, so the mirror must rank below the code without
+		// leaving the ranking.
+		return searchSecondaryClassPrior
+	case searchFileClassHarness:
+		if searchQuerySupplied(q, searchHarnessIntentTerms...) {
+			return 1
+		}
+		// Same strength as a fixture: a fuzz target or benchmark is real, compiled code that a fix may
+		// well touch, so it is demoted below the implementation rather than pushed out of the ranking.
+		return searchSecondaryClassPrior
+	case searchFileClassFixture:
+		if searchQuerySupplied(q, searchFixtureIntentTerms...) {
+			return 1
+		}
+		// Milder than the non-source prior: a fix legitimately updates a fixture
+		// alongside the code, so these must be demoted below the implementation
+		// without being pushed out of the ranking altogether.
+		return searchSecondaryClassPrior
+	}
+	return 1
+}
+
+4. internal/sem/search_section.go:64 NonProgramTextPath  [body: def NonProgramTextPath]
+COVERING TEST (what hit 1 is supposed to do; not a fix site):
+5. internal/sem/search_file_class_test.go:279-280 symbol=TestClassifySearchFileHarnessTrees kind=function focus=279 signals=related:covering-test
+			t.Errorf("classifySearchFile(%q) = harness, want implementation", path)
+		}
+
+  ALSO COVERING classifySearchFile (4 tests cover it; all must still pass): TestClassifySearchFile, TestDeclarationMirrorsAreDemotedBelowImplementation, TestClassifySearchFile_Fixtures
+VERIFY: go test ./internal/sem -run '^TestClassifySearchFileHarnessTrees$'
+  targets internal/sem/search_file_class_test.go (from go.mod module root + covering test name) tier=narrow
+  run it ONCE after editing; if it fails, fix the code and re-run THIS command.
+  do not build an alternative test harness, hand-assemble a classpath, or re-verify by
+  reverting and reapplying the edit.
+SAME-CONCEPT LITERAL "prohibitedTargets" — 2 in 1 file repo-wide:
+  internal/cli/pivot.go:431 buildPivotResponse CONSUMER
+
+### 2. IMPACT ###
+Index: cache-miss (19183ms) | Query: 5ms | Total: 19189ms
+Completeness: degraded for Go (0 of 421 Go files failed to parse; 7 total diagnostics in this snapshot)
+- warning W_DATA_FLOW_EVIDENCE_UNMERGED
+- plus 5 diagnostics in other languages (C++ 5), which cannot affect this answer
+Impact: buildPivotResponse (internal/cli/pivot.go:336) def=336 span=336-544 [function]
+Blast radius: 4 callers (3 direct, 1 transitive), 14 callees, 6 type consumers, 5 data flows, 2 co-change files, 0 siblings.
+Callers (3 direct, 1 transitive; who breaks if behavior changes):
+- runPivot (internal/cli/pivot.go:299, def :269)
+- TestPivotClassifiesTestFilesWithoutExclusion (internal/cli/pivot_test.go:72, def :71)
+- TestPivotExcludeTestsDropsTestsAndTheirPropagation (internal/cli/pivot_test.go:95, def :94)
+- Run (internal/cli/root.go:105, def :43) [via runPivot]
+Callees (14; what it depends on):
+- fmt.Sprintf
+- sort.Slice
+- sort.Strings
+- strings.Join
+- isConventionalTestPath (internal/cli/neighbors.go:579)
+- buildFileDependents (internal/cli/pivot.go:559)
+- pivotAtRiskWhy (internal/cli/pivot.go:583)
+- prohibitedMatch (internal/cli/pivot.go:596)
+- prohibitedTargets (internal/cli/pivot.go:619)
+- fileRecordPath (internal/cli/pivot.go:635)
+- firstEvidenceLine (internal/cli/pivot.go:644)
+- semanticLanguages (internal/cli/pivot.go:651)
+- sortPivotFiles (internal/cli/pivot.go:663)
+- classifyPivotRole (internal/cli/pivot_roles.go:62)
+Type consumers (0 in, 6 out; USES_TYPE/PARAM_TYPE/RETURNS_TYPE):
+- -> pivotFlags (internal/cli/pivot.go:57) [PARAM_TYPE]
+- -> pivotFlags (internal/cli/pivot.go:57) [USES_TYPE]
+- -> pivotResponse (internal/cli/pivot.go:120) [RETURNS_TYPE]
+- -> pivotResponse (internal/cli/pivot.go:120) [USES_TYPE]
+- -> ProviderSnapshot (internal/sem/provider.go:417) [PARAM_TYPE]
+- -> ProviderSnapshot (internal/sem/provider.go:417) [USES_TYPE]
+Data flows (1 in, 4 out):
+- -> buildFileDependents (internal/cli/pivot.go:559)
+- -> prohibitedMatch (internal/cli/pivot.go:596)
+- <- fileRecordPath (internal/cli/pivot.go:635)
+- -> semanticLanguages (internal/cli/pivot.go:651)
+- -> classifyPivotRole (internal/cli/pivot_roles.go:62)
+Co-change coupling (2; files that historically change with internal/cli/pivot.go):
+- BUILDATHON.md [files changed together in 2 recent commits]
+- internal/cli/help.go [files changed together in 3 recent commits]
+Same-container siblings (0):
+- none
+
+### 3. SEMANTIC DIFF ###
+{
+  "base": "4a0a219",
+  "head": "HEAD",
+  "files": [
+    {
+      "path": "BUILDATHON.md",
+      "status": "M",
+      "language": "Markdown",
+      "changes": [
+        {
+          "type": "removed",
+          "kind": "section",
+          "name": "Two-design-decisions-worth-defending",
+          "old_signature": "markdown heading Two design decisions worth defending",
+          "before_start_line": 79,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "Three-design-decisions-worth-defending",
+          "new_signature": "markdown heading Three design decisions worth defending",
+          "after_start_line": 90,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "code_fence",
+          "name": "code_fence_3_text",
+          "new_signature": "markdown code fence text",
+          "after_start_line": 145,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "What-the-grouped-report-looks-like",
+          "new_signature": "markdown heading What the grouped report looks like",
+          "after_start_line": 166,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "code_fence",
+          "name": "code_fence_5_text",
+          "new_signature": "markdown code fence text",
+          "after_start_line": 171,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "code_fence",
+          "name": "code_fence_6_text",
+          "new_signature": "markdown code fence text",
+          "after_start_line": 176,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "code_fence",
+          "name": "code_fence_7_text",
+          "new_signature": "markdown code fence text",
+          "after_start_line": 182,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "code_fence",
+          "name": "code_fence_8_text",
+          "new_signature": "markdown code fence text",
+          "after_start_line": 189,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "The-work-order:---format-plan",
+          "new_signature": "markdown heading The work order: `--format plan`",
+          "after_start_line": 194,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "The-two-commits-with-no-checkpoint-are-the-honest-part",
+          "new_signature": "markdown heading The two commits with no checkpoint are the honest part",
+          "after_start_line": 258,
+          "dependents_count": 0
+        },
+        {
+          "type": "renamed",
+          "kind": "code_fence",
+          "name": "code_fence_9_sh",
+          "old_name": "code_fence_3_sh",
+          "new_name": "code_fence_9_sh",
+          "old_signature": "markdown code fence sh",
+          "new_signature": "markdown code fence sh",
+          "before_start_line": 134,
+          "after_start_line": 274,
+          "dependents_count": 0,
+          "similarity": 1,
+          "reconciliation": "RENAMED"
+        },
+        {
+          "type": "added",
+          "kind": "section",
+          "name": "the-agent-work-order",
+          "new_signature": "markdown heading the agent work order",
+          "after_start_line": 282,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "code_fence",
+          "name": "code_fence_10_text",
+          "new_signature": "markdown code fence text",
+          "after_start_line": 284,
+          "dependents_count": 0
+        }
+      ]
+    },
+    {
+      "path": "internal/cli/help.go",
+      "status": "M",
+      "language": "Go",
+      "changes": [
+        {
+          "type": "body_changed",
+          "kind": "module",
+          "name": "internal/cli/help.go",
+          "before_start_line": 1,
+          "after_start_line": 1,
+          "dependents_count": 0
+        }
+      ]
+    },
+    {
+      "path": "internal/cli/pivot.go",
+      "status": "M",
+      "language": "Go",
+      "changes": [
+        {
+          "type": "signature_changed",
+          "kind": "type",
+          "name": "pivotFlags",
+          "old_signature": "pivotFlags struct { Repo string Dependency []string CheckpointID string Format string Worktree bool Profile string CacheDir string DisableCache bool Depth int ExcludeTests bool }",
+          "new_signature": "pivotFlags struct { Repo string Dependency []string CheckpointID string Format string Worktree bool Profile string CacheDir string DisableCache bool Depth int ExcludeTests bool // RepoRoot is set by runPivot after the repo resolves. It exists only so the // GENERATED role can be decided by the file's own header, which the snapshot // does not carry. Left empty, classification does no disk I/O at all, which is // what keeps buildPivotResponse drivable from a test with no repository. RepoRoot string }",
+          "before_start_line": 59,
+          "after_start_line": 57,
+          "dependents_count": 15
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotFlags.RepoRoot",
+          "new_signature": "RepoRoot string",
+          "after_start_line": 72,
+          "dependents_count": 111
+        },
+        {
+          "type": "signature_changed",
+          "kind": "type",
+          "name": "pivotFile",
+          "old_signature": "pivotFile struct { Path string `json:\"path\"` Verdict string `json:\"verdict\"` // Distance is hops from the nearest invalidated file: 0 for an invalidated // file itself, 1 for a direct dependent, and so on up to the depth cap. Distance int `json:\"distance\"` Language string `json:\"language,omitempty\"` // Why is a one-line reading of the evidence, in the report's own voice. Why string `json:\"why\"` // Evidence is what Why is derived from. Never empty for a non-Safe verdict. Evidence []pivotEdge `json:\"evidence,omitempty\"` // InCheckpoint marks a file the supplied checkpoint touched, so the reader can // see which of the affected files are ones this session actually wrote. InCheckpoint bool `json:\"in_checkpoint,omitempty\"` }",
+          "new_signature": "pivotFile struct { Path string `json:\"path\"` Verdict string `json:\"verdict\"` // Distance is hops from the nearest invalidated file: 0 for an invalidated // file itself, 1 for a direct dependent, and so on up to the depth cap. Distance int `json:\"distance\"` Language string `json:\"language,omitempty\"` // Role is what kind of file this is (production, test, fixture, generated, // vendored). It changes how a verdict should be read, not the verdict itself: // a hundred at-risk test files in one package are one command to run, while // one at-risk production file is a change someone has to make by hand. Role string `json:\"role\"` // RootInvalidated is the invalidated file this one traces back to. At two hops // the evidence edge names the intermediate file, which is the wrong thing to // order work by: what a reader needs is the root that has to be fixed first. RootInvalidated string `json:\"root_invalidated,omitempty\"` // Why is a one-line reading of the evidence, in the report's own voice. Why string `json:\"why\"` // Evidence is what Why is derived from. Never empty for a non-Safe verdict. Evidence []pivotEdge `json:\"evidence,omitempty\"` // InCheckpoint marks a file the supplied checkpoint touched, so the reader can // see which of the affected files are ones this session actually wrote. InCheckpoint bool `json:\"in_checkpoint,omitempty\"` }",
+          "before_start_line": 85,
+          "after_start_line": 88,
+          "dependents_count": 21
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotFile.Role",
+          "new_signature": "Role string",
+          "after_start_line": 99,
+          "dependents_count": 32
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotFile.RootInvalidated",
+          "new_signature": "RootInvalidated string",
+          "after_start_line": 103,
+          "dependents_count": 7
+        },
+        {
+          "type": "signature_changed",
+          "kind": "type",
+          "name": "pivotResponse",
+          "old_signature": "pivotResponse struct { SchemaVersion string `json:\"schema_version\"` Provider string `json:\"provider\"` Version string `json:\"version\"` Repo string `json:\"repo\"` Commit string `json:\"commit,omitempty\"` Prohibited []string `json:\"prohibited\"` MaxDepth int `json:\"max_depth\"` ExcludeTests bool `json:\"exclude_tests,omitempty\"` // Checkpoint, when supplied, is the intent half of the evidence. Checkpoint string `json:\"checkpoint,omitempty\"` CheckpointBase string `json:\"checkpoint_base,omitempty\"` CheckpointHead string `json:\"checkpoint_head,omitempty\"` CheckpointFiles []pivotCheckpointFile `json:\"checkpoint_files,omitempty\"` Invalidated []pivotFile `json:\"invalidated\"` AtRisk []pivotFile `json:\"at_risk\"` Safe []pivotFile `json:\"safe\"` Counts pivotCounts `json:\"counts\"` // Unreached is the honest half of the answer: files the graph could not // analyze for relationships, so their verdict is unknown rather than Safe. Unreached []string `json:\"unreached,omitempty\"` UnreachedReason string `json:\"unreached_reason,omitempty\"` Warnings []sem.ProviderWarning `json:\"warnings,omitempty\"` PartialFailures []sem.PartialFailure `json:\"partial_failures\"` Stats sem.ProviderStats `json:\"stats\"` Completeness sem.CompletenessReport `json:\"completeness\"` IndexCacheHit bool `json:\"index_cache_hit\"` IndexLatencyMS int64 `json:\"index_latency_ms\"` QueryLatencyMS int64 `json:\"query_latency_ms\"` TotalLatencyMS int64 `json:\"total_latency_ms\"` }",
+          "new_signature": "pivotResponse struct { SchemaVersion string `json:\"schema_version\"` Provider string `json:\"provider\"` Version string `json:\"version\"` Repo string `json:\"repo\"` Commit string `json:\"commit,omitempty\"` Prohibited []string `json:\"prohibited\"` MaxDepth int `json:\"max_depth\"` ExcludeTests bool `json:\"exclude_tests,omitempty\"` // Checkpoint, when supplied, is the intent half of the evidence. Checkpoint string `json:\"checkpoint,omitempty\"` CheckpointBase string `json:\"checkpoint_base,omitempty\"` CheckpointHead string `json:\"checkpoint_head,omitempty\"` CheckpointFiles []pivotCheckpointFile `json:\"checkpoint_files,omitempty\"` Invalidated []pivotFile `json:\"invalidated\"` AtRisk []pivotFile `json:\"at_risk\"` Safe []pivotFile `json:\"safe\"` Counts pivotCounts `json:\"counts\"` // RoleCounts is the whole tree broken down by file role, so a consumer can see // the shape of the repository the verdicts were drawn from. RoleCounts map[string]int `json:\"role_counts,omitempty\"` // Unreached is the honest half of the answer: files the graph could not // analyze for relationships, so their verdict is unknown rather than Safe. Unreached []string `json:\"unreached,omitempty\"` UnreachedReason string `json:\"unreached_reason,omitempty\"` Warnings []sem.ProviderWarning `json:\"warnings,omitempty\"` PartialFailures []sem.PartialFailure `json:\"partial_failures\"` Stats sem.ProviderStats `json:\"stats\"` Completeness sem.CompletenessReport `json:\"completeness\"` IndexCacheHit bool `json:\"index_cache_hit\"` IndexLatencyMS int64 `json:\"index_latency_ms\"` QueryLatencyMS int64 `json:\"query_latency_ms\"` TotalLatencyMS int64 `json:\"total_latency_ms\"` }",
+          "before_start_line": 108,
+          "after_start_line": 120,
+          "dependents_count": 11
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotResponse.RoleCounts",
+          "new_signature": "RoleCounts map[string]int",
+          "after_start_line": 143,
+          "dependents_count": 6
+        },
+        {
+          "type": "body_changed",
+          "kind": "function",
+          "name": "parsePivotFlags",
+          "before_start_line": 157,
+          "after_start_line": 172,
+          "dependents_count": 3
+        },
+        {
+          "type": "body_changed",
+          "kind": "function",
+          "name": "runPivot",
+          "before_start_line": 254,
+          "after_start_line": 269,
+          "dependents_count": 2
+        },
+        {
+          "type": "body_changed",
+          "kind": "function",
+          "name": "buildPivotResponse",
+          "before_start_line": 312,
+          "after_start_line": 336,
+          "dependents_count": 4
+        },
+        {
+          "type": "signature_changed",
+          "kind": "function",
+          "name": "pivotAtRiskWhy",
+          "old_signature": "func pivotAtRiskWhy(depth int, relation, target string) string",
+          "new_signature": "func pivotAtRiskWhy(depth int, relation, target, root string) string",
+          "before_start_line": 541,
+          "after_start_line": 583,
+          "dependents_count": 1
+        }
+      ]
+    },
+    {
+      "path": "internal/cli/pivot_plan.go",
+      "status": "A",
+      "language": "Go",
+      "changes": [
+        {
+          "type": "added",
+          "kind": "type",
+          "name": "pivotPlan",
+          "new_signature": "pivotPlan struct { SchemaVersion string `json:\"schema_version\"` // PlanID is derived from the inputs that determine the plan, so the same repo // state and the same constraint produce the same id. A random id would make // two runs look like two plans. PlanID string `json:\"plan_id\"` GraphTool pivotPlanTool `json:\"graph_tool\"` Repo string `json:\"repo\"` HeadCommit string `json:\"head_commit\"` Constraint pivotPlanConstraint `json:\"constraint\"` Counts pivotPlanCounts `json:\"counts\"` // KnownBlindSpots is stated up front rather than footnoted. An agent reading // this plan is deciding how much to trust it, and it should decide that before // it reads the work items, not after. KnownBlindSpots []pivotBlindSpot `json:\"known_blind_spots\"` WorkItems []pivotWorkItem `json:\"work_items\"` Validation pivotPlanValidation `json:\"validation\"` ExecutionContract pivotExecutionContract `json:\"execution_contract\"` }",
+          "after_start_line": 48,
+          "dependents_count": 1
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlan.SchemaVersion",
+          "new_signature": "SchemaVersion string",
+          "after_start_line": 49,
+          "dependents_count": 68
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlan.PlanID",
+          "new_signature": "PlanID string",
+          "after_start_line": 53,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlan.GraphTool",
+          "new_signature": "GraphTool pivotPlanTool",
+          "after_start_line": 54,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlan.Repo",
+          "new_signature": "Repo string",
+          "after_start_line": 55,
+          "dependents_count": 52
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlan.HeadCommit",
+          "new_signature": "HeadCommit string",
+          "after_start_line": 56,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlan.Constraint",
+          "new_signature": "Constraint pivotPlanConstraint",
+          "after_start_line": 57,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlan.Counts",
+          "new_signature": "Counts pivotPlanCounts",
+          "after_start_line": 58,
+          "dependents_count": 19
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlan.KnownBlindSpots",
+          "new_signature": "KnownBlindSpots []pivotBlindSpot",
+          "after_start_line": 62,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlan.WorkItems",
+          "new_signature": "WorkItems []pivotWorkItem",
+          "after_start_line": 63,
+          "dependents_count": 4
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlan.Validation",
+          "new_signature": "Validation pivotPlanValidation",
+          "after_start_line": 64,
+          "dependents_count": 4
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlan.ExecutionContract",
+          "new_signature": "ExecutionContract pivotExecutionContract",
+          "after_start_line": 65,
+          "dependents_count": 4
+        },
+        {
+          "type": "added",
+          "kind": "type",
+          "name": "pivotPlanTool",
+          "new_signature": "pivotPlanTool struct { Name string `json:\"name\"` Version string `json:\"version\"` Provider string `json:\"provider\"` SchemaVersion string `json:\"graph_schema_version\"` // Analysis records how the graph was produced, because a plan built from a // shallow profile or a dirty worktree deserves less trust than one built from // a full parse of a committed tree. Depth int `json:\"depth\"` ExcludeTests bool `json:\"exclude_tests\"` IndexCacheHit bool `json:\"index_cache_hit\"` }",
+          "after_start_line": 68,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanTool.Name",
+          "new_signature": "Name string",
+          "after_start_line": 69,
+          "dependents_count": 767
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanTool.Version",
+          "new_signature": "Version string",
+          "after_start_line": 70,
+          "dependents_count": 105
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanTool.Provider",
+          "new_signature": "Provider string",
+          "after_start_line": 71,
+          "dependents_count": 37
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanTool.SchemaVersion",
+          "new_signature": "SchemaVersion string",
+          "after_start_line": 72,
+          "dependents_count": 68
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanTool.Depth",
+          "new_signature": "Depth int",
+          "after_start_line": 76,
+          "dependents_count": 42
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanTool.ExcludeTests",
+          "new_signature": "ExcludeTests bool",
+          "after_start_line": 77,
+          "dependents_count": 20
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanTool.IndexCacheHit",
+          "new_signature": "IndexCacheHit bool",
+          "after_start_line": 78,
+          "dependents_count": 36
+        },
+        {
+          "type": "added",
+          "kind": "type",
+          "name": "pivotPlanConstraint",
+          "new_signature": "pivotPlanConstraint struct { // Prohibited is what the caller supplied. The plan deliberately does not carry // the sentence it came from: turning prose into a package name happens outside // this binary, and recording a paraphrase here would imply the tool checked it. Prohibited []string `json:\"prohibited\"` Rule string `json:\"rule\"` Interpreted string `json:\"interpreted_by\"` }",
+          "after_start_line": 81,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanConstraint.Prohibited",
+          "new_signature": "Prohibited []string",
+          "after_start_line": 85,
+          "dependents_count": 10
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanConstraint.Rule",
+          "new_signature": "Rule string",
+          "after_start_line": 86,
+          "dependents_count": 6
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanConstraint.Interpreted",
+          "new_signature": "Interpreted string",
+          "after_start_line": 87,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "type",
+          "name": "pivotPlanCounts",
+          "new_signature": "pivotPlanCounts struct { Invalidated int `json:\"invalidated\"` AtRisk int `json:\"at_risk\"` Safe int `json:\"safe\"` Unreached int `json:\"unreached\"` Total int `json:\"total\"` ExcludedTests int `json:\"excluded_tests\"` P0 int `json:\"p0\"` P1 int `json:\"p1\"` P2 int `json:\"p2\"` ByRole map[string]int `json:\"by_role,omitempty\"` }",
+          "after_start_line": 90,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanCounts.Invalidated",
+          "new_signature": "Invalidated int",
+          "after_start_line": 91,
+          "dependents_count": 12
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanCounts.AtRisk",
+          "new_signature": "AtRisk int",
+          "after_start_line": 92,
+          "dependents_count": 12
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanCounts.Safe",
+          "new_signature": "Safe int",
+          "after_start_line": 93,
+          "dependents_count": 15
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanCounts.Unreached",
+          "new_signature": "Unreached int",
+          "after_start_line": 94,
+          "dependents_count": 8
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanCounts.Total",
+          "new_signature": "Total int",
+          "after_start_line": 95,
+          "dependents_count": 57
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanCounts.ExcludedTests",
+          "new_signature": "ExcludedTests int",
+          "after_start_line": 96,
+          "dependents_count": 7
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanCounts.P0",
+          "new_signature": "P0 int",
+          "after_start_line": 98,
+          "dependents_count": 5
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanCounts.P1",
+          "new_signature": "P1 int",
+          "after_start_line": 99,
+          "dependents_count": 4
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanCounts.P2",
+          "new_signature": "P2 int",
+          "after_start_line": 100,
+          "dependents_count": 6
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanCounts.ByRole",
+          "new_signature": "ByRole map[string]int",
+          "after_start_line": 102,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "type",
+          "name": "pivotBlindSpot",
+          "new_signature": "pivotBlindSpot struct { ID string `json:\"id\"` Statement string `json:\"statement\"` Implication string `json:\"implication\"` }",
+          "after_start_line": 105,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotBlindSpot.ID",
+          "new_signature": "ID string",
+          "after_start_line": 106,
+          "dependents_count": 459
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotBlindSpot.Statement",
+          "new_signature": "Statement string",
+          "after_start_line": 107,
+          "dependents_count": 5
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotBlindSpot.Implication",
+          "new_signature": "Implication string",
+          "after_start_line": 108,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "type",
+          "name": "pivotWorkItem",
+          "new_signature": "pivotWorkItem struct { ID string `json:\"id\"` Priority string `json:\"priority\"` Action string `json:\"action\"` Verdict string `json:\"verdict\"` Role string `json:\"role\"` Path string `json:\"path\"` Package string `json:\"package\"` // Distance is hops from the root invalidated file; 0 for a direct violation and // -1 for a file that no invalidated code reaches. Distance int `json:\"distance\"` RootInvalidated string `json:\"root_invalidated,omitempty\"` Evidence []pivotEdge `json:\"evidence\"` // InCheckpoint marks work in a file the supplied checkpoint's session wrote. InCheckpoint bool `json:\"in_checkpoint,omitempty\"` AgentInstructions []string `json:\"agent_instructions\"` AcceptanceCriteria []string `json:\"acceptance_criteria\"` }",
+          "after_start_line": 111,
+          "dependents_count": 4
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotWorkItem.ID",
+          "new_signature": "ID string",
+          "after_start_line": 112,
+          "dependents_count": 459
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotWorkItem.Priority",
+          "new_signature": "Priority string",
+          "after_start_line": 113,
+          "dependents_count": 5
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotWorkItem.Action",
+          "new_signature": "Action string",
+          "after_start_line": 114,
+          "dependents_count": 13
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotWorkItem.Verdict",
+          "new_signature": "Verdict string",
+          "after_start_line": 115,
+          "dependents_count": 8
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotWorkItem.Role",
+          "new_signature": "Role string",
+          "after_start_line": 116,
+          "dependents_count": 32
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotWorkItem.Path",
+          "new_signature": "Path string",
+          "after_start_line": 117,
+          "dependents_count": 317
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotWorkItem.Package",
+          "new_signature": "Package string",
+          "after_start_line": 118,
+          "dependents_count": 23
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotWorkItem.Distance",
+          "new_signature": "Distance int",
+          "after_start_line": 121,
+          "dependents_count": 13
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotWorkItem.RootInvalidated",
+          "new_signature": "RootInvalidated string",
+          "after_start_line": 122,
+          "dependents_count": 7
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotWorkItem.Evidence",
+          "new_signature": "Evidence []pivotEdge",
+          "after_start_line": 123,
+          "dependents_count": 131
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotWorkItem.InCheckpoint",
+          "new_signature": "InCheckpoint bool",
+          "after_start_line": 125,
+          "dependents_count": 5
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotWorkItem.AgentInstructions",
+          "new_signature": "AgentInstructions []string",
+          "after_start_line": 126,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotWorkItem.AcceptanceCriteria",
+          "new_signature": "AcceptanceCriteria []string",
+          "after_start_line": 127,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "type",
+          "name": "pivotPlanValidation",
+          "new_signature": "pivotPlanValidation struct { // RequiredCommands is the whole point of collapsing test fallout by package: // the per-package commands land here, where an agent can run them. RequiredCommands []string `json:\"required_commands\"` Notes []string `json:\"notes,omitempty\"` }",
+          "after_start_line": 130,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanValidation.RequiredCommands",
+          "new_signature": "RequiredCommands []string",
+          "after_start_line": 133,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPlanValidation.Notes",
+          "new_signature": "Notes []string",
+          "after_start_line": 134,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "type",
+          "name": "pivotExecutionContract",
+          "new_signature": "pivotExecutionContract struct { MustNotClaim []string `json:\"must_not_claim\"` MustDo []string `json:\"must_do,omitempty\"` }",
+          "after_start_line": 137,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotExecutionContract.MustNotClaim",
+          "new_signature": "MustNotClaim []string",
+          "after_start_line": 138,
+          "dependents_count": 4
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotExecutionContract.MustDo",
+          "new_signature": "MustDo []string",
+          "after_start_line": 139,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "buildPivotPlan",
+          "new_signature": "func buildPivotPlan(response pivotResponse, flags pivotFlags) pivotPlan",
+          "after_start_line": 145,
+          "dependents_count": 7
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "pivotDistanceRank",
+          "new_signature": "func pivotDistanceRank(distance int) int",
+          "after_start_line": 249,
+          "dependents_count": 1
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "pivotWorkItemFor",
+          "new_signature": "func pivotWorkItemFor(file pivotFile, action, constraint string) pivotWorkItem",
+          "after_start_line": 256,
+          "dependents_count": 1
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "pivotPriorityFor",
+          "new_signature": "func pivotPriorityFor(file pivotFile, action string) string",
+          "after_start_line": 283,
+          "dependents_count": 1
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "pivotAgentInstructions",
+          "new_signature": "func pivotAgentInstructions(file pivotFile, action, constraint string) []string",
+          "after_start_line": 302,
+          "dependents_count": 1
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "pivotAcceptanceCriteria",
+          "new_signature": "func pivotAcceptanceCriteria(file pivotFile, action, constraint string) []string",
+          "after_start_line": 347,
+          "dependents_count": 1
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "pivotKnownBlindSpots",
+          "new_signature": "func pivotKnownBlindSpots(constraint string) []pivotBlindSpot",
+          "after_start_line": 377,
+          "dependents_count": 1
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "pivotRequiredCommands",
+          "new_signature": "func pivotRequiredCommands(response pivotResponse, flags pivotFlags) []string",
+          "after_start_line": 416,
+          "dependents_count": 1
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "pivotRerunCommand",
+          "new_signature": "func pivotRerunCommand(response pivotResponse, flags pivotFlags) string",
+          "after_start_line": 433,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "pivotMustNotClaim",
+          "new_signature": "func pivotMustNotClaim(constraint string, response pivotResponse) []string",
+          "after_start_line": 455,
+          "dependents_count": 1
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "pivotPlanID",
+          "new_signature": "func pivotPlanID(response pivotResponse, flags pivotFlags) string",
+          "after_start_line": 478,
+          "dependents_count": 1
+        }
+      ]
+    },
+    {
+      "path": "internal/cli/pivot_plan_test.go",
+      "status": "A",
+      "language": "Go",
+      "changes": [
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "planTestResponse",
+          "new_signature": "func planTestResponse() pivotResponse",
+          "after_start_line": 10,
+          "dependents_count": 7
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestBuildPivotPlanMapsEveryVerdictToAnAction",
+          "new_signature": "func TestBuildPivotPlanMapsEveryVerdictToAnAction(t *testing.T)",
+          "after_start_line": 43,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestBuildPivotPlanOrdersWorkByWhatBlocksWhat",
+          "new_signature": "func TestBuildPivotPlanOrdersWorkByWhatBlocksWhat(t *testing.T)",
+          "after_start_line": 93,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestBuildPivotPlanStatesItsOwnBlindSpots",
+          "new_signature": "func TestBuildPivotPlanStatesItsOwnBlindSpots(t *testing.T)",
+          "after_start_line": 117,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestPivotRequiredCommandsAreRunnable",
+          "new_signature": "func TestPivotRequiredCommandsAreRunnable(t *testing.T)",
+          "after_start_line": 143,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestPivotRerunCommandReproducesTheInvocation",
+          "new_signature": "func TestPivotRerunCommandReproducesTheInvocation(t *testing.T)",
+          "after_start_line": 164,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestPivotPlanIDIsDeterministic",
+          "new_signature": "func TestPivotPlanIDIsDeterministic(t *testing.T)",
+          "after_start_line": 177,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestPivotRoleAwareContractClauses",
+          "new_signature": "func TestPivotRoleAwareContractClauses(t *testing.T)",
+          "after_start_line": 197,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestParsePivotFlagsAcceptsPlanFormat",
+          "new_signature": "func TestParsePivotFlagsAcceptsPlanFormat(t *testing.T)",
+          "after_start_line": 211,
+          "dependents_count": 0
+        }
+      ]
+    },
+    {
+      "path": "internal/cli/pivot_roles.go",
+      "status": "A",
+      "language": "Go",
+      "changes": [
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "classifyPivotRole",
+          "new_signature": "func classifyPivotRole(filePath, repoRoot string) string",
+          "after_start_line": 62,
+          "dependents_count": 4
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "hasGeneratedHeader",
+          "new_signature": "func hasGeneratedHeader(absolutePath string) (generated bool, readable bool)",
+          "after_start_line": 104,
+          "dependents_count": 1
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "isTestRole",
+          "new_signature": "func isTestRole(role string) bool",
+          "after_start_line": 124,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "roleRank",
+          "new_signature": "func roleRank(role string) int",
+          "after_start_line": 129,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "type",
+          "name": "pivotPackageGroup",
+          "new_signature": "pivotPackageGroup struct { Package string `json:\"package\"` Files int `json:\"files\"` // Command is the narrowest check that covers the whole group. Command string `json:\"command\"` // Nearest is the smallest hop distance in the group, so a package holding a // direct dependent sorts above one that is only reached in two hops. Nearest int `json:\"nearest_distance\"` }",
+          "after_start_line": 148,
+          "dependents_count": 4
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPackageGroup.Package",
+          "new_signature": "Package string",
+          "after_start_line": 149,
+          "dependents_count": 23
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPackageGroup.Files",
+          "new_signature": "Files int",
+          "after_start_line": 150,
+          "dependents_count": 176
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPackageGroup.Command",
+          "new_signature": "Command string",
+          "after_start_line": 152,
+          "dependents_count": 113
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "pivotPackageGroup.Nearest",
+          "new_signature": "Nearest int",
+          "after_start_line": 155,
+          "dependents_count": 4
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "collapsePivotPackages",
+          "new_signature": "func collapsePivotPackages(files []pivotFile) []pivotPackageGroup",
+          "after_start_line": 162,
+          "dependents_count": 4
+        },
+        {
+          "type": "added",
+          "kind": "type",
+          "name": "accumulator",
+          "new_signature": "accumulator struct { files int nearest int goFile bool }",
+          "after_start_line": 163,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "accumulator.files",
+          "new_signature": "files int",
+          "after_start_line": 164,
+          "dependents_count": 416
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "accumulator.nearest",
+          "new_signature": "nearest int",
+          "after_start_line": 165,
+          "dependents_count": 25
+        },
+        {
+          "type": "added",
+          "kind": "field",
+          "name": "accumulator.goFile",
+          "new_signature": "goFile bool",
+          "after_start_line": 166,
+          "dependents_count": 2
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "pivotPackageOf",
+          "new_signature": "func pivotPackageOf(filePath string) string",
+          "after_start_line": 202,
+          "dependents_count": 3
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "pivotPackageCommand",
+          "new_signature": "func pivotPackageCommand(pkg string, hasGo bool) string",
+          "after_start_line": 213,
+          "dependents_count": 2
+        },
+        {
+          "type": "moved",
+          "kind": "function",
+          "name": "writePivotText",
+          "old_signature": "func writePivotText(out io.Writer, response pivotResponse)",
+          "new_signature": "func writePivotText(out io.Writer, response pivotResponse)",
+          "old_path": "internal/cli/pivot.go",
+          "new_path": "internal/cli/pivot_roles.go",
+          "before_start_line": 672,
+          "after_start_line": 228,
+          "dependents_count": 2,
+          "similarity": 1,
+          "reconciliation": "MOVED"
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "splitByTestRole",
+          "new_signature": "func splitByTestRole(files []pivotFile) (production, tests []pivotFile)",
+          "after_start_line": 332,
+          "dependents_count": 1
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "writePivotPackageLines",
+          "new_signature": "func writePivotPackageLines(out io.Writer, indent string, groups []pivotPackageGroup)",
+          "after_start_line": 352,
+          "dependents_count": 1
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "pivotRepoName",
+          "new_signature": "func pivotRepoName(repo string) string",
+          "after_start_line": 360,
+          "dependents_count": 1
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "collapsePivotPaths",
+          "new_signature": "func collapsePivotPaths(paths []string) []pivotPackageGroup",
+          "after_start_line": 373,
+          "dependents_count": 1
+        },
+        {
+          "type": "moved",
+          "kind": "function",
+          "name": "writePivotFileLine",
+          "old_signature": "func writePivotFileLine(out io.Writer, file pivotFile)",
+          "new_signature": "func writePivotFileLine(out io.Writer, file pivotFile)",
+          "old_path": "internal/cli/pivot.go",
+          "new_path": "internal/cli/pivot_roles.go",
+          "before_start_line": 734,
+          "after_start_line": 385,
+          "dependents_count": 1,
+          "similarity": 1,
+          "reconciliation": "MOVED"
+        }
+      ]
+    },
+    {
+      "path": "internal/cli/pivot_roles_test.go",
+      "status": "A",
+      "language": "Go",
+      "changes": [
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestClassifyPivotRolePathSignals",
+          "new_signature": "func TestClassifyPivotRolePathSignals(t *testing.T)",
+          "after_start_line": 15,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestClassifyPivotRoleGeneratedHeader",
+          "new_signature": "func TestClassifyPivotRoleGeneratedHeader(t *testing.T)",
+          "after_start_line": 41,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestCollapsePivotPackagesRanksByVolume",
+          "new_signature": "func TestCollapsePivotPackagesRanksByVolume(t *testing.T)",
+          "after_start_line": 77,
+          "dependents_count": 0
+        },
+        {
+          "type": "added",
+          "kind": "function",
+          "name": "TestWritePivotTextGroupsAndCollapses",
+          "new_signature": "func TestWritePivotTextGroupsAndCollapses(t *testing.T)",
+          "after_start_line": 114,
+          "dependents_count": 0
+        }
+      ]
+    }
+  ],
+  "schema_version": "1.1",
+  "producer_version": "dev"
+}
