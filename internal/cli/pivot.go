@@ -97,6 +97,10 @@ type pivotFile struct {
 	// a hundred at-risk test files in one package are one command to run, while
 	// one at-risk production file is a change someone has to make by hand.
 	Role string `json:"role"`
+	// RootInvalidated is the invalidated file this one traces back to. At two hops
+	// the evidence edge names the intermediate file, which is the wrong thing to
+	// order work by: what a reader needs is the root that has to be fixed first.
+	RootInvalidated string `json:"root_invalidated,omitempty"`
 	// Why is a one-line reading of the evidence, in the report's own voice.
 	Why string `json:"why"`
 	// Evidence is what Why is derived from. Never empty for a non-Safe verdict.
@@ -199,8 +203,8 @@ func parsePivotFlags(args []string) (pivotFlags, error) {
 			if err != nil {
 				return pivotFlags{}, err
 			}
-			if value != "text" && value != "json" {
-				return pivotFlags{}, fmt.Errorf("unknown --format %q (want text or json)", value)
+			if value != "text" && value != "json" && value != "plan" {
+				return pivotFlags{}, fmt.Errorf("unknown --format %q (want text, json or plan)", value)
 			}
 			flags.Format, i = value, next
 		case "--depth":
@@ -311,9 +315,16 @@ func runPivot(ctx context.Context, opts Options, args []string) error {
 	response.QueryLatencyMS = queryLatency.Milliseconds()
 	response.TotalLatencyMS = time.Since(totalStarted).Milliseconds()
 
-	if flags.Format == "json" {
+	if flags.Format == "json" || flags.Format == "plan" {
 		encoder := json.NewEncoder(termsafe.NewJSONWriter(opts.Stdout))
 		encoder.SetEscapeHTML(false)
+		// json is the classification in full; plan is the work order derived from
+		// it. Both are emitted from the same finished response, so a plan can never
+		// disagree with the report it came from.
+		if flags.Format == "plan" {
+			encoder.SetIndent("", "  ")
+			return encoder.Encode(buildPivotPlan(response, flags))
+		}
 		return encoder.Encode(response)
 	}
 	writePivotText(opts.Stdout, response)
@@ -427,9 +438,14 @@ func buildPivotResponse(snapshot sem.ProviderSnapshot, flags pivotFlags) pivotRe
 	// capped so the answer stays a shortlist rather than the whole repository.
 	dependents := buildFileDependents(snapshot, endpointFile)
 	frontier := make([]string, 0, 8)
+	// rootOf carries the originating invalidated file along the walk. Without it a
+	// two-hop file would report its intermediate neighbour as the thing to fix.
+	rootOf := make(map[string]string)
 	for filePath, entry := range verdicts {
 		if entry.Verdict == verdictInvalidated {
 			frontier = append(frontier, filePath)
+			rootOf[filePath] = filePath
+			entry.RootInvalidated = filePath
 		}
 	}
 	sort.Strings(frontier)
@@ -448,6 +464,8 @@ func buildPivotResponse(snapshot sem.ProviderSnapshot, flags pivotFlags) pivotRe
 				}
 				entry.Verdict = verdictAtRisk
 				entry.Distance = depth
+				entry.RootInvalidated = rootOf[invalidatedPath]
+				rootOf[edge.from] = entry.RootInvalidated
 				entry.Evidence = append(entry.Evidence, pivotEdge{
 					Relation:   edge.relation,
 					Target:     invalidatedPath,
@@ -456,7 +474,7 @@ func buildPivotResponse(snapshot sem.ProviderSnapshot, flags pivotFlags) pivotRe
 					SourceFile: invalidatedPath,
 					Line:       edge.line,
 				})
-				entry.Why = pivotAtRiskWhy(depth, edge.relation, invalidatedPath)
+				entry.Why = pivotAtRiskWhy(depth, edge.relation, invalidatedPath, entry.RootInvalidated)
 				next = append(next, edge.from)
 			}
 		}
@@ -562,11 +580,13 @@ func buildFileDependents(snapshot sem.ProviderSnapshot, endpointFile func(string
 	return dependents
 }
 
-func pivotAtRiskWhy(depth int, relation, target string) string {
+func pivotAtRiskWhy(depth int, relation, target, root string) string {
 	if depth == 1 {
 		return fmt.Sprintf("%s %s directly", strings.ToLower(relation), target)
 	}
-	return fmt.Sprintf("reaches %s in %d hops via %s", target, depth, strings.ToLower(relation))
+	// Name the root as well as the neighbour: the neighbour is how it was reached,
+	// the root is what has to be replaced before this file can be trusted again.
+	return fmt.Sprintf("%s %s in %d hops, rooted at %s", strings.ToLower(relation), target, depth, root)
 }
 
 // prohibitedMatch reports which prohibited name this relation target is, or "" when

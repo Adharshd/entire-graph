@@ -207,7 +207,7 @@ var commandDocs = []commandDoc{
 		name:    "pivot",
 		group:   groupAnalyze,
 		summary: "What survives a changed requirement: keep, rework, or drop",
-		usage:   []string{"entire graph pivot --dependency PKG --repo . [--checkpoint ID] [--depth 1..5] [--format text|json]"},
+		usage:   []string{"entire graph pivot --dependency PKG --repo . [--checkpoint ID] [--depth 1..5] [--exclude-tests] [--format text|json|plan]"},
 		long: "A constraint that arrives after the code is written — a dependency that may no longer touch certain data, a pattern that is no longer allowed — splits the tree into three populations. INVALIDATED files reach the prohibited dependency themselves and cannot stay as written. AT-RISK files break no rule but are built on something invalidated, so they survive only after that foundation is replaced. SAFE files have no dependency path to any of it.\n\n" +
 			"Every verdict is a rule over graph evidence, never a model's opinion: a file is invalidated because a specific IMPORTS or CALLS edge was found, and that edge is printed with the verdict so you can check it. Pass --checkpoint to fold in what an agent session actually built and how much depends on it.\n\n" +
 			"Propagation is capped (default 2 hops) because unbounded closure turns a whole repository At-Risk and stops being an answer. Files in inventory-only languages are reported as UNREACHED rather than Safe: the parser never checked them for relations, so their verdict is unknown.",
@@ -225,6 +225,7 @@ var commandDocs = []commandDoc{
 			"entire graph pivot --repo . --dependency net/http",
 			"entire graph pivot --repo . --dependency net/http --exclude-tests",
 			"entire graph pivot --repo . --dependency net/http --checkpoint 0d9e08fe2689",
+			"entire graph pivot --repo . --dependency os/exec --exclude-tests --format plan",
 		},
 	},
 	{
