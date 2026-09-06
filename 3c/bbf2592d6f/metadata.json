@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.10.5",
+  "checkpoint_id": "3cbbf2592d6f",
+  "strategy": "manual-commit",
+  "branch": "pivot-work-order",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "internal/cli/help.go",
+    "internal/cli/pivot.go",
+    "internal/cli/pivot_plan.go"
+  ],
+  "sessions": [
+    {
+      "metadata": "/3c/bbf2592d6f/0/metadata.json",
+      "transcript": "/3c/bbf2592d6f/0/full.jsonl",
+      "compact_transcript": "/3c/bbf2592d6f/0/transcript.jsonl",
+      "content_hash": "/3c/bbf2592d6f/0/content_hash.txt",
+      "prompt": "/3c/bbf2592d6f/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 24,
+    "cache_creation_tokens": 10141,
+    "cache_read_tokens": 1557697,
+    "output_tokens": 3904,
+    "api_call_count": 12
+  }
+}
