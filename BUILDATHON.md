@@ -124,6 +124,12 @@ PRODUCTION, 266 TEST and 91 TEST_FIXTURE:
 These were re-measured from a clean detached build at `934d180`, in a scratch worktree, rather than
 carried forward from an earlier run.
 
+**Read this table as a frozen snapshot at `934d180`, not as what you will see today.** The counts are
+file counts, and later commits in this branch added files — `pivot_plan.go`, its test, the demo
+evidence under `docs/demo/`. Re-running these commands at the submitted head therefore shifts several
+rows by one or two, and the totals move with them. The commands and the findings hold; the exact
+integers belong to the commit named above.
+
 One internal consistency check falls out of the excluded column: `--exclude-tests` drops exactly 357
 files, and 266 TEST + 91 TEST_FIXTURE is exactly 357, leaving exactly the 277 PRODUCTION files. That
 is agreement by construction rather than independent confirmation — the role classifier and the
@@ -199,8 +205,18 @@ time, with no way afterwards to tell what it was supposed to have done. `--forma
 work instead, as `pivot-plan/v1`.
 
 Run at `--dependency os/exec --exclude-tests --depth 1` against `53ff6bd`: **278 work items — 8 P0,
-11 P1, 259 P2**, plan id `pivot-09dbca466cc4`, with 7 required commands, 6 declared blind spots and 6
-must-not-claim clauses.
+11 P1, 259 P2**, with 7 required commands, 6 declared blind spots and 6 must-not-claim clauses.
+
+The `plan_id` is deliberately not quoted here. It is a digest over the head commit, the constraint,
+the depth, the flags and the counts, so it changes with every commit by design — that is what makes
+two plans comparable or provably different. A fixed id printed in prose is stale the moment anything
+lands, and a reader who cannot reproduce it has been given a number to distrust. Read it from the run
+itself instead:
+
+```sh
+entire graph pivot --repo . --dependency os/exec --exclude-tests --depth 1 --format plan \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['plan_id'])"
+```
 
 **Every classified file becomes exactly one work item**, so nothing falls between the report and the
 plan: `INVALIDATED → REPLACE_OR_REMOVE`, `AT-RISK → VERIFY_AFTER_ROOT_FIX`, `SAFE → NO_ACTION`,
