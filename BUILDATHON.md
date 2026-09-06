@@ -380,6 +380,40 @@ static analysis loses: an import read from source, a call matched only by name, 
 carrying a warning, and a file the parser failed on. Nine tests cover the tier rules directly, both
 output surfaces, the weakest-edge rule, and the fully-resolved regression lock.
 
+### Run against Kubernetes
+
+The card describes a repository "using dynamic dispatch, generated code, reflection, or another
+pattern that static analysis cannot fully resolve". Kubernetes at `b2ec8b6f` is that repository,
+counted rather than asserted: **17,838 Go files, 4,259 carrying a `DO NOT EDIT` header, 1,592
+importing `reflect`, 3,754 interface declarations.**
+
+```
+pivot --dependency os/exec --exclude-tests --depth 1     # 608s cold parse
+
+46 invalidated, 78 at-risk, 12877 safe, 48 unverified, 794 unreached (of 13843 files)
+Evidence: 52 CONFIRMED, 71 HEURISTIC, 49 UNVERIFIED — verify the non-confirmed before acting
+```
+
+**More of the evidence was inferred than proved** — 71 heuristic against 52 confirmed. Before this
+change all 172 edges rendered identically, and any one of them could have carried a P0 work item
+alone.
+
+One of the heuristic edges is demonstrably false, which is why it is in the record:
+
+```
+[HEURISTIC] evidence: USES_TYPE pkg/controller/garbagecollector/graph.go:142
+            -> cmd/prune-junit-xml/prunexml.go (confidence 0.75, resolution name_only)
+```
+
+`graph.go:142` declares `func (n *node) setOwners(owners []metav1.OwnerReference)`.
+`prunexml.go:309` declares `type owners struct`. The parser matched a **parameter name** to an
+unrelated **type** in a different binary; `graph.go` does not import that package at all. The graph
+was honest when it created the edge — it recorded `name_only` and `0.75` — and pivot used to discard
+both. Full working in `docs/demo/curveball/11-kubernetes-finding.md`.
+
+The other half is the **48 files previously folded into the safe count**: shell scripts and YAML the
+parser could not read, reported as "no dependency path to invalidated code, leave alone".
+
 ### Graph evidence, captured before the first edit
 
 Every graph command was run **before** any code changed, and piped to a file rather than described:
@@ -396,7 +430,32 @@ Three findings are recorded there rather than asserted from memory:
    internal package paths. Recorded as a finding about the matcher rather than reported as an empty
    result.
 3. The installed plugin has no `pivot` subcommand — the feature exists only in this working tree —
-   so all pivot runs use a locally built binary without the `graph` prefix.
+   so all pivot runs use a locally built binary without the `graph` prefix. Built-in commands
+   (`search`, `impact`, `neighbors`, `diff`, `capabilities`) run fine on the installed v0.4.0.
+
+Finding 2 was fixed later in the same session, once the graded work was committed and pushed: see
+`fix(pivot): resolve internal package paths, so zero means zero`. The same run now returns 139
+invalidated files, which is the answer to the card's question about which parts of this
+implementation consume relationship evidence.
+
+### The evidence folder
+
+Everything above is reproducible from `docs/demo/curveball/`, committed rather than described:
+
+| File | What it is |
+|---|---|
+| `PLAN.md` | the plan for this session, its steps ticked off, and the findings recorded as they were made |
+| `01-search-evidence-consumers.txt` | `search` — located the code consuming relationship evidence |
+| `02..04-impact-*.txt` | `impact` on the verdict maker, the propagation walker, the renderer |
+| `05-neighbors-firstEvidenceLine.txt` | `neighbors` — the run that revealed per-edge `resolution` and `confidence` |
+| `06-capabilities.json` | semantic vs inventory-only languages |
+| `07/08-semantic-diff.*` | `diff 90d1939..HEAD` — the adaptation, entity by entity, entirely additive |
+| `10-kubernetes-pivot.txt` | the full Kubernetes run |
+| `11-kubernetes-finding.md` | the false edge, checked against source, with the limits of the run stated |
+| `12-impact-prohibitedMatch.txt` | `impact` captured before the matcher fix |
+| `13/14-pivot-on-itself-*` | PivotMap answering the card's question about itself, after the fix |
+
+Items 01-06 all ran **before the first line of code changed**.
 
 ## Checkpoint links and what each checkpoint proves
 
