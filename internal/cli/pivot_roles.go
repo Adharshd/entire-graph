@@ -394,11 +394,18 @@ func writePivotFileLine(out io.Writer, file pivotFile) {
 	fmt.Fprintf(out, "- %s [%s]%s%s\n", file.Path, file.Role, distance, marker)
 	fmt.Fprintf(out, "    %s\n", file.Why)
 	for _, edge := range file.Evidence {
-		location := ""
+		// The line belongs to the file being reported, not to the target it reaches:
+		// it is where THIS file makes the import or the call. Printing it against the
+		// target produced locations that do not exist -- a CALLS edge into a 413-line
+		// regexp.go was cited as "regexp.go:676", when 676 was the call site in its
+		// 828-line caller. A reader who opens the cited location and finds nothing
+		// there stops believing the rest of the evidence, which is the whole point of
+		// printing it.
+		origin := file.Path
 		if edge.Line > 0 {
-			location = fmt.Sprintf(":%d", edge.Line)
+			origin = fmt.Sprintf("%s:%d", file.Path, edge.Line)
 		}
-		fmt.Fprintf(out, "    evidence: %s -> %s%s (confidence %.2f) %s\n",
-			edge.Relation, edge.Target, location, edge.Confidence, edge.Reason)
+		fmt.Fprintf(out, "    evidence: %s %s -> %s (confidence %.2f) %s\n",
+			edge.Relation, origin, edge.Target, edge.Confidence, edge.Reason)
 	}
 }

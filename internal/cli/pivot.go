@@ -82,7 +82,11 @@ type pivotEdge struct {
 	// SourceFile is the file at the other end when this is a propagation edge,
 	// empty when the edge points at the prohibited dependency itself.
 	SourceFile string `json:"source_file,omitempty"`
-	Line       int    `json:"line,omitempty"`
+	// Line is a line in the file this evidence is attached to -- the import or call
+	// site where that file reaches out -- NOT a line in Target or SourceFile. Pairing
+	// it with the other end is what produced citations like "regexp.go:676" for a
+	// file of 413 lines, where 676 was the call site in the caller.
+	Line int `json:"line,omitempty"`
 }
 
 type pivotFile struct {
