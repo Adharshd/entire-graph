@@ -671,11 +671,17 @@ func attachPivotCheckpoint(ctx context.Context, repo, checkpointID string, respo
 // report is the work that is not safe.
 func writePivotText(out io.Writer, response pivotResponse) {
 	fmt.Fprintf(out, "Pivot: %s\n", strings.Join(response.Prohibited, ", "))
+	// Depth and index provenance belong to every run, not only committed ones: they are
+	// how a reader knows how far propagation was allowed to walk and whether the verdict
+	// came off a warm cache. A worktree run has no committed head, so name that state
+	// rather than dropping the line and the two facts travelling with it.
+	revision := "uncommitted worktree"
 	if response.Commit != "" {
-		fmt.Fprintf(out, "Repo %s at %s | depth %d | index %s (%dms)\n",
-			path.Base(response.Repo), shortCommit(response.Commit), response.MaxDepth,
-			cacheWord(response.IndexCacheHit), response.IndexLatencyMS)
+		revision = "at " + shortCommit(response.Commit)
 	}
+	fmt.Fprintf(out, "Repo %s %s | depth %d | index %s (%dms)\n",
+		path.Base(response.Repo), revision, response.MaxDepth,
+		cacheWord(response.IndexCacheHit), response.IndexLatencyMS)
 	fmt.Fprintf(out, "%d invalidated, %d at-risk, %d safe",
 		response.Counts.Invalidated, response.Counts.AtRisk, response.Counts.Safe)
 	if response.Counts.Unreached > 0 {
